@@ -1,0 +1,284 @@
+<!-- Top Bar -->
+<header class="top-bar">
+  <div class="breadcrumb">
+    <span class="page-name">Metadata</span>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button
+    class="tab"
+    [class.tab-active]="activeTab === 'categories'"
+    (click)="activeTab = 'categories'"
+  >
+    Categories
+    <span class="tab-count">{{ categories.length }}</span>
+  </button>
+  <button
+    class="tab"
+    [class.tab-active]="activeTab === 'accounts'"
+    (click)="activeTab = 'accounts'"
+  >
+    Accounts
+    <span class="tab-count">{{ accounts.length }}</span>
+  </button>
+</div>
+
+<!-- ==================== CATEGORIES TAB ==================== -->
+<section class="card" *ngIf="activeTab === 'categories'">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Categories</span>
+      <span class="item-count">{{ categories.length }}</span>
+    </div>
+    <button class="btn btn-add" (click)="openAddCatForm()">+ Add Category</button>
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      class="form-control search-input"
+      placeholder="Search categories..."
+      [(ngModel)]="catSearch"
+    />
+  </div>
+
+  <div class="inline-form" *ngIf="showCatForm">
+    <div class="inline-form-body">
+      <div class="form-field">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Category name..."
+          [(ngModel)]="catFormName"
+          (keydown.enter)="saveCatForm()"
+          (keydown.escape)="cancelCatForm()"
+        />
+        <span class="form-error" *ngIf="catFormError">{{ catFormError }}</span>
+      </div>
+      <div class="inline-form-actions">
+        <button class="btn btn-outline btn-sm" (click)="cancelCatForm()">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="saveCatForm()">
+          {{ catEditingId !== null ? 'Update' : 'Add' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="list-item" *ngFor="let cat of filteredCategories; let i = index">
+      <div class="list-item-left">
+        <span class="list-num">{{ i + 1 }}</span>
+        <span class="list-name">{{ cat.name }}</span>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn-icon" title="Edit" (click)="openEditCatForm(cat)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="btn-icon btn-icon-danger" title="Delete" (click)="deleteCategory(cat)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1m2 0v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4h8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="list-empty" *ngIf="filteredCategories.length === 0">
+      <span *ngIf="catSearch">No categories match "{{ catSearch }}"</span>
+      <span *ngIf="!catSearch">No categories yet. Click <strong>+ Add Category</strong> to create one.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ACCOUNTS TAB ==================== -->
+<section class="card" *ngIf="activeTab === 'accounts'">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Accounts</span>
+      <span class="item-count">{{ accounts.length }}</span>
+    </div>
+    <button class="btn btn-add" (click)="openAddAcctModal()">+ Add Account</button>
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      class="form-control search-input"
+      placeholder="Search accounts..."
+      [(ngModel)]="acctSearch"
+    />
+  </div>
+
+  <!-- Accounts Table -->
+  <div class="table-wrap">
+    <table class="acct-table">
+      <thead>
+        <tr>
+          <th class="th-num">#</th>
+          <th>NAME</th>
+          <th>CATEGORY</th>
+          <th>TYPE</th>
+          <th>DETAIL</th>
+          <th class="th-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let acct of filteredAccounts; let i = index" class="acct-row">
+          <td class="td-num">{{ i + 1 }}</td>
+          <td class="td-name">{{ acct.name }}</td>
+          <td class="td-cat">{{ getCategoryName(acct.categoryId) }}</td>
+          <td>
+            <span class="type-badge" [ngClass]="getAcctTypeBadgeClass(acct.accountType)">
+              {{ acct.accountType }}
+            </span>
+          </td>
+          <td class="td-detail">
+            <ng-container [ngSwitch]="acct.accountType">
+              <span *ngSwitchCase="'Product'">{{ acct.packing }} &middot; {{ acct.packingWeightKg }}kg</span>
+              <span *ngSwitchCase="'Expense'">{{ acct.expenseNature }}<span *ngIf="acct.budgetLimit"> &middot; Budget: {{ acct.budgetLimit | number }}</span></span>
+              <span *ngSwitchCase="'Account'">{{ acct.bankName || 'Cash' }}<span *ngIf="acct.accountNumber"> &middot; {{ acct.accountNumber }}</span></span>
+            </ng-container>
+          </td>
+          <td class="td-actions">
+            <button class="btn-icon" title="Edit" (click)="openEditAcctModal(acct)">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="btn-icon btn-icon-danger" title="Delete" (click)="deleteAccount(acct)">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1m2 0v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4h8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="list-empty" *ngIf="filteredAccounts.length === 0">
+      <span *ngIf="acctSearch">No accounts match "{{ acctSearch }}"</span>
+      <span *ngIf="!acctSearch">No accounts yet. Click <strong>+ Add Account</strong> to create one.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ACCOUNT MODAL ==================== -->
+<div class="modal-backdrop" *ngIf="showAcctModal" (click)="closeAcctModal()"></div>
+<div class="modal" *ngIf="showAcctModal">
+  <div class="modal-header">
+    <h2 class="modal-title">{{ acctEditingId !== null ? 'Edit' : 'New' }} Account</h2>
+    <button class="btn-icon modal-close" (click)="closeAcctModal()">&times;</button>
+  </div>
+
+  <div class="modal-body">
+    <!-- Error -->
+    <div class="modal-error" *ngIf="acctFormError">{{ acctFormError }}</div>
+
+    <!-- Step 1: Name -->
+    <div class="modal-field">
+      <label class="field-label">ACCOUNT NAME</label>
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Enter account name..."
+        [(ngModel)]="acctName"
+      />
+    </div>
+
+    <!-- Step 2: Category -->
+    <div class="modal-field">
+      <label class="field-label">CATEGORY</label>
+      <select class="form-control" [(ngModel)]="acctCategoryId">
+        <option [ngValue]="null" disabled>Select category...</option>
+        <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.name }}</option>
+      </select>
+    </div>
+
+    <!-- Step 3: Account Type -->
+    <div class="modal-field" *ngIf="acctCategoryId !== null">
+      <label class="field-label">ACCOUNT TYPE</label>
+      <div class="type-selector">
+        <button
+          *ngFor="let t of accountTypes"
+          class="type-btn"
+          [class.type-btn-active]="acctType === t"
+          (click)="acctType = t; onAcctTypeChange()"
+        >
+          <span class="type-btn-icon">
+            <ng-container [ngSwitch]="t">
+              <svg *ngSwitchCase="'Product'" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="6" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <svg *ngSwitchCase="'Expense'" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v8M7.5 8.5h5a1.5 1.5 0 010 3H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <svg *ngSwitchCase="'Account'" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 9h16" stroke="currentColor" stroke-width="1.5"/></svg>
+            </ng-container>
+          </span>
+          {{ t }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Dynamic Fields based on Account Type -->
+    <div class="type-fields" *ngIf="acctType">
+      <div class="type-fields-divider"></div>
+
+      <!-- PRODUCT fields -->
+      <ng-container *ngIf="acctType === 'Product'">
+        <div class="modal-field-row">
+          <div class="modal-field">
+            <label class="field-label">PACKING</label>
+            <input type="text" class="form-control" placeholder="e.g. 50kg / Bag" [(ngModel)]="acctPacking" />
+          </div>
+          <div class="modal-field">
+            <label class="field-label">WEIGHT PER PACK (KG)</label>
+            <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctPackingWeight" min="0" />
+          </div>
+        </div>
+        <div class="modal-field">
+          <label class="field-label">UNIT</label>
+          <select class="form-control" [(ngModel)]="acctUnit">
+            <option value="kg">Kilogram (kg)</option>
+            <option value="ton">Metric Ton</option>
+            <option value="lbs">Pounds (lbs)</option>
+          </select>
+        </div>
+      </ng-container>
+
+      <!-- EXPENSE fields -->
+      <ng-container *ngIf="acctType === 'Expense'">
+        <div class="modal-field">
+          <label class="field-label">EXPENSE NATURE</label>
+          <select class="form-control" [(ngModel)]="acctExpenseNature">
+            <option value="" disabled>Select nature...</option>
+            <option value="Fixed">Fixed</option>
+            <option value="Variable">Variable</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Quarterly">Quarterly</option>
+            <option value="Annual">Annual</option>
+            <option value="One-time">One-time</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="field-label">BUDGET LIMIT (Rs.)</label>
+          <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctBudgetLimit" min="0" />
+        </div>
+      </ng-container>
+
+      <!-- ACCOUNT (bank/cash) fields -->
+      <ng-container *ngIf="acctType === 'Account'">
+        <div class="modal-field">
+          <label class="field-label">BANK NAME</label>
+          <input type="text" class="form-control" placeholder="Leave empty for cash accounts" [(ngModel)]="acctBankName" />
+        </div>
+        <div class="modal-field-row">
+          <div class="modal-field">
+            <label class="field-label">ACCOUNT NUMBER</label>
+            <input type="text" class="form-control" placeholder="e.g. 1234-5678-0001" [(ngModel)]="acctAccountNumber" />
+          </div>
+          <div class="modal-field">
+            <label class="field-label">OPENING BALANCE (Rs.)</label>
+            <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctOpeningBalance" min="0" />
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-outline" (click)="closeAcctModal()">Cancel</button>
+    <button class="btn btn-primary" (click)="saveAcctForm()">
+      {{ acctEditingId !== null ? 'Update Account' : 'Create Account' }}
+    </button>
+  </div>
+</div>
