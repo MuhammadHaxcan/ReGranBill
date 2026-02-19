@@ -7,6 +7,8 @@ import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { SaleInvoiceComponent } from './pages/sale-invoice/sale-invoice.component';
 import { CategoriesAccountsComponent } from './pages/categories-accounts/categories-accounts.component';
+import { PendingInvoicesComponent } from './pages/pending-invoices/pending-invoices.component';
+import { AddRateComponent } from './pages/add-rate/add-rate.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 
 @NgModule({
@@ -14,6 +16,8 @@ import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
     App,
     SaleInvoiceComponent,
     CategoriesAccountsComponent,
+    PendingInvoicesComponent,
+    AddRateComponent,
     PkCurrencyPipe
   ],
   imports: [

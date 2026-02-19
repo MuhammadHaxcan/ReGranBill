@@ -1,0 +1,137 @@
+<!-- Top Bar -->
+<header class="top-bar">
+  <div class="breadcrumb">
+    <a class="breadcrumb-link" routerLink="/pending-invoices">Pending Invoices</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="page-name">Add Rate</span>
+  </div>
+  <div class="badges">
+    <span class="badge badge-admin">Admin</span>
+  </div>
+</header>
+
+<!-- Invoice Header Card -->
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Add Rate</h1>
+      <p class="invoice-subtitle">Enter rates for invoice products</p>
+    </div>
+    <div class="invoice-meta">
+      <div class="invoice-number">{{ invoiceNumber }}</div>
+      <div class="invoice-date">{{ formattedDate }}</div>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">CUSTOMER</label>
+      <div class="readonly-value">{{ getCustomerName() }}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">DESCRIPTION</label>
+      <div class="readonly-value">{{ description || '—' }}</div>
+    </div>
+  </div>
+</section>
+
+<!-- Product Lines Card -->
+<section class="card product-lines">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Product Lines — Rate Entry</span>
+      <span class="line-count">{{ lines.length }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="lines-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-product">PRODUCT</th>
+          <th class="col-packing">PACKING</th>
+          <th class="col-rbp">RBP</th>
+          <th class="col-qty">QTY</th>
+          <th class="col-weight">TOTAL WEIGHT</th>
+          <th class="col-rate">RATE</th>
+          <th class="col-amount">AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let line of lines; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-product">
+            <span class="product-name">{{ line.product?.name || '—' }}</span>
+          </td>
+          <td class="col-packing">
+            <span class="packing-label">{{ line.product?.packing || '—' }}</span>
+          </td>
+          <td class="col-rbp">
+            <span class="rbp-badge" [class.rbp-yes]="line.rbp === 'Yes'" [class.rbp-no]="line.rbp === 'No'">
+              {{ line.rbp }}
+            </span>
+          </td>
+          <td class="col-qty text-center">
+            <strong>{{ line.qty }}</strong>
+          </td>
+          <td class="col-weight">
+            <strong>{{ getLineTotalWeight(line) }}</strong> <span class="unit">kg</span>
+          </td>
+          <td class="col-rate">
+            <input
+              type="number"
+              class="form-control form-control-sm rate-input"
+              [(ngModel)]="line.rate"
+              min="0"
+              step="0.5"
+              placeholder="Enter rate..."
+            />
+          </td>
+          <td class="col-amount">
+            {{ getLineAmount(line) | number:'1.2-2' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="lines-summary">
+    <div class="summary-item">
+      <span class="summary-label">BAGS</span>
+      <span class="summary-value">{{ totalBags }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">WEIGHT</span>
+      <span class="summary-value">{{ totalWeight }} <span class="unit">kg</span></span>
+    </div>
+    <div class="summary-item summary-total">
+      <span class="summary-label">AMOUNT</span>
+      <span class="summary-value text-primary">{{ totalAmount | number:'1.2-2' }}</span>
+    </div>
+  </div>
+</section>
+
+<!-- Cartage Section (read-only) -->
+<section class="card cartage-section" *ngIf="cartage">
+  <div class="cartage-row">
+    <div class="cartage-info">
+      <span class="cartage-icon">&#x1F69A;</span>
+      <div>
+        <div class="cartage-title">Cartage / Transport</div>
+        <div class="cartage-detail">
+          {{ cartage.providerName }} &middot; {{ cartage.city }} &middot;
+          <span class="text-primary">{{ cartage.amount | pkCurrency }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Bottom Actions -->
+<footer class="bottom-actions">
+  <button class="btn btn-outline" (click)="cancel()">Cancel</button>
+  <div class="bottom-actions-right">
+    <button class="btn btn-primary btn-submit" (click)="saveRates()">Save Rates</button>
+  </div>
+</footer>

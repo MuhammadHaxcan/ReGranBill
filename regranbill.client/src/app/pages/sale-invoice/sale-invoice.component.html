@@ -1,7 +1,9 @@
 <!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
-    <span class="page-name">Sale Invoice</span>
+    <a *ngIf="isEditMode" class="breadcrumb-link" routerLink="/pending-invoices">Pending Invoices</a>
+    <span *ngIf="isEditMode" class="breadcrumb-sep">/</span>
+    <span class="page-name">{{ isEditMode ? 'Edit Invoice' : 'Sale Invoice' }}</span>
   </div>
   <div class="badges">
     <span class="badge badge-draft">{{ status }}</span>
@@ -12,8 +14,8 @@
 <section class="card invoice-header">
   <div class="header-row">
     <div>
-      <h1 class="invoice-title">Sale Invoice</h1>
-      <p class="invoice-subtitle">Create a new delivery challan</p>
+      <h1 class="invoice-title">{{ isEditMode ? 'Edit Invoice' : 'Sale Invoice' }}</h1>
+      <p class="invoice-subtitle">{{ isEditMode ? 'Edit invoice details' : 'Create a new delivery challan' }}</p>
     </div>
     <div class="invoice-meta">
       <div class="invoice-number">{{ invoiceNumber }}</div>

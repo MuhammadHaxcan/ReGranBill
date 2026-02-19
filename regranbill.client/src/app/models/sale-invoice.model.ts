@@ -27,9 +27,11 @@ export interface Customer {
 export type InvoiceStatus = 'Draft' | 'Posted';
 
 export interface SaleInvoice {
+  id?: number;
   invoiceNumber: string;
   date: Date;
   customerId: number | null;
+  customerName?: string;
   description: string;
   lines: ProductLine[];
   cartage: Cartage | null;

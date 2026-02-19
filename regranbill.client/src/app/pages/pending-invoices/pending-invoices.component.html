@@ -1,0 +1,108 @@
+<!-- Top Bar -->
+<header class="top-bar">
+  <div class="breadcrumb">
+    <span class="page-name">Pending Invoices</span>
+  </div>
+  <div class="badges">
+    <span class="badge badge-admin">Admin</span>
+  </div>
+</header>
+
+<!-- Header Card -->
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Pending Invoices</h1>
+      <p class="invoice-subtitle">Review and manage all sale invoices awaiting rate entry</p>
+    </div>
+    <div class="invoice-meta">
+      <div class="total-count">{{ invoices.length }}</div>
+      <div class="total-label">Total Invoices</div>
+    </div>
+  </div>
+</section>
+
+<!-- Invoices Grid -->
+<section class="card grid-card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">All Invoices</span>
+      <span class="line-count">{{ invoices.length }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-invoice-no">INVOICE NO</th>
+          <th class="col-date">DATE</th>
+          <th class="col-customer">CUSTOMER</th>
+          <th class="col-products">PRODUCTS</th>
+          <th class="col-bags">BAGS</th>
+          <th class="col-weight">WEIGHT</th>
+          <th class="col-amount">AMOUNT</th>
+          <th class="col-status">STATUS</th>
+          <th class="col-actions">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let invoice of invoices; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-invoice-no">
+            <span class="invoice-number-badge">{{ invoice.invoiceNumber }}</span>
+          </td>
+          <td class="col-date">{{ getFormattedDate(invoice.date) }}</td>
+          <td class="col-customer">
+            <div class="customer-name">{{ invoice.customerName || '—' }}</div>
+          </td>
+          <td class="col-products text-center">{{ getProductCount(invoice) }}</td>
+          <td class="col-bags text-center">{{ getTotalBags(invoice) }}</td>
+          <td class="col-weight">
+            <strong>{{ getTotalWeight(invoice) }}</strong> <span class="unit">kg</span>
+          </td>
+          <td class="col-amount">
+            <span *ngIf="hasRates(invoice)">{{ getTotalAmount(invoice) | number:'1.2-2' }}</span>
+            <span *ngIf="!hasRates(invoice)" class="no-rate">Pending</span>
+          </td>
+          <td class="col-status">
+            <span class="status-badge" [class.status-rated]="hasRates(invoice)" [class.status-pending]="!hasRates(invoice)">
+              {{ hasRates(invoice) ? 'Rated' : 'Pending' }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <div class="action-buttons">
+              <button class="btn btn-action btn-edit" (click)="editInvoice(invoice)" title="Edit Invoice">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Edit
+              </button>
+              <button class="btn btn-action btn-rate" (click)="addRate(invoice)" title="Add Rate">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 11V14H5L13 6L10 3L2 11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8 2h6M11 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Add Rate
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="invoices.length === 0">
+    <div class="empty-icon">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="6" width="32" height="36" rx="4" stroke="#ccc" stroke-width="2"/>
+        <path d="M16 16h16M16 22h16M16 28h10" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="empty-text">No pending invoices found</p>
+    <p class="empty-subtext">All invoices will appear here once created</p>
+  </div>
+</section>
