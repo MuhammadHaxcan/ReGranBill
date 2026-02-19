@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="regranbill.client/regranbill.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="ReGranBill.Server/ReGranBill.Server.csproj" />
+</Solution>
