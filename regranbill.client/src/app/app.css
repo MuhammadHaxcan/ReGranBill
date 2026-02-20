@@ -97,6 +97,27 @@
   gap: 10px;
 }
 
+.btn-logout {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.btn-logout:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
 .user-avatar {
   display: inline-flex;
   align-items: center;
@@ -120,7 +141,7 @@
 .main-content {
   flex: 1;
   margin-left: 230px;
-  padding: 24px;
+  padding: 24px 32px;
   min-height: 100vh;
-  max-width: 1200px;
+  width: calc(100% - 230px);
 }

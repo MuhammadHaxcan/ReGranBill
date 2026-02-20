@@ -1,56 +1,29 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { Category } from '../models/category.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CategoryService {
-  private nextId = 7;
+  private url = '/api/categories';
 
-  private categories: Category[] = [
-    { id: 1, name: 'Raw Materials' },
-    { id: 2, name: 'Finished Goods' },
-    { id: 3, name: 'Packaging' },
-    { id: 4, name: 'Transport' },
-    { id: 5, name: 'Office Supplies' },
-    { id: 6, name: 'Utilities' },
-  ];
+  constructor(private http: HttpClient) {}
 
-  getAll(): Category[] {
-    return [...this.categories];
+  getAll(): Observable<Category[]> {
+    return this.http.get<Category[]>(this.url);
   }
 
-  add(name: string): Category | null {
-    const trimmed = name.trim();
-    if (!trimmed) return null;
-    if (this.isDuplicate(trimmed)) return null;
-
-    const category: Category = { id: this.nextId++, name: trimmed };
-    this.categories.push(category);
-    return category;
+  add(name: string): Observable<Category> {
+    return this.http.post<Category>(this.url, { name });
   }
 
-  update(id: number, name: string): boolean {
-    const trimmed = name.trim();
-    if (!trimmed) return false;
-    if (this.isDuplicate(trimmed, id)) return false;
-
-    const cat = this.categories.find(c => c.id === id);
-    if (!cat) return false;
-    cat.name = trimmed;
-    return true;
+  update(id: number, name: string): Observable<Category> {
+    return this.http.put<Category>(`${this.url}/${id}`, { name });
   }
 
-  delete(id: number): boolean {
-    const index = this.categories.findIndex(c => c.id === id);
-    if (index === -1) return false;
-    this.categories.splice(index, 1);
-    return true;
-  }
-
-  isDuplicate(name: string, excludeId?: number): boolean {
-    return this.categories.some(
-      c => c.name.toLowerCase() === name.toLowerCase() && c.id !== excludeId
-    );
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}`);
   }
 }

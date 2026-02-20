@@ -1,8 +1,9 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
 import { Category } from '../../models/category.model';
-import { Account, AccountType } from '../../models/account.model';
+import { Account, AccountType, PartyRole } from '../../models/account.model';
+import { SelectOption } from '../../components/searchable-select/searchable-select.component';
 
 @Component({
   selector: 'app-categories-accounts',
@@ -38,20 +39,25 @@ export class CategoriesAccountsComponent implements OnInit {
   acctPackingWeight: number | null = null;
   acctUnit = 'kg';
 
-  // Expense fields
-  acctExpenseNature = '';
-  acctBudgetLimit: number | null = null;
-
   // Account (bank/cash) fields
   acctAccountNumber = '';
-  acctOpeningBalance: number | null = null;
   acctBankName = '';
 
-  accountTypes: AccountType[] = ['Product', 'Expense', 'Account'];
+  // Party fields
+  acctPartyRole: PartyRole = PartyRole.Customer;
+  acctContactPerson = '';
+  acctPhone = '';
+  acctCity = '';
+  acctAddress = '';
+
+  categoryOptions: SelectOption[] = [];
+  accountTypes: AccountType[] = [AccountType.Product, AccountType.Expense, AccountType.Account, AccountType.Party];
+  partyRoles: PartyRole[] = [PartyRole.Customer, PartyRole.Vendor, PartyRole.Transporter, PartyRole.Both];
 
   constructor(
     private categoryService: CategoryService,
-    private accountService: AccountService
+    private accountService: AccountService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -59,7 +65,6 @@ export class CategoriesAccountsComponent implements OnInit {
     this.loadAccounts();
   }
 
-  // Close modal on Escape
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.showAcctModal) this.closeAcctModal();
@@ -68,7 +73,11 @@ export class CategoriesAccountsComponent implements OnInit {
 
   // ==================== CATEGORIES ====================
   loadCategories(): void {
-    this.categories = this.categoryService.getAll();
+    this.categoryService.getAll().subscribe(cats => {
+      this.categories = cats;
+      this.categoryOptions = cats.map(c => ({ value: c.id, label: c.name }));
+      this.cdr.detectChanges();
+    });
   }
 
   get filteredCategories(): Category[] {
@@ -102,27 +111,34 @@ export class CategoriesAccountsComponent implements OnInit {
     const name = this.catFormName.trim();
     if (!name) { this.catFormError = 'Name is required.'; return; }
 
-    if (this.catEditingId !== null) {
-      if (this.categoryService.isDuplicate(name, this.catEditingId)) {
-        this.catFormError = 'A category with this name already exists.';
-        return;
-      }
-      this.categoryService.update(this.catEditingId, name);
-    } else {
-      if (this.categoryService.isDuplicate(name)) {
-        this.catFormError = 'A category with this name already exists.';
-        return;
-      }
-      this.categoryService.add(name);
+    const isDuplicate = this.categories.some(
+      c => c.name.toLowerCase() === name.toLowerCase() && c.id !== this.catEditingId
+    );
+    if (isDuplicate) {
+      this.catFormError = 'A category with this name already exists.';
+      return;
     }
-    this.loadCategories();
-    this.cancelCatForm();
+
+    if (this.catEditingId !== null) {
+      this.categoryService.update(this.catEditingId, name).subscribe(() => {
+        this.loadCategories();
+        this.cancelCatForm();
+        this.cdr.detectChanges();
+      });
+    } else {
+      this.categoryService.add(name).subscribe(() => {
+        this.loadCategories();
+        this.cancelCatForm();
+        this.cdr.detectChanges();
+      });
+    }
   }
 
   deleteCategory(cat: Category): void {
     if (confirm(`Delete category "${cat.name}"?`)) {
-      this.categoryService.delete(cat.id);
-      this.loadCategories();
+      this.categoryService.delete(cat.id).subscribe(() => {
+        this.loadCategories();
+      });
     }
   }
 
@@ -133,7 +149,10 @@ export class CategoriesAccountsComponent implements OnInit {
 
   // ==================== ACCOUNTS ====================
   loadAccounts(): void {
-    this.accounts = this.accountService.getAll();
+    this.accountService.getAll().subscribe(accts => {
+      this.accounts = accts;
+      this.cdr.detectChanges();
+    });
   }
 
   get filteredAccounts(): Account[] {
@@ -141,7 +160,8 @@ export class CategoriesAccountsComponent implements OnInit {
     const term = this.acctSearch.toLowerCase();
     return this.accounts.filter(a =>
       a.name.toLowerCase().includes(term) ||
-      a.accountType.toLowerCase().includes(term)
+      a.accountType.toLowerCase().includes(term) ||
+      (a.partyRole && a.partyRole.toLowerCase().includes(term))
     );
   }
 
@@ -158,15 +178,16 @@ export class CategoriesAccountsComponent implements OnInit {
     this.acctType = acct.accountType;
     this.acctFormError = '';
 
-    // Populate type-specific fields
     this.acctPacking = acct.packing || '';
     this.acctPackingWeight = acct.packingWeightKg ?? null;
     this.acctUnit = acct.unit || 'kg';
-    this.acctExpenseNature = acct.expenseNature || '';
-    this.acctBudgetLimit = acct.budgetLimit ?? null;
     this.acctAccountNumber = acct.accountNumber || '';
-    this.acctOpeningBalance = acct.openingBalance ?? null;
     this.acctBankName = acct.bankName || '';
+    this.acctPartyRole = acct.partyRole || PartyRole.Customer;
+    this.acctContactPerson = acct.contactPerson || '';
+    this.acctPhone = acct.phone || '';
+    this.acctCity = acct.city || '';
+    this.acctAddress = acct.address || '';
 
     this.showAcctModal = true;
   }
@@ -184,23 +205,26 @@ export class CategoriesAccountsComponent implements OnInit {
     this.acctPacking = '';
     this.acctPackingWeight = null;
     this.acctUnit = 'kg';
-    this.acctExpenseNature = '';
-    this.acctBudgetLimit = null;
     this.acctAccountNumber = '';
-    this.acctOpeningBalance = null;
     this.acctBankName = '';
+    this.acctPartyRole = PartyRole.Customer;
+    this.acctContactPerson = '';
+    this.acctPhone = '';
+    this.acctCity = '';
+    this.acctAddress = '';
   }
 
   onAcctTypeChange(): void {
-    // Reset type-specific fields when type changes
     this.acctPacking = '';
     this.acctPackingWeight = null;
     this.acctUnit = 'kg';
-    this.acctExpenseNature = '';
-    this.acctBudgetLimit = null;
     this.acctAccountNumber = '';
-    this.acctOpeningBalance = null;
     this.acctBankName = '';
+    this.acctPartyRole = PartyRole.Customer;
+    this.acctContactPerson = '';
+    this.acctPhone = '';
+    this.acctCity = '';
+    this.acctAddress = '';
   }
 
   saveAcctForm(): void {
@@ -209,53 +233,63 @@ export class CategoriesAccountsComponent implements OnInit {
     if (this.acctCategoryId === null) { this.acctFormError = 'Please select a category.'; return; }
     if (this.acctType === null) { this.acctFormError = 'Please select an account type.'; return; }
 
-    if (this.accountService.isDuplicate(name, this.acctEditingId ?? undefined)) {
+    const isDuplicate = this.accounts.some(
+      a => a.name.toLowerCase() === name.toLowerCase() && a.id !== this.acctEditingId
+    );
+    if (isDuplicate) {
       this.acctFormError = 'An account with this name already exists.';
       return;
     }
 
-    const data: Omit<Account, 'id'> = {
+    const data: any = {
       name,
       categoryId: this.acctCategoryId,
       accountType: this.acctType,
     };
 
-    // Attach type-specific fields
     if (this.acctType === 'Product') {
       data.packing = this.acctPacking;
       data.packingWeightKg = this.acctPackingWeight ?? 0;
       data.unit = this.acctUnit;
-    } else if (this.acctType === 'Expense') {
-      data.expenseNature = this.acctExpenseNature;
-      data.budgetLimit = this.acctBudgetLimit ?? 0;
     } else if (this.acctType === 'Account') {
       data.accountNumber = this.acctAccountNumber;
-      data.openingBalance = this.acctOpeningBalance ?? 0;
       data.bankName = this.acctBankName;
+    } else if (this.acctType === 'Party') {
+      data.partyRole = this.acctPartyRole;
+      data.contactPerson = this.acctContactPerson;
+      data.phone = this.acctPhone;
+      data.city = this.acctCity;
+      data.address = this.acctAddress;
     }
 
     if (this.acctEditingId !== null) {
-      this.accountService.update(this.acctEditingId, data);
+      this.accountService.update(this.acctEditingId, data).subscribe(() => {
+        this.loadAccounts();
+        this.closeAcctModal();
+        this.cdr.detectChanges();
+      });
     } else {
-      this.accountService.add(data);
+      this.accountService.add(data).subscribe(() => {
+        this.loadAccounts();
+        this.closeAcctModal();
+        this.cdr.detectChanges();
+      });
     }
-
-    this.loadAccounts();
-    this.closeAcctModal();
   }
 
   deleteAccount(acct: Account): void {
     if (confirm(`Delete account "${acct.name}"?`)) {
-      this.accountService.delete(acct.id);
-      this.loadAccounts();
+      this.accountService.delete(acct.id).subscribe(() => this.loadAccounts());
     }
   }
 
   getAcctTypeBadgeClass(type: AccountType): string {
     switch (type) {
-      case 'Product': return 'badge-product';
-      case 'Expense': return 'badge-expense';
-      case 'Account': return 'badge-account';
+      case AccountType.Product: return 'badge-product';
+      case AccountType.Expense: return 'badge-expense';
+      case AccountType.Account: return 'badge-account';
+      case AccountType.Party: return 'badge-party';
+      default: return '';
     }
   }
 }

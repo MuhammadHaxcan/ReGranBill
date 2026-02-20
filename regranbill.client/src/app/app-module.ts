@@ -1,23 +1,28 @@
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
-import { SaleInvoiceComponent } from './pages/sale-invoice/sale-invoice.component';
+import { LoginComponent } from './pages/login/login.component';
+import { DeliveryChallanComponent } from './pages/delivery-challan/delivery-challan.component';
 import { CategoriesAccountsComponent } from './pages/categories-accounts/categories-accounts.component';
-import { PendingInvoicesComponent } from './pages/pending-invoices/pending-invoices.component';
+import { PendingChallansComponent } from './pages/pending-challans/pending-challans.component';
 import { AddRateComponent } from './pages/add-rate/add-rate.component';
+import { SearchableSelectComponent } from './components/searchable-select/searchable-select.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 @NgModule({
   declarations: [
     App,
-    SaleInvoiceComponent,
+    LoginComponent,
+    DeliveryChallanComponent,
     CategoriesAccountsComponent,
-    PendingInvoicesComponent,
+    PendingChallansComponent,
     AddRateComponent,
+    SearchableSelectComponent,
     PkCurrencyPipe
   ],
   imports: [
@@ -27,7 +32,8 @@ import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
     AppRoutingModule
   ],
   providers: [
-    provideBrowserGlobalErrorListeners()
+    provideBrowserGlobalErrorListeners(),
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],
   bootstrap: [App]
 })

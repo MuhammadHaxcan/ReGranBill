@@ -1,4 +1,16 @@
-export type AccountType = 'Product' | 'Expense' | 'Account';
+export enum AccountType {
+  Product = 'Product',
+  Expense = 'Expense',
+  Account = 'Account',
+  Party = 'Party',
+}
+
+export enum PartyRole {
+  Customer = 'Customer',
+  Vendor = 'Vendor',
+  Transporter = 'Transporter',
+  Both = 'Both',
+}
 
 export interface Account {
   id: number;
@@ -11,12 +23,14 @@ export interface Account {
   packingWeightKg?: number;
   unit?: string;
 
-  // Expense-specific
-  expenseNature?: string;
-  budgetLimit?: number;
-
-  // Account-specific (bank / cash / receivable)
+  // Account-specific (bank / cash)
   accountNumber?: string;
-  openingBalance?: number;
   bankName?: string;
+
+  // Party-specific (customer / vendor / transporter)
+  partyRole?: PartyRole;
+  contactPerson?: string;
+  phone?: string;
+  city?: string;
+  address?: string;
 }

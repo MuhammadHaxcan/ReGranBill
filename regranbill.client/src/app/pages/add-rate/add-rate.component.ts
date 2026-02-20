@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SaleInvoiceService } from '../../services/sale-invoice.service';
-import { SaleInvoice, ProductLine, Cartage, Customer } from '../../models/sale-invoice.model';
+import { DeliveryChallanService } from '../../services/delivery-challan.service';
 
 @Component({
   selector: 'app-add-rate',
@@ -10,96 +9,96 @@ import { SaleInvoice, ProductLine, Cartage, Customer } from '../../models/sale-i
   standalone: false
 })
 export class AddRateComponent implements OnInit {
-  invoiceId: number | null = null;
-  invoiceNumber = '';
-  invoiceDate = new Date();
-  selectedCustomerId: number | null = null;
+  challanId: number | null = null;
+  dcNumber = '';
+  dcDate = new Date();
+  customerName = '';
   description = '';
-  status: 'Draft' | 'Posted' = 'Draft';
+  status = 'Draft';
+  ratesAdded = false;
+  loading = true;
 
-  customers: Customer[] = [];
-  lines: ProductLine[] = [];
-
-  cartage: Cartage | null = null;
+  lines: any[] = [];
+  cartage: any = null;
+  journalVouchers: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private invoiceService: SaleInvoiceService
+    private dcService: DeliveryChallanService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.customers = this.invoiceService.getCustomers();
-
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
-      this.invoiceId = +idParam;
-      const invoice = this.invoiceService.getInvoiceById(this.invoiceId);
-      if (invoice) {
-        this.invoiceNumber = invoice.invoiceNumber;
-        this.invoiceDate = new Date(invoice.date);
-        this.selectedCustomerId = invoice.customerId;
-        this.description = invoice.description;
-        this.status = invoice.status;
-        this.lines = invoice.lines;
-        this.cartage = invoice.cartage;
-      }
+      this.challanId = +idParam;
+      this.loadData();
     }
   }
 
-  getCustomerName(): string {
-    const customer = this.customers.find(c => c.id === this.selectedCustomerId);
-    return customer ? `${customer.name} — ${customer.city}` : '—';
+  loadData(): void {
+    this.dcService.getById(this.challanId!).subscribe(dc => {
+      if (dc) {
+        this.dcNumber = dc.dcNumber;
+        this.dcDate = new Date(dc.date);
+        this.customerName = dc.customerName || '—';
+        this.description = dc.description || '';
+        this.status = dc.status;
+        this.ratesAdded = dc.ratesAdded;
+        this.lines = dc.lines;
+        this.cartage = dc.cartage;
+        this.journalVouchers = dc.journalVouchers || [];
+      }
+      this.loading = false;
+      this.cdr.detectChanges();
+    });
   }
 
   get formattedDate(): string {
-    return this.invoiceDate.toLocaleDateString('en-GB', {
+    return this.dcDate.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
   }
 
-  getLineTotalWeight(line: ProductLine): number {
-    if (!line.product || !line.qty) return 0;
-    return line.product.packingWeightKg * line.qty;
+  getLineTotalWeight(line: any): number {
+    return (line.packingWeightKg || 0) * (line.qty || 0);
   }
 
-  getLineAmount(line: ProductLine): number {
-    return this.getLineTotalWeight(line) * line.rate;
+  getLineAmount(line: any): number {
+    if (line.rbp === 'Yes') {
+      return this.getLineTotalWeight(line) * (line.rate || 0);
+    }
+    return (line.qty || 0) * (line.rate || 0);
   }
 
   get totalBags(): number {
-    return this.lines.reduce((sum, line) => sum + (line.qty || 0), 0);
+    return this.lines.reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
   }
 
   get totalWeight(): number {
-    return this.lines.reduce((sum, line) => sum + this.getLineTotalWeight(line), 0);
+    return this.lines.reduce((sum: number, line: any) => sum + this.getLineTotalWeight(line), 0);
   }
 
   get totalAmount(): number {
-    return this.lines.reduce((sum, line) => sum + this.getLineAmount(line), 0);
+    return this.lines.reduce((sum: number, line: any) => sum + this.getLineAmount(line), 0);
   }
 
   saveRates(): void {
-    if (this.invoiceId) {
-      const invoice: SaleInvoice = {
-        id: this.invoiceId,
-        invoiceNumber: this.invoiceNumber,
-        date: this.invoiceDate,
-        customerId: this.selectedCustomerId,
-        description: this.description,
-        lines: this.lines,
-        cartage: this.cartage,
-        status: this.status
-      };
-      this.invoiceService.updateInvoiceRates(this.invoiceId, invoice);
-      alert('Rates saved successfully.');
-      this.router.navigate(['/pending-invoices']);
+    if (this.challanId) {
+      const rateUpdates = this.lines.map((l: any) => ({ lineId: l.id, rate: l.rate }));
+      this.dcService.updateRates(this.challanId, { lines: rateUpdates }).subscribe(updatedDc => {
+        this.journalVouchers = updatedDc.journalVouchers || [];
+        this.ratesAdded = updatedDc.ratesAdded;
+        alert('Rates saved successfully. Journal entries updated.');
+        this.router.navigate(['/pending-challans']);
+      });
     }
   }
 
   cancel(): void {
-    this.router.navigate(['/pending-invoices']);
+    this.router.navigate(['/pending-challans']);
   }
 }

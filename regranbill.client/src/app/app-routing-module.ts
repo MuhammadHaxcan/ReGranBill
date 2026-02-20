@@ -1,18 +1,22 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { SaleInvoiceComponent } from './pages/sale-invoice/sale-invoice.component';
+import { LoginComponent } from './pages/login/login.component';
+import { DeliveryChallanComponent } from './pages/delivery-challan/delivery-challan.component';
 import { CategoriesAccountsComponent } from './pages/categories-accounts/categories-accounts.component';
-import { PendingInvoicesComponent } from './pages/pending-invoices/pending-invoices.component';
+import { PendingChallansComponent } from './pages/pending-challans/pending-challans.component';
 import { AddRateComponent } from './pages/add-rate/add-rate.component';
+import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
 
 const routes: Routes = [
-  { path: 'sale-invoice', component: SaleInvoiceComponent },
-  { path: 'sale-invoice/:id', component: SaleInvoiceComponent },
-  { path: 'pending-invoices', component: PendingInvoicesComponent },
-  { path: 'add-rate/:id', component: AddRateComponent },
-  { path: 'metadata', component: CategoriesAccountsComponent },
-  { path: '', redirectTo: 'sale-invoice', pathMatch: 'full' },
-  { path: '**', redirectTo: 'sale-invoice' }
+  { path: 'login', component: LoginComponent },
+  { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
+  { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
+  { path: 'pending-challans', component: PendingChallansComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'add-rate/:id', component: AddRateComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'metadata', component: CategoriesAccountsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: '', redirectTo: 'delivery-challan', pathMatch: 'full' },
+  { path: '**', redirectTo: 'delivery-challan' }
 ];
 
 @NgModule({

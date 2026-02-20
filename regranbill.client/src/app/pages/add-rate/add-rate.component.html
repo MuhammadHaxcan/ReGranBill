@@ -1,24 +1,27 @@
 <!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
-    <a class="breadcrumb-link" routerLink="/pending-invoices">Pending Invoices</a>
+    <a class="breadcrumb-link" routerLink="/pending-challans">Pending Challans</a>
     <span class="breadcrumb-sep">/</span>
     <span class="page-name">Add Rate</span>
   </div>
   <div class="badges">
     <span class="badge badge-admin">Admin</span>
+    <span class="badge" [class.badge-rated]="ratesAdded" [class.badge-draft]="!ratesAdded">
+      {{ ratesAdded ? 'Rates Added' : 'Pending Rates' }}
+    </span>
   </div>
 </header>
 
-<!-- Invoice Header Card -->
-<section class="card invoice-header">
+<!-- DC Header Card -->
+<section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
     <div>
       <h1 class="invoice-title">Add Rate</h1>
-      <p class="invoice-subtitle">Enter rates for invoice products</p>
+      <p class="invoice-subtitle">Enter rates for delivery challan products</p>
     </div>
     <div class="invoice-meta">
-      <div class="invoice-number">{{ invoiceNumber }}</div>
+      <div class="invoice-number">{{ dcNumber }}</div>
       <div class="invoice-date">{{ formattedDate }}</div>
     </div>
   </div>
@@ -26,7 +29,7 @@
   <div class="form-row">
     <div class="form-group">
       <label class="form-label">CUSTOMER</label>
-      <div class="readonly-value">{{ getCustomerName() }}</div>
+      <div class="readonly-value">{{ customerName }}</div>
     </div>
     <div class="form-group">
       <label class="form-label">DESCRIPTION</label>
@@ -36,7 +39,7 @@
 </section>
 
 <!-- Product Lines Card -->
-<section class="card product-lines">
+<section class="card product-lines" *ngIf="!loading">
   <div class="card-header">
     <div class="card-header-left">
       <span class="card-header-title">Product Lines — Rate Entry</span>
@@ -62,10 +65,10 @@
         <tr *ngFor="let line of lines; let i = index">
           <td class="col-num">{{ i + 1 }}</td>
           <td class="col-product">
-            <span class="product-name">{{ line.product?.name || '—' }}</span>
+            <span class="product-name">{{ line.productName || '—' }}</span>
           </td>
           <td class="col-packing">
-            <span class="packing-label">{{ line.product?.packing || '—' }}</span>
+            <span class="packing-label">{{ line.packing || '—' }}</span>
           </td>
           <td class="col-rbp">
             <span class="rbp-badge" [class.rbp-yes]="line.rbp === 'Yes'" [class.rbp-no]="line.rbp === 'No'">
@@ -113,14 +116,14 @@
 </section>
 
 <!-- Cartage Section (read-only) -->
-<section class="card cartage-section" *ngIf="cartage">
+<section class="card cartage-section" *ngIf="!loading && cartage">
   <div class="cartage-row">
     <div class="cartage-info">
       <span class="cartage-icon">&#x1F69A;</span>
       <div>
         <div class="cartage-title">Cartage / Transport</div>
         <div class="cartage-detail">
-          {{ cartage.providerName }} &middot; {{ cartage.city }} &middot;
+          {{ cartage.transporterName }} &middot; {{ cartage.city }} &middot;
           <span class="text-primary">{{ cartage.amount | pkCurrency }}</span>
         </div>
       </div>
@@ -128,10 +131,72 @@
   </div>
 </section>
 
+<!-- Journal Voucher Sections -->
+<section class="card jv-section" *ngFor="let jv of journalVouchers">
+  <div class="card-header" [class.jv-header]="jv.voucherType === 'SaleVoucher'" [class.cv-header]="jv.voucherType === 'CartageVoucher'">
+    <div class="card-header-left">
+      <span class="card-header-title">
+        {{ jv.voucherType === 'CartageVoucher' ? 'Cartage Voucher' : 'Journal Voucher' }} — {{ jv.voucherNumber }}
+      </span>
+      <span class="line-count">{{ jv.entries.length }}</span>
+    </div>
+    <span class="jv-badge" [class.jv-balanced]="jv.totalDebit === jv.totalCredit">
+      {{ jv.totalDebit === jv.totalCredit ? 'Balanced' : 'Unbalanced' }}
+    </span>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="jv-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th>ACCOUNT</th>
+          <th>DESCRIPTION</th>
+          <th class="col-qty">QTY</th>
+          <th class="col-rbp">RBP</th>
+          <th class="col-debit">DEBIT</th>
+          <th class="col-credit">CREDIT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of jv.entries; let i = index"
+            [class.debit-row]="entry.debit > 0"
+            [class.credit-row]="entry.credit > 0">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="td-account">
+            <strong>{{ entry.accountName }}</strong>
+          </td>
+          <td class="td-desc">{{ entry.description || '—' }}</td>
+          <td class="col-qty text-center">{{ entry.qty || '—' }}</td>
+          <td class="col-rbp text-center">{{ entry.rbp || '—' }}</td>
+          <td class="col-debit">
+            <span *ngIf="entry.debit > 0" class="amount-debit">{{ entry.debit | number:'1.2-2' }}</span>
+          </td>
+          <td class="col-credit">
+            <span *ngIf="entry.credit > 0" class="amount-credit">{{ entry.credit | number:'1.2-2' }}</span>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="jv-totals">
+          <td colspan="5" class="text-right"><strong>TOTALS</strong></td>
+          <td class="col-debit"><strong>{{ jv.totalDebit | number:'1.2-2' }}</strong></td>
+          <td class="col-credit"><strong>{{ jv.totalCredit | number:'1.2-2' }}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+
 <!-- Bottom Actions -->
-<footer class="bottom-actions">
+<footer class="bottom-actions" *ngIf="!loading">
   <button class="btn btn-outline" (click)="cancel()">Cancel</button>
   <div class="bottom-actions-right">
     <button class="btn btn-primary btn-submit" (click)="saveRates()">Save Rates</button>
   </div>
 </footer>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>

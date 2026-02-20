@@ -1,0 +1,47 @@
+<div class="ss-container" [class.ss-compact]="compact" [class.ss-open]="isOpen">
+  <!-- Trigger -->
+  <div class="ss-trigger" (click)="toggleDropdown()">
+    <span class="ss-value" *ngIf="selectedOption">{{ selectedOption.label }}</span>
+    <span class="ss-placeholder" *ngIf="!selectedOption">{{ placeholder }}</span>
+    <span class="ss-actions">
+      <button class="ss-clear" *ngIf="selectedOption" (click)="clear($event)" title="Clear"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <svg class="ss-chevron" width="12" height="12" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    </span>
+  </div>
+
+  <!-- Dropdown (fixed position, escapes overflow) -->
+  <div
+    class="ss-dropdown"
+    *ngIf="isOpen"
+    [style.top.px]="dropdownTop"
+    [style.left.px]="dropdownLeft"
+    [style.width.px]="dropdownWidth"
+  >
+    <div class="ss-search-wrap">
+      <input
+        class="ss-search"
+        type="text"
+        placeholder="Type to search..."
+        [(ngModel)]="searchTerm"
+        (keydown)="onKeydown($event)"
+        #searchInput
+      />
+    </div>
+    <div class="ss-options">
+      <div
+        class="ss-option"
+        *ngFor="let opt of filteredOptions; let i = index"
+        [class.ss-highlighted]="i === highlightIndex"
+        [class.ss-selected]="selectedOption?.value === opt.value"
+        (click)="selectOption(opt)"
+        (mouseenter)="highlightIndex = i"
+      >
+        <span class="ss-option-label">{{ opt.label }}</span>
+        <span class="ss-option-sublabel" *ngIf="opt.sublabel">{{ opt.sublabel }}</span>
+      </div>
+      <div class="ss-no-results" *ngIf="filteredOptions.length === 0">
+        No results found
+      </div>
+    </div>
+  </div>
+</div>

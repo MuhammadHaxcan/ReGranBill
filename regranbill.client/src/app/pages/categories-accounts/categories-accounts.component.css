@@ -299,27 +299,38 @@
 .badge-product { background: #e8f5e9; color: #2e7d32; }
 .badge-expense { background: #fff3e0; color: #e65100; }
 .badge-account { background: #e3f2fd; color: #1565c0; }
+.badge-party { background: #f3e5f5; color: #7b1fa2; }
+
+.role-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  background: #f0f2f5;
+}
 
 /* ==================== MODAL ==================== */
-.modal-backdrop {
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.4);
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   background: #fff;
   border-radius: 16px;
   width: 520px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  z-index: 1001;
   box-shadow: 0 24px 48px rgba(0,0,0,0.15);
 }
 
@@ -409,8 +420,14 @@
 /* Type Selector Buttons */
 .type-selector {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+}
+
+.type-hint {
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
 }
 
 .type-btn {
@@ -418,7 +435,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 14px 8px;
+  padding: 12px 4px;
   border: 1.5px solid var(--border-color);
   border-radius: 10px;
   background: #fff;
@@ -475,6 +492,38 @@
   gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
+}
+
+/* Role Selector (Party sub-type) */
+.role-selector {
+  display: flex;
+  gap: 6px;
+}
+
+.role-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.role-btn:hover {
+  border-color: #bbb;
+  color: var(--navy);
+}
+
+.role-btn-active {
+  border-color: var(--primary);
+  background: #f0f4ff;
+  color: var(--primary);
 }
 
 /* Responsive */
