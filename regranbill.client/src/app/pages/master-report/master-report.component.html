@@ -1,0 +1,156 @@
+<!-- Top Bar -->
+<header class="top-bar">
+  <div class="breadcrumb">
+    <span class="page-name">Master Report</span>
+  </div>
+  <div class="badges">
+    <span class="badge badge-admin">Admin</span>
+  </div>
+</header>
+
+<!-- Report Parameters -->
+<section class="card filter-card" *ngIf="filtersLoaded">
+  <h3 class="filter-title">Report Parameters</h3>
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>Since</label>
+      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>Category</label>
+      <select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()" class="filter-input">
+        <option [ngValue]="null">All Categories</option>
+        <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Account</label>
+      <select [(ngModel)]="selectedAccountId" class="filter-input">
+        <option [ngValue]="null">All Accounts</option>
+        <option *ngFor="let a of filteredAccounts" [ngValue]="a.id">{{ a.name }}</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadReport()">Apply</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+</section>
+
+<!-- Results Section -->
+<section class="card grid-card" *ngIf="report && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Master Report Results</span>
+      <span class="line-count">{{ filteredEntries.length }} of {{ report.totalEntries }} entries</span>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Filter results..."
+      [(ngModel)]="searchText"
+    />
+  </div>
+
+  <!-- Summary Row -->
+  <div class="summary-strip">
+    <div class="summary-item">
+      <span class="summary-label">Total Debit</span>
+      <span class="summary-value">{{ report.totalDebit | pkCurrency }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Total Credit</span>
+      <span class="summary-value">{{ report.totalCredit | pkCurrency }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Net Balance</span>
+      <span class="summary-value" [class.balance-positive]="report.netBalance >= 0" [class.balance-negative]="report.netBalance < 0">
+        {{ report.netBalance | pkCurrency }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="filteredEntries.length > 0">
+      <thead>
+        <tr>
+          <th class="col-id">ID</th>
+          <th class="col-date">ENTRY DATE</th>
+          <th class="col-description">DESCRIPTION</th>
+          <th class="col-account">ACCOUNT</th>
+          <th class="col-qty">QUANTITY</th>
+          <th class="col-rate">RATE</th>
+          <th class="col-debit">DEBIT</th>
+          <th class="col-credit">CREDIT</th>
+          <th class="col-balance">BALANCE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of filteredEntries">
+          <td class="col-id">
+            <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            <div class="entry-id">Entry: {{ entry.entryId }}</div>
+          </td>
+          <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
+          <td class="col-description">{{ entry.description || '—' }}</td>
+          <td class="col-account">{{ entry.accountName }}</td>
+          <td class="col-qty">
+            <span *ngIf="entry.quantity">{{ entry.quantity }}</span>
+            <span *ngIf="!entry.quantity" class="zero-amount">—</span>
+          </td>
+          <td class="col-rate">
+            <span *ngIf="entry.rate">{{ entry.rate | number:'1.2-2' }}</span>
+            <span *ngIf="!entry.rate" class="zero-amount">—</span>
+          </td>
+          <td class="col-debit">
+            <span *ngIf="entry.debit > 0">{{ entry.debit | pkCurrency }}</span>
+            <span *ngIf="entry.debit === 0" class="zero-amount">—</span>
+          </td>
+          <td class="col-credit">
+            <span *ngIf="entry.credit > 0">{{ entry.credit | pkCurrency }}</span>
+            <span *ngIf="entry.credit === 0" class="zero-amount">—</span>
+          </td>
+          <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
+            {{ entry.runningBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td colspan="6" class="totals-label">Totals</td>
+          <td class="col-debit totals-value">{{ report.totalDebit | pkCurrency }}</td>
+          <td class="col-credit totals-value">{{ report.totalCredit | pkCurrency }}</td>
+          <td class="col-balance totals-value" [class.balance-positive]="report.netBalance >= 0" [class.balance-negative]="report.netBalance < 0">
+            {{ report.netBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="filteredEntries.length === 0">
+    <div class="empty-icon">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="6" width="32" height="36" rx="4" stroke="#ccc" stroke-width="2"/>
+        <path d="M16 16h16M16 22h16M16 28h10" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="empty-text">No entries found</p>
+    <p class="empty-subtext">Try adjusting your filters or search text</p>
+  </div>
+</section>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading report...</p>
+</div>

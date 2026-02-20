@@ -6,11 +6,6 @@ export enum VoucherType {
   CartageVoucher = 'CartageVoucher',
 }
 
-export enum ChallanStatus {
-  Draft = 'Draft',
-  Posted = 'Posted',
-}
-
 export interface Product {
   id: number;
   name: string;
@@ -49,6 +44,7 @@ export interface JournalEntry {
   credit: number;
   qty?: number;
   rbp?: string;
+  rate?: number;
   sortOrder: number;
 }
 
@@ -73,7 +69,6 @@ export interface DeliveryChallan {
   voucherType: VoucherType;
   lines: ProductLine[];
   cartage: Cartage | null;
-  status: ChallanStatus;
   ratesAdded: boolean;
   journalVouchers: JournalVoucherSummary[];
 }

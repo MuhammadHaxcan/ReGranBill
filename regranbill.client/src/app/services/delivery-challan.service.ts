@@ -32,11 +32,7 @@ export class DeliveryChallanService {
     return this.http.put<any>(`${this.url}/${id}`, request);
   }
 
-  updateRates(id: number, request: { lines: { lineId: number; rate: number }[] }): Observable<any> {
+  updateRates(id: number, request: { lines: { entryId: number; rate: number }[] }): Observable<any> {
     return this.http.patch<any>(`${this.url}/${id}/rates`, request);
-  }
-
-  submit(id: number): Observable<any> {
-    return this.http.patch<any>(`${this.url}/${id}/submit`, {});
   }
 }

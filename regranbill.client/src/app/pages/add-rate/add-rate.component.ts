@@ -14,7 +14,6 @@ export class AddRateComponent implements OnInit {
   dcDate = new Date();
   customerName = '';
   description = '';
-  status = 'Draft';
   ratesAdded = false;
   loading = true;
 
@@ -44,7 +43,6 @@ export class AddRateComponent implements OnInit {
         this.dcDate = new Date(dc.date);
         this.customerName = dc.customerName || '—';
         this.description = dc.description || '';
-        this.status = dc.status;
         this.ratesAdded = dc.ratesAdded;
         this.lines = dc.lines;
         this.cartage = dc.cartage;
@@ -88,7 +86,7 @@ export class AddRateComponent implements OnInit {
 
   saveRates(): void {
     if (this.challanId) {
-      const rateUpdates = this.lines.map((l: any) => ({ lineId: l.id, rate: l.rate }));
+      const rateUpdates = this.lines.map((l: any) => ({ entryId: l.id, rate: l.rate }));
       this.dcService.updateRates(this.challanId, { lines: rateUpdates }).subscribe(updatedDc => {
         this.journalVouchers = updatedDc.journalVouchers || [];
         this.ratesAdded = updatedDc.ratesAdded;

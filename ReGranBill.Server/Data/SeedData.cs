@@ -102,8 +102,6 @@ public static class SeedData
             });
         }
 
-        // DC Number Sequence
-        db.DcNumberSequences.Add(new DcNumberSequence { LastNumber = 42 });
         await db.SaveChangesAsync();
     }
 }

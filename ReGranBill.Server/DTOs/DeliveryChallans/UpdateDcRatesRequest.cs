@@ -7,6 +7,6 @@ public class UpdateDcRatesRequest
 
 public class LineRateUpdate
 {
-    public int LineId { get; set; }
+    public int EntryId { get; set; }
     public decimal Rate { get; set; }
 }

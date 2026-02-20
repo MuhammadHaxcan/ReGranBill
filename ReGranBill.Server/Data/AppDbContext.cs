@@ -14,12 +14,9 @@ public class AppDbContext : DbContext
     public DbSet<ProductDetail> ProductDetails => Set<ProductDetail>();
     public DbSet<BankDetail> BankDetails => Set<BankDetail>();
     public DbSet<PartyDetail> PartyDetails => Set<PartyDetail>();
-    public DbSet<DeliveryChallan> DeliveryChallans => Set<DeliveryChallan>();
-    public DbSet<DcLine> DcLines => Set<DcLine>();
-    public DbSet<DcCartage> DcCartages => Set<DcCartage>();
-    public DbSet<DcNumberSequence> DcNumberSequences => Set<DcNumberSequence>();
     public DbSet<JournalVoucher> JournalVouchers => Set<JournalVoucher>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+    public DbSet<JournalVoucherReference> JournalVoucherReferences => Set<JournalVoucherReference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,60 +84,16 @@ public class AppDbContext : DbContext
             e.HasOne(p => p.Account).WithOne(a => a.PartyDetail).HasForeignKey<PartyDetail>(p => p.AccountId);
         });
 
-        // DeliveryChallan
-        modelBuilder.Entity<DeliveryChallan>(e =>
-        {
-            e.ToTable("delivery_challans");
-            e.HasIndex(d => d.DcNumber).IsUnique();
-            e.Property(d => d.DcNumber).HasMaxLength(20);
-            e.Property(d => d.VehicleNumber).HasMaxLength(20);
-            e.Property(d => d.Description).HasMaxLength(500);
-            e.Property(d => d.VoucherType).HasMaxLength(20)
-                .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
-            e.Property(d => d.Status).HasMaxLength(20)
-                .HasConversion(v => v.ToString(), v => Enum.Parse<ChallanStatus>(v));
-            e.HasOne(d => d.Customer).WithMany().HasForeignKey(d => d.CustomerId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(d => d.Creator).WithMany().HasForeignKey(d => d.CreatedBy).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // DcLine
-        modelBuilder.Entity<DcLine>(e =>
-        {
-            e.ToTable("dc_lines");
-            e.Property(l => l.Rbp).HasMaxLength(5);
-            e.Property(l => l.Rate).HasColumnType("decimal(12,2)");
-            e.HasOne(l => l.DeliveryChallan).WithMany(d => d.Lines).HasForeignKey(l => l.DcId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(l => l.Product).WithMany().HasForeignKey(l => l.ProductId).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // DcCartage (1:1)
-        modelBuilder.Entity<DcCartage>(e =>
-        {
-            e.ToTable("dc_cartage");
-            e.HasIndex(c => c.DcId).IsUnique();
-            e.Property(c => c.Amount).HasColumnType("decimal(12,2)");
-            e.HasOne(c => c.DeliveryChallan).WithOne(d => d.Cartage).HasForeignKey<DcCartage>(c => c.DcId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(c => c.Transporter).WithMany().HasForeignKey(c => c.TransporterId).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // DcNumberSequence
-        modelBuilder.Entity<DcNumberSequence>(e =>
-        {
-            e.ToTable("dc_number_sequence");
-            e.Property(s => s.LastNumber).HasDefaultValue(42);
-        });
-
         // JournalVoucher
         modelBuilder.Entity<JournalVoucher>(e =>
         {
             e.ToTable("journal_vouchers");
             e.HasIndex(j => j.VoucherNumber).IsUnique();
             e.Property(j => j.VoucherNumber).HasMaxLength(20);
+            e.Property(j => j.VehicleNumber).HasMaxLength(20);
             e.Property(j => j.Description).HasMaxLength(500);
             e.Property(j => j.VoucherType).HasMaxLength(20)
                 .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
-            e.HasOne(j => j.DeliveryChallan).WithMany(d => d.JournalVouchers)
-                .HasForeignKey(j => j.DcId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(j => j.Creator).WithMany().HasForeignKey(j => j.CreatedBy).OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -152,8 +105,18 @@ public class AppDbContext : DbContext
             e.Property(je => je.Debit).HasColumnType("decimal(14,2)");
             e.Property(je => je.Credit).HasColumnType("decimal(14,2)");
             e.Property(je => je.Rbp).HasMaxLength(5);
+            e.Property(je => je.Rate).HasColumnType("decimal(12,2)");
             e.HasOne(je => je.JournalVoucher).WithMany(j => j.Entries).HasForeignKey(je => je.VoucherId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(je => je.Account).WithMany().HasForeignKey(je => je.AccountId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // JournalVoucherReference
+        modelBuilder.Entity<JournalVoucherReference>(e =>
+        {
+            e.ToTable("journal_voucher_references");
+            e.HasOne(r => r.MainVoucher).WithMany().HasForeignKey(r => r.MainVoucherId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.ReferenceVoucher).WithMany().HasForeignKey(r => r.ReferenceVoucherId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(r => new { r.MainVoucherId, r.ReferenceVoucherId }).IsUnique();
         });
     }
 }

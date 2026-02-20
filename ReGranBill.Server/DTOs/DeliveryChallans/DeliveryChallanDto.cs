@@ -10,7 +10,6 @@ public class DeliveryChallanDto
     public string? VehicleNumber { get; set; }
     public string? Description { get; set; }
     public string VoucherType { get; set; } = "SaleVoucher";
-    public string Status { get; set; } = "Draft";
     public bool RatesAdded { get; set; }
     public List<DcLineDto> Lines { get; set; } = new();
     public DcCartageDto? Cartage { get; set; }
@@ -59,5 +58,6 @@ public class JournalEntryDto
     public decimal Credit { get; set; }
     public int? Qty { get; set; }
     public string? Rbp { get; set; }
+    public decimal? Rate { get; set; }
     public int SortOrder { get; set; }
 }

@@ -59,11 +59,4 @@ public class DeliveryChallansController : ControllerBase
         if (!await _dcService.UpdateRatesAsync(id, request)) return NotFound();
         return Ok(await _dcService.GetByIdAsync(id));
     }
-
-    [HttpPatch("{id}/submit")]
-    public async Task<IActionResult> Submit(int id)
-    {
-        if (!await _dcService.SubmitAsync(id)) return NotFound();
-        return Ok(await _dcService.GetByIdAsync(id));
-    }
 }

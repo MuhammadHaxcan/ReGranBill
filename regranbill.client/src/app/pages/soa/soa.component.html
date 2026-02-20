@@ -1,0 +1,134 @@
+<!-- Top Bar -->
+<header class="top-bar">
+  <div class="breadcrumb">
+    <span class="page-name">Statement of Account</span>
+  </div>
+  <div class="badges">
+    <span class="badge badge-admin">Admin</span>
+  </div>
+</header>
+
+<!-- Filter Card -->
+<section class="card filter-card">
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>Customer</label>
+      <select [(ngModel)]="selectedAccountId" class="filter-input">
+        <option [ngValue]="null" disabled>Select Customer</option>
+        <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>From Date</label>
+      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>To Date</label>
+      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadStatement()" [disabled]="!selectedAccountId">Apply</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+</section>
+
+<!-- Header Card -->
+<section class="card info-header" *ngIf="statement">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">{{ statement.accountName }}</h1>
+      <p class="invoice-subtitle">
+        <span *ngIf="statement.city">{{ statement.city }}</span>
+        <span *ngIf="statement.city && statement.phone"> &middot; </span>
+        <span *ngIf="statement.phone">{{ statement.phone }}</span>
+        <span *ngIf="(statement.city || statement.phone) && statement.contactPerson"> &middot; </span>
+        <span *ngIf="statement.contactPerson">{{ statement.contactPerson }}</span>
+      </p>
+    </div>
+    <div class="invoice-meta">
+      <div class="net-balance" [class.balance-positive]="statement.netBalance >= 0" [class.balance-negative]="statement.netBalance < 0">
+        {{ statement.netBalance | pkCurrency }}
+      </div>
+      <div class="total-label">Net Balance</div>
+    </div>
+  </div>
+</section>
+
+<!-- Entries Grid -->
+<section class="card grid-card" *ngIf="statement && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Journal Entries</span>
+      <span class="line-count">{{ statement.entries.length }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="statement.entries.length > 0">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-date">DATE</th>
+          <th class="col-voucher">VOUCHER #</th>
+          <th class="col-type">TYPE</th>
+          <th class="col-description">DESCRIPTION</th>
+          <th class="col-debit">DEBIT</th>
+          <th class="col-credit">CREDIT</th>
+          <th class="col-balance">BALANCE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of statement.entries; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
+          <td class="col-voucher">
+            <span class="invoice-number-badge">{{ entry.voucherNumber }}</span>
+          </td>
+          <td class="col-type">
+            <span class="type-badge" [ngClass]="'type-' + entry.voucherType.toLowerCase()">{{ entry.voucherType }}</span>
+          </td>
+          <td class="col-description">{{ entry.description || '—' }}</td>
+          <td class="col-debit">
+            <span *ngIf="entry.debit > 0">{{ entry.debit | pkCurrency }}</span>
+            <span *ngIf="entry.debit === 0" class="zero-amount">—</span>
+          </td>
+          <td class="col-credit">
+            <span *ngIf="entry.credit > 0">{{ entry.credit | pkCurrency }}</span>
+            <span *ngIf="entry.credit === 0" class="zero-amount">—</span>
+          </td>
+          <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
+            {{ entry.runningBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td colspan="5" class="totals-label">Totals</td>
+          <td class="col-debit totals-value">{{ statement.totalDebit | pkCurrency }}</td>
+          <td class="col-credit totals-value">{{ statement.totalCredit | pkCurrency }}</td>
+          <td class="col-balance totals-value" [class.balance-positive]="statement.netBalance >= 0" [class.balance-negative]="statement.netBalance < 0">
+            {{ statement.netBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="statement.entries.length === 0">
+    <div class="empty-icon">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="6" width="32" height="36" rx="4" stroke="#ccc" stroke-width="2"/>
+        <path d="M16 16h16M16 22h16M16 28h10" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="empty-text">No entries found</p>
+    <p class="empty-subtext">No journal entries for this customer in the selected period</p>
+  </div>
+</section>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>

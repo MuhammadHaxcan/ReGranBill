@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReGranBill.Server.Data;
@@ -11,9 +12,11 @@ using ReGranBill.Server.Data;
 namespace ReGranBill.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260220033439_AddJournalVoucherReference")]
+    partial class AddJournalVoucherReference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -101,6 +104,149 @@ namespace ReGranBill.Server.Migrations
                     b.ToTable("categories", (string)null);
                 });
 
+            modelBuilder.Entity("ReGranBill.Server.Entities.DcCartage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<int>("DcId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TransporterId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DcId")
+                        .IsUnique();
+
+                    b.HasIndex("TransporterId");
+
+                    b.ToTable("dc_cartage", (string)null);
+                });
+
+            modelBuilder.Entity("ReGranBill.Server.Entities.DcLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DcId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Qty")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("Rbp")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DcId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("dc_lines", (string)null);
+                });
+
+            modelBuilder.Entity("ReGranBill.Server.Entities.DcNumberSequence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("LastNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(42);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("dc_number_sequence", (string)null);
+                });
+
+            modelBuilder.Entity("ReGranBill.Server.Entities.DeliveryChallan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DcNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("RatesAdded")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VehicleNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("VoucherType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("DcNumber")
+                        .IsUnique();
+
+                    b.ToTable("delivery_challans", (string)null);
+                });
+
             modelBuilder.Entity("ReGranBill.Server.Entities.JournalEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -124,9 +270,6 @@ namespace ReGranBill.Server.Migrations
 
                     b.Property<int?>("Qty")
                         .HasColumnType("integer");
-
-                    b.Property<decimal?>("Rate")
-                        .HasColumnType("decimal(12,2)");
 
                     b.Property<string>("Rbp")
                         .HasMaxLength(5)
@@ -164,6 +307,9 @@ namespace ReGranBill.Server.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("DcId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -173,10 +319,6 @@ namespace ReGranBill.Server.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VehicleNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("VoucherNumber")
                         .IsRequired()
@@ -191,6 +333,8 @@ namespace ReGranBill.Server.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DcId");
 
                     b.HasIndex("VoucherNumber")
                         .IsUnique();
@@ -358,6 +502,63 @@ namespace ReGranBill.Server.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("ReGranBill.Server.Entities.DcCartage", b =>
+                {
+                    b.HasOne("ReGranBill.Server.Entities.DeliveryChallan", "DeliveryChallan")
+                        .WithOne("Cartage")
+                        .HasForeignKey("ReGranBill.Server.Entities.DcCartage", "DcId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ReGranBill.Server.Entities.Account", "Transporter")
+                        .WithMany()
+                        .HasForeignKey("TransporterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DeliveryChallan");
+
+                    b.Navigation("Transporter");
+                });
+
+            modelBuilder.Entity("ReGranBill.Server.Entities.DcLine", b =>
+                {
+                    b.HasOne("ReGranBill.Server.Entities.DeliveryChallan", "DeliveryChallan")
+                        .WithMany("Lines")
+                        .HasForeignKey("DcId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ReGranBill.Server.Entities.Account", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DeliveryChallan");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("ReGranBill.Server.Entities.DeliveryChallan", b =>
+                {
+                    b.HasOne("ReGranBill.Server.Entities.User", "Creator")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ReGranBill.Server.Entities.Account", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Creator");
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("ReGranBill.Server.Entities.JournalEntry", b =>
                 {
                     b.HasOne("ReGranBill.Server.Entities.Account", "Account")
@@ -385,7 +586,14 @@ namespace ReGranBill.Server.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ReGranBill.Server.Entities.DeliveryChallan", "DeliveryChallan")
+                        .WithMany("JournalVouchers")
+                        .HasForeignKey("DcId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.Navigation("Creator");
+
+                    b.Navigation("DeliveryChallan");
                 });
 
             modelBuilder.Entity("ReGranBill.Server.Entities.JournalVoucherReference", b =>
@@ -441,6 +649,15 @@ namespace ReGranBill.Server.Migrations
             modelBuilder.Entity("ReGranBill.Server.Entities.Category", b =>
                 {
                     b.Navigation("Accounts");
+                });
+
+            modelBuilder.Entity("ReGranBill.Server.Entities.DeliveryChallan", b =>
+                {
+                    b.Navigation("Cartage");
+
+                    b.Navigation("JournalVouchers");
+
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("ReGranBill.Server.Entities.JournalVoucher", b =>

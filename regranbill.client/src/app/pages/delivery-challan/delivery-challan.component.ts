@@ -47,7 +47,6 @@ export class DeliveryChallanComponent implements OnInit {
     }
   }
   description = '';
-  status: 'Draft' | 'Posted' = 'Draft';
 
   products: Account[] = [];
   customers: Account[] = [];
@@ -131,7 +130,6 @@ export class DeliveryChallanComponent implements OnInit {
           this.selectedCustomerId = dc.customerId;
           this.vehicleNumber = dc.vehicleNumber || '';
           this.description = dc.description || '';
-          this.status = dc.status as 'Draft' | 'Posted';
           this.lines = dc.lines.map((l: any) => ({
             id: l.id,
             product: l.productId ? {
@@ -267,13 +265,10 @@ export class DeliveryChallanComponent implements OnInit {
 
   private buildRequest() {
     return {
-      dcNumber: this.dcNumber,
       date: this.dcDate,
       customerId: this.selectedCustomerId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,
-      voucherType: 'SaleVoucher',
-      status: this.status,
       lines: this.lines
         .filter(l => l.product)
         .map((l, i) => ({
@@ -296,35 +291,17 @@ export class DeliveryChallanComponent implements OnInit {
     }
   }
 
-  saveDraft(): void {
+  save(): void {
     const req = this.buildRequest();
-    req.status = 'Draft';
 
     if (this.isEditMode && this.challanId) {
       this.dcService.update(this.challanId, req).subscribe(() => {
-        this.showToast('Draft saved successfully');
+        this.showToast('Challan saved successfully');
         this.router.navigate(['/pending-challans']);
       });
     } else {
       this.dcService.create(req).subscribe(dc => {
-        this.showToast(`${dc.dcNumber} saved as draft`);
-        this.resetForm();
-      });
-    }
-  }
-
-  submitAndPost(): void {
-    const req = this.buildRequest();
-    req.status = 'Posted';
-
-    if (this.isEditMode && this.challanId) {
-      this.dcService.update(this.challanId, req).subscribe(() => {
-        this.showToast('Challan updated and posted');
-        this.router.navigate(['/pending-challans']);
-      });
-    } else {
-      this.dcService.create(req).subscribe(dc => {
-        this.showToast(`${dc.dcNumber} submitted and posted`);
+        this.showToast(`${dc.dcNumber} saved successfully`);
         this.resetForm();
       });
     }
@@ -335,7 +312,6 @@ export class DeliveryChallanComponent implements OnInit {
     this.vehicleNumber = '';
     this.description = '';
     this.dcDate = new Date();
-    this.status = 'Draft';
     this.cartage = null;
     this.showCartageForm = false;
     this.lines = [];

@@ -2,13 +2,10 @@ namespace ReGranBill.Server.DTOs.DeliveryChallans;
 
 public class CreateDcRequest
 {
-    public string DcNumber { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public int CustomerId { get; set; }
     public string? VehicleNumber { get; set; }
     public string? Description { get; set; }
-    public string? VoucherType { get; set; } = "SaleVoucher";
-    public string Status { get; set; } = "Draft";
     public List<CreateDcLineRequest> Lines { get; set; } = new();
     public CreateDcCartageRequest? Cartage { get; set; }
 }

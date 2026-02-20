@@ -10,6 +10,7 @@ public class JournalEntry
     public decimal Credit { get; set; }
     public int? Qty { get; set; }
     public string? Rbp { get; set; }
+    public decimal? Rate { get; set; }
     public int SortOrder { get; set; }
 
     public JournalVoucher JournalVoucher { get; set; } = null!;

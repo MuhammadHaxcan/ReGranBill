@@ -42,6 +42,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDeliveryChallanService, DeliveryChallanService>();
+builder.Services.AddScoped<IStatementService, StatementService>();
+builder.Services.AddScoped<IMasterReportService, MasterReportService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
