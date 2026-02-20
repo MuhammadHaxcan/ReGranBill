@@ -307,6 +307,24 @@ export class DeliveryChallanComponent implements OnInit {
     }
   }
 
+  saveAndPrint(): void {
+    const req = this.buildRequest();
+
+    if (this.isEditMode && this.challanId) {
+      this.dcService.update(this.challanId, req).subscribe(dc => {
+        this.showToast('Challan saved successfully');
+        this.dcService.openPdfInNewTab(dc.id);
+        this.router.navigate(['/pending-challans']);
+      });
+    } else {
+      this.dcService.create(req).subscribe(dc => {
+        this.showToast(`${dc.dcNumber} saved successfully`);
+        this.dcService.openPdfInNewTab(dc.id);
+        this.resetForm();
+      });
+    }
+  }
+
   private resetForm(): void {
     this.selectedCustomerId = null;
     this.vehicleNumber = '';

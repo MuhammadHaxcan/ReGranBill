@@ -538,6 +538,15 @@ select.form-control {
   padding: 10px 28px;
 }
 
+.btn-print {
+  background: #1a5c2a;
+  border-color: #1a5c2a;
+}
+
+.btn-print:hover {
+  background: #145222;
+}
+
 /* Bottom Actions */
 .bottom-actions {
   display: flex;

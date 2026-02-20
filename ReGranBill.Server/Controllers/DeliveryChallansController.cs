@@ -12,8 +12,13 @@ namespace ReGranBill.Server.Controllers;
 public class DeliveryChallansController : ControllerBase
 {
     private readonly IDeliveryChallanService _dcService;
+    private readonly IPdfService _pdfService;
 
-    public DeliveryChallansController(IDeliveryChallanService dcService) => _dcService = dcService;
+    public DeliveryChallansController(IDeliveryChallanService dcService, IPdfService pdfService)
+    {
+        _dcService = dcService;
+        _pdfService = pdfService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -50,6 +55,22 @@ public class DeliveryChallansController : ControllerBase
         var result = await _dcService.UpdateAsync(id, request);
         if (result == null) return NotFound();
         return Ok(result);
+    }
+
+    [HttpGet("{id}/pdf")]
+    public async Task<IActionResult> GetPdf(int id)
+    {
+        var dc = await _dcService.GetByIdAsync(id);
+        if (dc == null) return NotFound();
+        try
+        {
+            var pdfBytes = _pdfService.GenerateDeliveryChallanPdf(dc);
+            return File(pdfBytes, "application/pdf", $"GatePass-{dc.DcNumber}.pdf");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, stack = ex.StackTrace });
+        }
     }
 
     [HttpPatch("{id}/rates")]

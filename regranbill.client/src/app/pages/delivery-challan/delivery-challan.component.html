@@ -213,7 +213,10 @@
 <!-- Bottom Actions -->
 <footer class="bottom-actions" *ngIf="!loading">
   <button class="btn btn-outline" (click)="discard()">Discard</button>
-  <button class="btn btn-primary btn-submit" (click)="save()">Save</button>
+  <div class="bottom-actions-right">
+    <button class="btn btn-primary btn-submit" (click)="save()">Save</button>
+    <button class="btn btn-primary btn-submit btn-print" (click)="saveAndPrint()">Save &amp; Print</button>
+  </div>
 </footer>
 
 <!-- Loading State -->

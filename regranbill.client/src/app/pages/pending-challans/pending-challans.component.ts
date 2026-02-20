@@ -70,4 +70,8 @@ export class PendingChallansComponent implements OnInit {
   addRate(dc: any): void {
     this.router.navigate(['/add-rate', dc.id]);
   }
+
+  printChallan(dc: any): void {
+    this.dcService.openPdfInNewTab(dc.id);
+  }
 }

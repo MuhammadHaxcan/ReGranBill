@@ -319,6 +319,16 @@
   background: #2a4db8;
 }
 
+.btn-print {
+  background: #1a5c2a;
+  color: #fff;
+  border: 1.5px solid #1a5c2a;
+}
+
+.btn-print:hover {
+  background: #145222;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

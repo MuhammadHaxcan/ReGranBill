@@ -5,6 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.Services;
 
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Database
@@ -44,6 +46,7 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDeliveryChallanService, DeliveryChallanService>();
 builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IMasterReportService, MasterReportService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

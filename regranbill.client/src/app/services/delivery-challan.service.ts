@@ -35,4 +35,15 @@ export class DeliveryChallanService {
   updateRates(id: number, request: { lines: { entryId: number; rate: number }[] }): Observable<any> {
     return this.http.patch<any>(`${this.url}/${id}/rates`, request);
   }
+
+  getPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.url}/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  openPdfInNewTab(id: number): void {
+    this.getPdf(id).subscribe(blob => {
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    });
+  }
 }
