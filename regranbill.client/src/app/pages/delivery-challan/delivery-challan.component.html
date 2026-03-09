@@ -1,4 +1,4 @@
-<!-- Top Bar -->
+﻿<!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
     <a *ngIf="isEditMode" class="breadcrumb-link" routerLink="/pending-challans">Pending Challans</a>
@@ -29,7 +29,7 @@
 
   <div class="form-row form-row-3">
     <div class="form-group">
-      <label class="form-label">DATE</label>
+      <label class="form-label">Date</label>
       <input
         type="text"
         class="form-control"
@@ -38,7 +38,7 @@
       />
     </div>
     <div class="form-group">
-      <label class="form-label">CUSTOMER</label>
+      <label class="form-label">Customer</label>
       <app-searchable-select
         [options]="customerOptions"
         [placeholder]="'Select customer...'"
@@ -46,7 +46,7 @@
       ></app-searchable-select>
     </div>
     <div class="form-group">
-      <label class="form-label">DESCRIPTION</label>
+      <label class="form-label">Description</label>
       <input
         type="text"
         class="form-control"
@@ -75,13 +75,13 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
-          <th class="col-product">PRODUCT</th>
-          <th class="col-packing">PACKING</th>
+          <th class="col-product">Product</th>
+          <th class="col-packing">Packing</th>
           <th class="col-rbp">RBP</th>
-          <th class="col-qty">QTY</th>
-          <th class="col-weight">TOTAL WEIGHT</th>
-          <th class="col-rate" *ngIf="isAdmin">RATE</th>
-          <th class="col-amount" *ngIf="isAdmin">AMOUNT</th>
+          <th class="col-qty">Qty</th>
+          <th class="col-weight">Total Weight</th>
+          <th class="col-rate" *ngIf="isAdmin">Rate</th>
+          <th class="col-amount" *ngIf="isAdmin">Amount</th>
           <th class="col-actions"></th>
         </tr>
       </thead>
@@ -98,7 +98,7 @@
             ></app-searchable-select>
           </td>
           <td class="col-packing">
-            <span class="packing-label">{{ line.product?.packing || '—' }}</span>
+            <span class="packing-label">{{ line.product?.packing || '-' }}</span>
           </td>
           <td class="col-rbp">
             <app-searchable-select
@@ -149,15 +149,15 @@
 
   <div class="lines-summary">
     <div class="summary-item">
-      <span class="summary-label">BAGS</span>
+      <span class="summary-label">Bags</span>
       <span class="summary-value">{{ totalBags }}</span>
     </div>
     <div class="summary-item">
-      <span class="summary-label">WEIGHT</span>
+      <span class="summary-label">Weight</span>
       <span class="summary-value">{{ totalWeight }} <span class="unit">kg</span></span>
     </div>
     <div class="summary-item summary-total" *ngIf="isAdmin">
-      <span class="summary-label">AMOUNT</span>
+      <span class="summary-label">Amount</span>
       <span class="summary-value text-primary">{{ totalAmount | number:'1.2-2' }}</span>
     </div>
   </div>
@@ -188,7 +188,7 @@
   <h3 class="cartage-form-title">{{ cartage ? 'Edit' : 'Add' }} Cartage / Transport</h3>
   <div class="cartage-form-row">
     <div class="form-group">
-      <label class="form-label">TRANSPORTER</label>
+      <label class="form-label">Transporter</label>
       <app-searchable-select
         [options]="transporterOptions"
         [placeholder]="'Select transporter...'"
@@ -196,7 +196,7 @@
       ></app-searchable-select>
     </div>
     <div class="form-group">
-      <label class="form-label">AMOUNT</label>
+      <label class="form-label">Amount</label>
       <input type="number" class="form-control" [(ngModel)]="cartageAmount" min="0" />
     </div>
   </div>
@@ -230,3 +230,5 @@
   <span class="toast-icon">{{ toastType === 'success' ? '&#x2714;' : '&#x2716;' }}</span>
   <span class="toast-message">{{ toastMessage }}</span>
 </div>
+
+

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.MasterReport;
+using ReGranBill.Server.Enums;
 
 namespace ReGranBill.Server.Services;
 
@@ -15,7 +16,8 @@ public class MasterReportService : IMasterReportService
         var query = _db.JournalEntries
             .Include(e => e.JournalVoucher)
             .Include(e => e.Account)
-            .Where(e => e.JournalVoucher.RatesAdded);
+            .Where(e => e.JournalVoucher.RatesAdded
+                || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher);
 
         if (from.HasValue)
             query = query.Where(e => e.JournalVoucher.Date >= from.Value);

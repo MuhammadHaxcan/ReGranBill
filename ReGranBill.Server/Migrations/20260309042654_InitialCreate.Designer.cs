@@ -12,8 +12,8 @@ using ReGranBill.Server.Data;
 namespace ReGranBill.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260220040320_ConsolidateDcIntoJv")]
-    partial class ConsolidateDcIntoJv
+    [Migration("20260309042654_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -102,24 +102,6 @@ namespace ReGranBill.Server.Migrations
                         .IsUnique();
 
                     b.ToTable("categories", (string)null);
-                });
-
-            modelBuilder.Entity("ReGranBill.Server.Entities.DcNumberSequence", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("LastNumber")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(42);
-
-                    b.HasKey("Id");
-
-                    b.ToTable("dc_number_sequence", (string)null);
                 });
 
             modelBuilder.Entity("ReGranBill.Server.Entities.JournalEntry", b =>

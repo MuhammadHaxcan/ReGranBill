@@ -138,6 +138,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Qty = line.Qty,
                 Rbp = line.Rbp,
                 Rate = line.Rate > 0 ? line.Rate : null,
+                IsEdited = false,
                 SortOrder = ++sortOrder
             });
         }
@@ -149,6 +150,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             Description = $"Delivery to customer - {dcNumber}",
             Debit = totalProductAmount,
             Credit = 0,
+            IsEdited = false,
             SortOrder = 0
         });
 
@@ -175,6 +177,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Description = $"Cartage charge - {dcNumber}",
                 Debit = request.Cartage.Amount,
                 Credit = 0,
+                IsEdited = false,
                 SortOrder = 0
             });
 
@@ -184,6 +187,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Description = $"Cartage for {dcNumber}",
                 Debit = 0,
                 Credit = request.Cartage.Amount,
+                IsEdited = false,
                 SortOrder = 1
             });
 
@@ -257,6 +261,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Qty = line.Qty,
                 Rbp = line.Rbp,
                 Rate = line.Rate > 0 ? line.Rate : null,
+                IsEdited = true,
                 SortOrder = ++sortOrder
             });
         }
@@ -267,6 +272,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             Description = $"Delivery to customer - {saleJv.VoucherNumber}",
             Debit = totalProductAmount,
             Credit = 0,
+            IsEdited = true,
             SortOrder = 0
         });
 
@@ -296,6 +302,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             if (entry != null && entry.SortOrder > 0)
             {
                 entry.Rate = update.Rate;
+                entry.IsEdited = true;
 
                 // Recalculate credit amount
                 var weight = entry.Account?.ProductDetail?.PackingWeightKg ?? 0;
@@ -310,6 +317,7 @@ public class DeliveryChallanService : IDeliveryChallanService
         if (customerEntry != null)
         {
             customerEntry.Debit = saleJv.Entries.Where(e => e.SortOrder > 0).Sum(e => e.Credit);
+            customerEntry.IsEdited = true;
         }
 
         saleJv.RatesAdded = saleJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
@@ -359,6 +367,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Description = $"Cartage charge - {saleJv.VoucherNumber}",
                 Debit = cartageAmount,
                 Credit = 0,
+                IsEdited = true,
                 SortOrder = 0
             });
 
@@ -368,6 +377,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Description = $"Cartage for {saleJv.VoucherNumber}",
                 Debit = 0,
                 Credit = cartageAmount,
+                IsEdited = true,
                 SortOrder = 1
             });
 
@@ -477,6 +487,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             Qty = e.Qty,
             Rbp = e.Rbp,
             Rate = e.Rate,
+            IsEdited = e.IsEdited,
             SortOrder = e.SortOrder
         }).ToList()
     };

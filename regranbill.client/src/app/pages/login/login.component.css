@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: var(--bg);
+  background: radial-gradient(circle at top right, #eef3ff 0%, #f4f6fb 45%, #eef2f8 100%);
 }
 
 .login-card {
@@ -18,7 +18,7 @@
   padding: 40px 36px;
   width: 400px;
   max-width: 90vw;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-soft);
 }
 
 .login-brand {
@@ -101,7 +101,7 @@
 .btn-primary {
   background: var(--primary);
   color: #fff;
-  border: 1.5px solid var(--primary);
+  border: 1px solid var(--primary);
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;

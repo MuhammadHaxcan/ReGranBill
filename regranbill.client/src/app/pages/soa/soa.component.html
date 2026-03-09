@@ -1,4 +1,4 @@
-<!-- Top Bar -->
+﻿<!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
     <span class="page-name">Statement of Account</span>
@@ -69,13 +69,13 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
-          <th class="col-date">DATE</th>
-          <th class="col-voucher">VOUCHER #</th>
-          <th class="col-type">TYPE</th>
-          <th class="col-description">DESCRIPTION</th>
-          <th class="col-debit">DEBIT</th>
-          <th class="col-credit">CREDIT</th>
-          <th class="col-balance">BALANCE</th>
+          <th class="col-date">Date</th>
+          <th class="col-voucher">Voucher #</th>
+          <th class="col-type">Type</th>
+          <th class="col-description">Description</th>
+          <th class="col-debit">Debit</th>
+          <th class="col-credit">Credit</th>
+          <th class="col-balance">Balance</th>
         </tr>
       </thead>
       <tbody>
@@ -88,14 +88,14 @@
           <td class="col-type">
             <span class="type-badge" [ngClass]="'type-' + entry.voucherType.toLowerCase()">{{ entry.voucherType }}</span>
           </td>
-          <td class="col-description">{{ entry.description || '—' }}</td>
+          <td class="col-description">{{ entry.description || '-' }}</td>
           <td class="col-debit">
             <span *ngIf="entry.debit > 0">{{ entry.debit | pkCurrency }}</span>
-            <span *ngIf="entry.debit === 0" class="zero-amount">—</span>
+            <span *ngIf="entry.debit === 0" class="zero-amount">-</span>
           </td>
           <td class="col-credit">
             <span *ngIf="entry.credit > 0">{{ entry.credit | pkCurrency }}</span>
-            <span *ngIf="entry.credit === 0" class="zero-amount">—</span>
+            <span *ngIf="entry.credit === 0" class="zero-amount">-</span>
           </td>
           <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
             {{ entry.runningBalance | pkCurrency }}
@@ -132,3 +132,4 @@
 <div class="loading-state" *ngIf="loading">
   <p>Loading...</p>
 </div>
+

@@ -55,6 +55,19 @@ public class AccountService : IAccountService
         return accounts.Select(MapToDto).ToList();
     }
 
+    public async Task<List<AccountDto>> GetJournalAccountsAsync()
+    {
+        var accounts = await _db.Accounts
+            .Include(a => a.BankDetail)
+            .Include(a => a.PartyDetail)
+            .Where(a => a.AccountType == AccountType.Expense
+                || a.AccountType == AccountType.Party
+                || a.AccountType == AccountType.Account)
+            .OrderBy(a => a.Name)
+            .ToListAsync();
+        return accounts.Select(MapToDto).ToList();
+    }
+
     public async Task<AccountDto> CreateAsync(CreateAccountRequest request)
     {
         var accountType = Enum.Parse<AccountType>(request.AccountType);

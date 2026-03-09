@@ -1,4 +1,4 @@
-<!-- Top Bar -->
+﻿<!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
     <span class="page-name">Metadata</span>
@@ -112,10 +112,10 @@
       <thead>
         <tr>
           <th class="th-num">#</th>
-          <th>NAME</th>
-          <th>CATEGORY</th>
-          <th>TYPE</th>
-          <th>DETAIL</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Type</th>
+          <th>Detail</th>
           <th class="th-actions"></th>
         </tr>
       </thead>
@@ -133,7 +133,7 @@
           <td class="td-detail">
             <ng-container [ngSwitch]="acct.accountType">
               <span *ngSwitchCase="'Product'">{{ acct.packing }} &middot; {{ acct.packingWeightKg }}kg</span>
-              <span *ngSwitchCase="'Expense'">—</span>
+              <span *ngSwitchCase="'Expense'">-</span>
               <span *ngSwitchCase="'Account'">{{ acct.bankName || 'Cash' }}<span *ngIf="acct.accountNumber"> &middot; {{ acct.accountNumber }}</span></span>
               <span *ngSwitchCase="'Party'">{{ acct.city }}<span *ngIf="acct.phone"> &middot; {{ acct.phone }}</span></span>
             </ng-container>
@@ -169,13 +169,13 @@
 
     <!-- Name -->
     <div class="modal-field">
-      <label class="field-label">ACCOUNT NAME</label>
+      <label class="field-label">Account Name</label>
       <input type="text" class="form-control" placeholder="Enter account name..." [(ngModel)]="acctName" />
     </div>
 
     <!-- Category -->
     <div class="modal-field">
-      <label class="field-label">CATEGORY</label>
+      <label class="field-label">Category</label>
       <app-searchable-select
         [options]="categoryOptions"
         [placeholder]="'Select category...'"
@@ -185,7 +185,7 @@
 
     <!-- Account Type -->
     <div class="modal-field" *ngIf="acctCategoryId !== null">
-      <label class="field-label">ACCOUNT TYPE</label>
+      <label class="field-label">Account Type</label>
       <div class="type-selector">
         <button
           *ngFor="let t of accountTypes"
@@ -214,16 +214,16 @@
       <ng-container *ngIf="acctType === 'Product'">
         <div class="modal-field-row">
           <div class="modal-field">
-            <label class="field-label">PACKING</label>
+            <label class="field-label">Packing</label>
             <input type="text" class="form-control" placeholder="e.g. 50kg / Bag" [(ngModel)]="acctPacking" />
           </div>
           <div class="modal-field">
-            <label class="field-label">WEIGHT PER PACK (KG)</label>
+            <label class="field-label">Weight Per Pack (kg)</label>
             <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctPackingWeight" min="0" />
           </div>
         </div>
         <div class="modal-field">
-          <label class="field-label">UNIT</label>
+          <label class="field-label">Unit</label>
           <select class="form-control" [(ngModel)]="acctUnit">
             <option value="kg">Kilogram (kg)</option>
             <option value="ton">Metric Ton</option>
@@ -241,11 +241,11 @@
       <ng-container *ngIf="acctType === 'Account'">
         <div class="modal-field-row">
           <div class="modal-field">
-            <label class="field-label">BANK NAME</label>
+            <label class="field-label">Bank Name</label>
             <input type="text" class="form-control" placeholder="Leave empty for cash" [(ngModel)]="acctBankName" />
           </div>
           <div class="modal-field">
-            <label class="field-label">ACCOUNT NUMBER</label>
+            <label class="field-label">Account Number</label>
             <input type="text" class="form-control" placeholder="e.g. 1234-5678-0001" [(ngModel)]="acctAccountNumber" />
           </div>
         </div>
@@ -254,7 +254,7 @@
       <!-- PARTY (customer / vendor) -->
       <ng-container *ngIf="acctType === 'Party'">
         <div class="modal-field">
-          <label class="field-label">ROLE</label>
+          <label class="field-label">Role</label>
           <div class="role-selector">
             <button
               *ngFor="let r of partyRoles"
@@ -266,20 +266,20 @@
         </div>
         <div class="modal-field-row">
           <div class="modal-field">
-            <label class="field-label">CONTACT PERSON</label>
+            <label class="field-label">Contact Person</label>
             <input type="text" class="form-control" placeholder="Full name..." [(ngModel)]="acctContactPerson" />
           </div>
           <div class="modal-field">
-            <label class="field-label">PHONE</label>
+            <label class="field-label">Phone</label>
             <input type="text" class="form-control" placeholder="e.g. 0300-1234567" [(ngModel)]="acctPhone" />
           </div>
         </div>
         <div class="modal-field">
-          <label class="field-label">CITY</label>
+          <label class="field-label">City</label>
           <input type="text" class="form-control" placeholder="City..." [(ngModel)]="acctCity" />
         </div>
         <div class="modal-field">
-          <label class="field-label">ADDRESS</label>
+          <label class="field-label">Address</label>
           <input type="text" class="form-control" placeholder="Full address..." [(ngModel)]="acctAddress" />
         </div>
       </ng-container>
@@ -294,3 +294,4 @@
   </div>
 </div>
 </div>
+

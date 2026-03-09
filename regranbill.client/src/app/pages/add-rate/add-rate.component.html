@@ -1,4 +1,4 @@
-<!-- Top Bar -->
+﻿<!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
     <a class="breadcrumb-link" routerLink="/pending-challans">Pending Challans</a>
@@ -28,12 +28,12 @@
 
   <div class="form-row">
     <div class="form-group">
-      <label class="form-label">CUSTOMER</label>
+      <label class="form-label">Customer</label>
       <div class="readonly-value">{{ customerName }}</div>
     </div>
     <div class="form-group">
-      <label class="form-label">DESCRIPTION</label>
-      <div class="readonly-value">{{ description || '—' }}</div>
+      <label class="form-label">Description</label>
+      <div class="readonly-value">{{ description || '-' }}</div>
     </div>
   </div>
 </section>
@@ -42,7 +42,7 @@
 <section class="card product-lines" *ngIf="!loading">
   <div class="card-header">
     <div class="card-header-left">
-      <span class="card-header-title">Product Lines — Rate Entry</span>
+      <span class="card-header-title">Product Lines - Rate Entry</span>
       <span class="line-count">{{ lines.length }}</span>
     </div>
   </div>
@@ -52,23 +52,23 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
-          <th class="col-product">PRODUCT</th>
-          <th class="col-packing">PACKING</th>
+          <th class="col-product">Product</th>
+          <th class="col-packing">Packing</th>
           <th class="col-rbp">RBP</th>
-          <th class="col-qty">QTY</th>
-          <th class="col-weight">TOTAL WEIGHT</th>
-          <th class="col-rate">RATE</th>
-          <th class="col-amount">AMOUNT</th>
+          <th class="col-qty">Qty</th>
+          <th class="col-weight">Total Weight</th>
+          <th class="col-rate">Rate</th>
+          <th class="col-amount">Amount</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let line of lines; let i = index">
           <td class="col-num">{{ i + 1 }}</td>
           <td class="col-product">
-            <span class="product-name">{{ line.productName || '—' }}</span>
+            <span class="product-name">{{ line.productName || '-' }}</span>
           </td>
           <td class="col-packing">
-            <span class="packing-label">{{ line.packing || '—' }}</span>
+            <span class="packing-label">{{ line.packing || '-' }}</span>
           </td>
           <td class="col-rbp">
             <span class="rbp-badge" [class.rbp-yes]="line.rbp === 'Yes'" [class.rbp-no]="line.rbp === 'No'">
@@ -101,15 +101,15 @@
 
   <div class="lines-summary">
     <div class="summary-item">
-      <span class="summary-label">BAGS</span>
+      <span class="summary-label">Bags</span>
       <span class="summary-value">{{ totalBags }}</span>
     </div>
     <div class="summary-item">
-      <span class="summary-label">WEIGHT</span>
+      <span class="summary-label">Weight</span>
       <span class="summary-value">{{ totalWeight }} <span class="unit">kg</span></span>
     </div>
     <div class="summary-item summary-total">
-      <span class="summary-label">AMOUNT</span>
+      <span class="summary-label">Amount</span>
       <span class="summary-value text-primary">{{ totalAmount | number:'1.2-2' }}</span>
     </div>
   </div>
@@ -136,7 +136,7 @@
   <div class="card-header" [class.jv-header]="jv.voucherType === 'SaleVoucher'" [class.cv-header]="jv.voucherType === 'CartageVoucher'">
     <div class="card-header-left">
       <span class="card-header-title">
-        {{ jv.voucherType === 'CartageVoucher' ? 'Cartage Voucher' : 'Journal Voucher' }} — {{ jv.voucherNumber }}
+        {{ jv.voucherType === 'CartageVoucher' ? 'Cartage Voucher' : 'Journal Voucher' }} - {{ jv.voucherNumber }}
       </span>
       <span class="line-count">{{ jv.entries.length }}</span>
     </div>
@@ -150,12 +150,12 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
-          <th>ACCOUNT</th>
-          <th>DESCRIPTION</th>
-          <th class="col-qty">QTY</th>
+          <th>Account</th>
+          <th>Description</th>
+          <th class="col-qty">Qty</th>
           <th class="col-rbp">RBP</th>
-          <th class="col-debit">DEBIT</th>
-          <th class="col-credit">CREDIT</th>
+          <th class="col-debit">Debit</th>
+          <th class="col-credit">Credit</th>
         </tr>
       </thead>
       <tbody>
@@ -166,9 +166,9 @@
           <td class="td-account">
             <strong>{{ entry.accountName }}</strong>
           </td>
-          <td class="td-desc">{{ entry.description || '—' }}</td>
-          <td class="col-qty text-center">{{ entry.qty || '—' }}</td>
-          <td class="col-rbp text-center">{{ entry.rbp || '—' }}</td>
+          <td class="td-desc">{{ entry.description || '-' }}</td>
+          <td class="col-qty text-center">{{ entry.qty || '-' }}</td>
+          <td class="col-rbp text-center">{{ entry.rbp || '-' }}</td>
           <td class="col-debit">
             <span *ngIf="entry.debit > 0" class="amount-debit">{{ entry.debit | number:'1.2-2' }}</span>
           </td>
@@ -179,7 +179,7 @@
       </tbody>
       <tfoot>
         <tr class="jv-totals">
-          <td colspan="5" class="text-right"><strong>TOTALS</strong></td>
+          <td colspan="5" class="text-right"><strong>Totals</strong></td>
           <td class="col-debit"><strong>{{ jv.totalDebit | number:'1.2-2' }}</strong></td>
           <td class="col-credit"><strong>{{ jv.totalCredit | number:'1.2-2' }}</strong></td>
         </tr>
@@ -200,3 +200,5 @@
 <div class="loading-state" *ngIf="loading">
   <p>Loading...</p>
 </div>
+
+

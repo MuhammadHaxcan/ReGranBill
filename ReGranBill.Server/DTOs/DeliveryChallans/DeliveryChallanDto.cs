@@ -59,5 +59,6 @@ public class JournalEntryDto
     public int? Qty { get; set; }
     public string? Rbp { get; set; }
     public decimal? Rate { get; set; }
+    public bool IsEdited { get; set; }
     public int SortOrder { get; set; }
 }

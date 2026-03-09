@@ -1,4 +1,4 @@
-<!-- Top Bar -->
+﻿<!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
     <span class="page-name">Pending Challans</span>
@@ -36,15 +36,15 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
-          <th class="col-invoice-no">DC NO</th>
-          <th class="col-date">DATE</th>
-          <th class="col-customer">CUSTOMER</th>
-          <th class="col-products">PRODUCTS</th>
-          <th class="col-bags">BAGS</th>
-          <th class="col-weight">WEIGHT</th>
-          <th class="col-amount">AMOUNT</th>
-          <th class="col-status">STATUS</th>
-          <th class="col-actions">ACTIONS</th>
+          <th class="col-invoice-no">DC No</th>
+          <th class="col-date">Date</th>
+          <th class="col-customer">Customer</th>
+          <th class="col-products">Products</th>
+          <th class="col-bags">Bags</th>
+          <th class="col-weight">Weight</th>
+          <th class="col-amount">Amount</th>
+          <th class="col-status">Status</th>
+          <th class="col-actions">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -55,7 +55,7 @@
           </td>
           <td class="col-date">{{ getFormattedDate(dc.date) }}</td>
           <td class="col-customer">
-            <div class="customer-name">{{ dc.customerName || '—' }}</div>
+            <div class="customer-name">{{ dc.customerName || '-' }}</div>
           </td>
           <td class="col-products text-center">{{ getProductCount(dc) }}</td>
           <td class="col-bags text-center">{{ getTotalBags(dc) }}</td>
@@ -119,3 +119,4 @@
 <div class="loading-state" *ngIf="loading">
   <p>Loading...</p>
 </div>
+

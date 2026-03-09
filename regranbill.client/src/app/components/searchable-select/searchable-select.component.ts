@@ -27,6 +27,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
   @Input() compact = false;
 
   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('trigger') triggerRef!: ElementRef<HTMLElement>;
 
   isOpen = false;
   searchTerm = '';
@@ -79,6 +80,12 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
     this.isOpen ? this.close() : this.open();
   }
 
+  focusTrigger(): void {
+    if (this.triggerRef) {
+      this.triggerRef.nativeElement.focus();
+    }
+  }
+
   open(): void {
     this.updatePosition();
     this.isOpen = true;
@@ -128,6 +135,24 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
       case 'Escape':
         this.close();
         break;
+    }
+  }
+
+  onTriggerKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleDropdown();
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.open();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      this.close();
     }
   }
 

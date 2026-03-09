@@ -106,6 +106,7 @@ public class AppDbContext : DbContext
             e.Property(je => je.Credit).HasColumnType("decimal(14,2)");
             e.Property(je => je.Rbp).HasMaxLength(5);
             e.Property(je => je.Rate).HasColumnType("decimal(12,2)");
+            e.Property(je => je.IsEdited).HasDefaultValue(false);
             e.HasOne(je => je.JournalVoucher).WithMany(j => j.Entries).HasForeignKey(je => je.VoucherId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(je => je.Account).WithMany().HasForeignKey(je => je.AccountId).OnDelete(DeleteBehavior.Restrict);
         });

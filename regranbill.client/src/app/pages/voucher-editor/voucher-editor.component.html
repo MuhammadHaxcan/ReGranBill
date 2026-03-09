@@ -1,0 +1,208 @@
+﻿<header class="top-bar">
+  <div class="breadcrumb">
+    <span class="page-name">Voucher Editor</span>
+  </div>
+</header>
+
+<section class="card search-card">
+  <div class="search-title">Search Voucher</div>
+  <div class="search-grid">
+    <div class="form-group">
+      <label class="form-label">Voucher Type</label>
+      <app-searchable-select
+        [options]="voucherTypeOptions"
+        [placeholder]="'Select voucher type...'"
+        [(ngModel)]="searchVoucherType"
+      ></app-searchable-select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Voucher Number</label>
+      <input
+        type="text"
+        class="form-control"
+        placeholder="e.g. JV-0001 / DC-0004 / CV-0002"
+        [(ngModel)]="searchVoucherNumber"
+      />
+    </div>
+    <div class="search-actions">
+      <button class="btn btn-primary" (click)="search()" [disabled]="searching || loadingAccounts">
+        {{ searching ? 'Loading...' : 'Load Voucher' }}
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="card editor-header" *ngIf="hasLoadedVoucher">
+  <div class="header-row">
+    <div class="header-block">
+      <h1 class="editor-title">Ledger Edit</h1>
+      <p class="editor-subtitle">{{ voucher?.voucherType }} | {{ voucher?.voucherNumber }}</p>
+    </div>
+  </div>
+
+  <div class="form-row form-row-3">
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-control" [(ngModel)]="voucherDateIso" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input type="text" class="form-control" [(ngModel)]="description" placeholder="Voucher description..." />
+    </div>
+    <div class="form-group" *ngIf="isSaleVoucher">
+      <label class="form-label">Vehicle Number</label>
+      <input type="text" class="form-control" [(ngModel)]="vehicleNumber" placeholder="Vehicle number..." />
+    </div>
+  </div>
+</section>
+
+<section class="card lines-card" *ngIf="hasLoadedVoucher">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Ledger Lines</span>
+      <span class="line-count">{{ lines.length }}</span>
+    </div>
+    <button class="btn btn-add-line" (click)="addLine(true)">
+      + Add Line
+      <kbd>Alt+N</kbd>
+    </button>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="lines-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-account">Account</th>
+          <th class="col-desc">Description</th>
+          <th class="col-amount">Debit</th>
+          <th class="col-amount">Credit</th>
+          <th class="col-sale" *ngIf="isSaleVoucher">Qty</th>
+          <th class="col-sale" *ngIf="isSaleVoucher">RBP</th>
+          <th class="col-sale" *ngIf="isSaleVoucher">Rate</th>
+          <th class="col-edited">Edited</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let line of lines; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-account">
+            <app-searchable-select
+              #accountSelect
+              [options]="accountOptions"
+              [placeholder]="'Select account...'"
+              [compact]="true"
+              [ngModel]="line.accountId"
+              (ngModelChange)="onAccountChange(line, $event)"
+            ></app-searchable-select>
+          </td>
+          <td class="col-desc">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              placeholder="Line description..."
+              [(ngModel)]="line.description"
+            />
+          </td>
+          <td class="col-amount">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="0.01"
+              [(ngModel)]="line.debit"
+              (ngModelChange)="onDebitChange(line)"
+            />
+          </td>
+          <td class="col-amount">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="0.01"
+              [(ngModel)]="line.credit"
+              (ngModelChange)="onCreditChange(line)"
+              (keydown)="onCreditKeydown($event, i)"
+            />
+          </td>
+          <td class="col-sale" *ngIf="isSaleVoucher">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="1"
+              [(ngModel)]="line.qty"
+            />
+          </td>
+          <td class="col-sale" *ngIf="isSaleVoucher">
+            <app-searchable-select
+              [options]="rbpOptions"
+              [compact]="true"
+              [ngModel]="line.rbp"
+              (ngModelChange)="onRbpChange(line, $event)"
+            ></app-searchable-select>
+          </td>
+          <td class="col-sale" *ngIf="isSaleVoucher">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="0.01"
+              [(ngModel)]="line.rate"
+            />
+          </td>
+          <td class="col-edited">
+            <span class="edited-tag" [class.edited-tag-on]="line.isEdited">
+              {{ line.isEdited ? 'Yes' : 'No' }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <button
+              class="btn-remove"
+              (click)="removeLine(i)"
+              [disabled]="lines.length <= 2"
+              title="Remove line"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-item">
+      <span class="summary-label">Total Debit</span>
+      <span class="summary-value">{{ totalDebit | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Total Credit</span>
+      <span class="summary-value">{{ totalCredit | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Difference</span>
+      <span class="summary-value" [class.bad]="difference !== 0">{{ difference | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="status" [class.status-ok]="isBalanced" [class.status-bad]="!isBalanced">
+        {{ isBalanced ? 'Balanced' : 'Unbalanced' }}
+      </span>
+    </div>
+  </div>
+</section>
+
+<section class="card message-card" *ngIf="errorMessage || successMessage">
+  <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
+</section>
+
+<footer class="bottom-actions" *ngIf="hasLoadedVoucher">
+  <button class="btn btn-primary btn-submit" (click)="save()" [disabled]="!canSave || saving">
+    {{ saving ? 'Saving...' : 'Save Updates' }}
+  </button>
+</footer>
+

@@ -27,6 +27,10 @@ export class AccountService {
     return this.http.get<Account[]>(`${this.url}/products`);
   }
 
+  getJournalAccounts(): Observable<Account[]> {
+    return this.http.get<Account[]>(`${this.url}/journal`);
+  }
+
   add(account: Omit<Account, 'id'>): Observable<Account> {
     return this.http.post<Account>(this.url, account);
   }

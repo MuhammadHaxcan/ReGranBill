@@ -14,6 +14,8 @@ import { SearchableSelectComponent } from './components/searchable-select/search
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
+import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
+import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 
@@ -26,6 +28,8 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     PendingChallansComponent,
     AddRateComponent,
     PrintDcComponent,
+    JournalVoucherComponent,
+    VoucherEditorComponent,
     SearchableSelectComponent,
     SoaComponent,
     MasterReportComponent,

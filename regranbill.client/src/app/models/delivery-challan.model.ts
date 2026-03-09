@@ -45,6 +45,7 @@ export interface JournalEntry {
   qty?: number;
   rbp?: string;
   rate?: number;
+  isEdited: boolean;
   sortOrder: number;
 }
 

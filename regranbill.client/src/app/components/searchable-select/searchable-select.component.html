@@ -1,6 +1,12 @@
 <div class="ss-container" [class.ss-compact]="compact" [class.ss-open]="isOpen">
   <!-- Trigger -->
-  <div class="ss-trigger" (click)="toggleDropdown()">
+  <div
+    #trigger
+    class="ss-trigger"
+    tabindex="0"
+    (click)="toggleDropdown()"
+    (keydown)="onTriggerKeydown($event)"
+  >
     <span class="ss-value" *ngIf="selectedOption">{{ selectedOption.label }}</span>
     <span class="ss-placeholder" *ngIf="!selectedOption">{{ placeholder }}</span>
     <span class="ss-actions">

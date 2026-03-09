@@ -8,6 +8,8 @@ import { AddRateComponent } from './pages/add-rate/add-rate.component';
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
+import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
+import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
@@ -16,6 +18,9 @@ const routes: Routes = [
   { path: 'print-dc/:id', component: PrintDcComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
+  { path: 'journal-voucher', component: JournalVoucherComponent, canActivate: [AuthGuard] },
+  { path: 'journal-voucher/:id', component: JournalVoucherComponent, canActivate: [AuthGuard] },
+  { path: 'voucher-editor', component: VoucherEditorComponent, canActivate: [AuthGuard] },
   { path: 'pending-challans', component: PendingChallansComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'add-rate/:id', component: AddRateComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'soa/:accountId', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },

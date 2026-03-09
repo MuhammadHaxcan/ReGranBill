@@ -39,6 +39,12 @@ public class AccountsController : ControllerBase
         return Ok(await _accountService.GetProductsAsync());
     }
 
+    [HttpGet("journal")]
+    public async Task<IActionResult> GetJournalAccounts()
+    {
+        return Ok(await _accountService.GetJournalAccountsAsync());
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateAccountRequest request)

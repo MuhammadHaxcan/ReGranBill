@@ -12,8 +12,8 @@ using ReGranBill.Server.Data;
 namespace ReGranBill.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260220040927_RemoveDcNumberSequence")]
-    partial class RemoveDcNumberSequence
+    [Migration("20260309061531_AddJournalEntryIsEdited")]
+    partial class AddJournalEntryIsEdited
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -124,6 +124,11 @@ namespace ReGranBill.Server.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsEdited")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<int?>("Qty")
                         .HasColumnType("integer");

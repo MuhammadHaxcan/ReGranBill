@@ -1,0 +1,169 @@
+﻿<header class="top-bar">
+  <div class="breadcrumb">
+    <span class="page-name">{{ isEditMode ? 'Edit Journal Voucher' : 'Journal Voucher' }}</span>
+  </div>
+</header>
+
+<section class="card invoice-header" *ngIf="!loading">
+  <div class="header-row">
+    <div class="header-block">
+      <h1 class="invoice-title">Journal Voucher</h1>
+      <p class="invoice-subtitle">Manual double-entry voucher for payments, receipts, and purchases</p>
+    </div>
+    <div class="invoice-meta header-block">
+      <div class="invoice-number">{{ voucherNumber }}</div>
+    </div>
+  </div>
+
+  <div class="form-row form-row-2">
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-control" [(ngModel)]="voucherDateIso" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Narration</label>
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Optional description..."
+        [(ngModel)]="description"
+      />
+    </div>
+  </div>
+</section>
+
+<section class="card lines-card" *ngIf="!loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Journal Lines</span>
+      <span class="line-count">{{ lines.length }}</span>
+    </div>
+    <button class="btn btn-add-line" (click)="addLine(true)">
+      + Add Line
+      <kbd>Alt+N</kbd>
+    </button>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="lines-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-account">Account</th>
+          <th class="col-desc">Description</th>
+          <th class="col-amount">Debit</th>
+          <th class="col-amount">Credit</th>
+          <th class="col-edited">Edited</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let line of lines; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-account">
+            <app-searchable-select
+              #accountSelect
+              [options]="accountOptions"
+              [placeholder]="'Select account...'"
+              [compact]="true"
+              [ngModel]="line.accountId"
+              (ngModelChange)="onAccountChange(line, $event)"
+            ></app-searchable-select>
+          </td>
+          <td class="col-desc">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              placeholder="Line description..."
+              [(ngModel)]="line.description"
+            />
+          </td>
+          <td class="col-amount">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="0.01"
+              [(ngModel)]="line.debit"
+              (ngModelChange)="onDebitChange(line)"
+            />
+          </td>
+          <td class="col-amount">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="0.01"
+              [(ngModel)]="line.credit"
+              (ngModelChange)="onCreditChange(line)"
+              (keydown)="onCreditKeydown($event, i)"
+            />
+          </td>
+          <td class="col-edited">
+            <span class="edited-tag" [class.edited-tag-on]="line.isEdited">
+              {{ line.isEdited ? 'Yes' : 'No' }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <button
+              class="btn-remove"
+              (click)="removeLine(i)"
+              [disabled]="lines.length <= 2"
+              title="Remove line"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td colspan="3" class="totals-label">Totals</td>
+          <td class="totals-value">{{ totalDebit | number:'1.2-2' }}</td>
+          <td class="totals-value">{{ totalCredit | number:'1.2-2' }}</td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-item">
+      <span class="summary-label">Total Debit</span>
+      <span class="summary-value">{{ totalDebit | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Total Credit</span>
+      <span class="summary-value">{{ totalCredit | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Difference</span>
+      <span class="summary-value" [class.bad]="difference !== 0">{{ difference | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="status" [class.status-ok]="isBalanced" [class.status-bad]="!isBalanced">
+        {{ isBalanced ? 'Balanced' : 'Unbalanced' }}
+      </span>
+    </div>
+  </div>
+</section>
+
+<section class="card message-card" *ngIf="errorMessage || successMessage">
+  <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
+</section>
+
+<footer class="bottom-actions" *ngIf="!loading">
+  <button class="btn btn-outline" (click)="reset()">Reset</button>
+  <button class="btn btn-primary btn-submit" (click)="save()" [disabled]="!canSave || saving">
+    {{ saving ? 'Saving...' : (isEditMode ? 'Update Voucher' : 'Save Voucher') }}
+  </button>
+</footer>
+
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>
+
