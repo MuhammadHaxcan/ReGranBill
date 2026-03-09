@@ -325,6 +325,18 @@ select.form-control {
   font-weight: 400;
 }
 
+.col-weight .loose-label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #b8860b;
+  background: #fff8e1;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .col-rate {
   width: 10%;
   min-width: 80px;

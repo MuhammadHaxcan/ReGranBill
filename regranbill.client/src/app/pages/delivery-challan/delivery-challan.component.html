@@ -117,6 +117,7 @@
             />
           </td>
           <td class="col-weight">
+            <span *ngIf="isLoose(line)" class="loose-label">Loose</span>
             <strong>{{ getLineTotalWeight(line) }}</strong> <span class="unit">kg</span>
           </td>
           <td class="col-rate" *ngIf="isAdmin">

@@ -15,6 +15,10 @@ export class App {
     return this.router.url === '/login';
   }
 
+  get isPrintPage(): boolean {
+    return this.router.url.startsWith('/print-dc');
+  }
+
   get isAdmin(): boolean {
     return this.authService.isAdmin();
   }

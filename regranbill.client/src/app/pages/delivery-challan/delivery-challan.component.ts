@@ -201,7 +201,12 @@ export class DeliveryChallanComponent implements OnInit {
 
   getLineTotalWeight(line: ProductLine): number {
     if (!line.product || !line.qty) return 0;
+    if (line.rbp === 'No') return line.qty;
     return line.product.packingWeightKg * line.qty;
+  }
+
+  isLoose(line: ProductLine): boolean {
+    return line.rbp === 'No';
   }
 
   getLineAmount(line: ProductLine): number {

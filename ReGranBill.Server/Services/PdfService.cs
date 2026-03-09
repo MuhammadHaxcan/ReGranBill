@@ -141,20 +141,23 @@ public class PdfService : IPdfService
                         var lines = dto.Lines ?? new List<DcLineDto>();
                         foreach (var line in lines)
                         {
-                            var totalWeight = line.PackingWeightKg * line.Qty;
+                            var isLoose = line.Rbp == "No";
+                            var weightText = isLoose
+                                ? "Loose"
+                                : $"{line.PackingWeightKg * line.Qty} kg";
                             var desc = line.ProductName ?? "";
                             if (!string.IsNullOrEmpty(line.Packing))
                                 desc += $" ({line.Packing})";
 
                             table.Cell().Border(0.5f).BorderColor(BorderGreen)
                                 .Padding(5).AlignCenter()
-                                .Text($"{totalWeight} kg").FontSize(11);
+                                .Text(weightText).FontSize(11);
                             table.Cell().Border(0.5f).BorderColor(BorderGreen)
                                 .Padding(5)
                                 .Text(desc).FontSize(11);
                             table.Cell().Border(0.5f).BorderColor(BorderGreen)
                                 .Padding(5).AlignCenter()
-                                .Text($"{line.Qty}").FontSize(11);
+                                .Text(isLoose ? $"{line.Qty} kg" : $"{line.Qty}").FontSize(11);
                         }
 
                         // Empty rows to pad to minimum
@@ -170,8 +173,10 @@ public class PdfService : IPdfService
                         }
 
                         // Total row
-                        var totalQty = lines.Sum(l => l.Qty);
-                        var totalWeightAll = lines.Sum(l => l.PackingWeightKg * l.Qty);
+                        var totalQty = lines.Where(l => l.Rbp != "No").Sum(l => l.Qty);
+                        var looseWeightTotal = lines.Where(l => l.Rbp == "No").Sum(l => l.Qty);
+                        var packedWeightTotal = lines.Where(l => l.Rbp != "No").Sum(l => l.PackingWeightKg * l.Qty);
+                        var totalWeightAll = packedWeightTotal + looseWeightTotal;
 
                         table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(1.5f).BorderRight(0.5f).BorderColor(Green)
                             .Padding(6).AlignCenter()

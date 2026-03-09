@@ -41,9 +41,6 @@ export class DeliveryChallanService {
   }
 
   openPdfInNewTab(id: number): void {
-    this.getPdf(id).subscribe(blob => {
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    });
+    window.open(`/print-dc/${id}`, '_blank');
   }
 }

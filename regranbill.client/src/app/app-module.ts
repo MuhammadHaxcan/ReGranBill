@@ -13,6 +13,7 @@ import { AddRateComponent } from './pages/add-rate/add-rate.component';
 import { SearchableSelectComponent } from './components/searchable-select/searchable-select.component';
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
+import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 
@@ -24,6 +25,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     CategoriesAccountsComponent,
     PendingChallansComponent,
     AddRateComponent,
+    PrintDcComponent,
     SearchableSelectComponent,
     SoaComponent,
     MasterReportComponent,

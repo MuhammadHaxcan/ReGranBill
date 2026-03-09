@@ -1,10 +1,10 @@
-<!-- Login page: no sidebar -->
-<ng-container *ngIf="isLoginPage">
+<!-- Login / Print page: no sidebar -->
+<ng-container *ngIf="isLoginPage || isPrintPage">
   <router-outlet></router-outlet>
 </ng-container>
 
 <!-- Authenticated layout: sidebar + main -->
-<ng-container *ngIf="!isLoginPage">
+<ng-container *ngIf="!isLoginPage && !isPrintPage">
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-brand">

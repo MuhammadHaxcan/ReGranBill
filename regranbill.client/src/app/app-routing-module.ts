@@ -7,11 +7,13 @@ import { PendingChallansComponent } from './pages/pending-challans/pending-chall
 import { AddRateComponent } from './pages/add-rate/add-rate.component';
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
+import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'print-dc/:id', component: PrintDcComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'pending-challans', component: PendingChallansComponent, canActivate: [AuthGuard, AdminGuard] },
