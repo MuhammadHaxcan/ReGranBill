@@ -165,7 +165,7 @@
     <div class="cartage-info">
       <span class="cartage-icon">&#x1F69A;</span>
       <div>
-        <div class="cartage-title">Cartage / Transport</div>
+        <div class="cartage-title">Less Cartage</div>
         <div class="cartage-detail">
           {{ cartage.transporterName }} &middot; {{ cartage.city }} &middot;
           <span class="text-primary">{{ cartage.amount | pkCurrency }}</span>
@@ -174,14 +174,14 @@
     </div>
     <div class="cartage-actions">
       <button class="btn btn-outline" (click)="removeCartage()">Remove</button>
-      <button class="btn btn-outline btn-outline-primary" (click)="openCartageForm()">Edit Cartage</button>
+      <button class="btn btn-outline btn-outline-primary" (click)="openCartageForm()">Edit Less Cartage</button>
     </div>
   </div>
 </section>
 
 <!-- Cartage Form (inline) -->
 <section class="card cartage-form-section" *ngIf="!loading && showCartageForm">
-  <h3 class="cartage-form-title">{{ cartage ? 'Edit' : 'Add' }} Cartage / Transport</h3>
+  <h3 class="cartage-form-title">{{ cartage ? 'Edit' : 'Add' }} - Less Cartage</h3>
   <div class="cartage-form-row">
     <div class="form-group">
       <label class="form-label">Transporter</label>
@@ -198,13 +198,13 @@
   </div>
   <div class="cartage-form-actions">
     <button class="btn btn-outline" (click)="cancelCartageForm()">Cancel</button>
-    <button class="btn btn-primary" (click)="saveCartage()">Save Cartage</button>
+    <button class="btn btn-primary" (click)="saveCartage()">Save Less Cartage</button>
   </div>
 </section>
 
 <!-- Add Cartage Button -->
 <section class="card cartage-add" *ngIf="!loading && !cartage && !showCartageForm">
-  <button class="btn btn-outline btn-outline-primary" (click)="openCartageForm()">+ Add Cartage / Transport</button>
+  <button class="btn btn-outline btn-outline-primary" (click)="openCartageForm()">+ Add - Less Cartage</button>
 </section>
 
 <!-- Bottom Actions -->

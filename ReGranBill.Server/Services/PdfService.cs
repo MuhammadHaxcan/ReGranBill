@@ -12,6 +12,14 @@ public class PdfService : IPdfService
     private const string BorderGreen = "#a0c8a0";
     private const int MinRows = 8;
 
+    private readonly string _logoSvg;
+
+    public PdfService(IWebHostEnvironment env)
+    {
+        var logoPath = Path.Combine(env.ContentRootPath, "..", "regranbill.client", "public", "KPI_LOGO.svg");
+        _logoSvg = File.ReadAllText(logoPath);
+    }
+
     public byte[] GenerateDeliveryChallanPdf(DeliveryChallanDto dto)
     {
         var document = Document.Create(container =>
@@ -32,7 +40,7 @@ public class PdfService : IPdfService
                     {
                         row.RelativeItem().Row(logoRow =>
                         {
-                            logoRow.ConstantItem(55).Height(55).Svg(DiamondLogoSvg());
+                            logoRow.ConstantItem(55).Height(55).Svg(_logoSvg);
 
                             logoRow.RelativeItem().PaddingLeft(10).Column(c =>
                             {
@@ -221,18 +229,4 @@ public class PdfService : IPdfService
         return document.GeneratePdf();
     }
 
-    private static string DiamondLogoSvg()
-    {
-        return @"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 300 300"" width=""300"" height=""300"">
-  <g transform=""translate(85, 150)"">
-    <polygon fill=""#2E7D32"" points=""0,-65 65,0 0,65 -65,0"" />
-  </g>
-  <g transform=""translate(150, 85)"">
-    <polygon fill=""#2E7D32"" points=""0,-65 65,0 0,65 -65,0"" />
-  </g>
-  <g transform=""translate(215, 150)"">
-    <polygon fill=""#2E7D32"" points=""0,-65 65,0 0,65 -65,0"" />
-  </g>
-</svg>";
-    }
 }
