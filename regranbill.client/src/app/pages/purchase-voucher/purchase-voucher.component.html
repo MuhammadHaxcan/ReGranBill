@@ -1,33 +1,21 @@
-<!-- Top Bar -->
-<header class="top-bar">
-  <div class="breadcrumb">
-    <a *ngIf="isEditMode" class="breadcrumb-link" routerLink="/pending-purchases">Pending Purchases</a>
-    <span *ngIf="isEditMode" class="breadcrumb-sep">/</span>
-    <span class="page-name">{{ isEditMode ? 'Edit Purchase Voucher' : 'Purchase Voucher' }}</span>
-  </div>
-</header>
-
 <!-- DC Header Card -->
 <section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
     <div>
-      <h1 class="invoice-title">{{ isEditMode ? 'Edit Purchase Voucher' : 'Purchase Voucher' }}</h1>
+      <div class="breadcrumb" *ngIf="isEditMode">
+        <a class="breadcrumb-link" routerLink="/pending-purchases">Pending Purchases</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Edit</span>
+      </div>
+      <h1 class="invoice-title">Purchase Voucher</h1>
       <p class="invoice-subtitle">{{ isEditMode ? 'Edit purchase voucher details' : 'Create a new purchase voucher' }}</p>
     </div>
     <div class="invoice-meta">
       <div class="invoice-number">{{ dcNumber }}</div>
-      <div class="vehicle-number-field">
-        <input
-          type="text"
-          class="form-control form-control-sm vehicle-input"
-          placeholder="Vehicle No."
-          [(ngModel)]="vehicleNumber"
-        />
-      </div>
     </div>
   </div>
 
-  <div class="form-row form-row-3">
+  <div class="form-row form-row-4">
     <div class="form-group">
       <label class="form-label">Date</label>
       <input
@@ -51,6 +39,15 @@
         class="form-control"
         placeholder="Optional note..."
         [(ngModel)]="description"
+      />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Vehicle No.</label>
+      <input
+        type="text"
+        class="form-control vehicle-input"
+        placeholder="e.g. ABC-1234"
+        [(ngModel)]="vehicleNumber"
       />
     </div>
   </div>
@@ -214,8 +211,8 @@
 <footer class="bottom-actions" *ngIf="!loading">
   <button class="btn btn-outline" (click)="discard()">Discard</button>
   <div class="bottom-actions-right">
-    <button class="btn btn-primary btn-submit" (click)="save()">Save</button>
-    <button class="btn btn-primary btn-submit btn-print" (click)="saveAndPrint()">Save &amp; Print</button>
+    <button class="btn btn-primary btn-submit" (click)="save()" [disabled]="!canSave">Save</button>
+    <button class="btn btn-primary btn-submit btn-print" (click)="saveAndPrint()" [disabled]="!canSave">Save &amp; Print</button>
   </div>
 </footer>
 
@@ -224,8 +221,3 @@
   <p>Loading...</p>
 </div>
 
-<!-- Toast -->
-<div class="toast" *ngIf="toastVisible" [class.toast-success]="toastType === 'success'" [class.toast-error]="toastType === 'error'">
-  <span class="toast-icon">{{ toastType === 'success' ? '&#x2714;' : '&#x2716;' }}</span>
-  <span class="toast-message">{{ toastMessage }}</span>
-</div>

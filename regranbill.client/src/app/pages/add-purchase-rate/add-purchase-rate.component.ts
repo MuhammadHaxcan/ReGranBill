@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-add-purchase-rate',
@@ -25,7 +26,8 @@ export class AddPurchaseRateComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private purchaseService: PurchaseVoucherService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -37,19 +39,26 @@ export class AddPurchaseRateComponent implements OnInit {
   }
 
   loadData(): void {
-    this.purchaseService.getById(this.challanId!).subscribe(dc => {
-      if (dc) {
-        this.dcNumber = dc.dcNumber;
-        this.dcDate = new Date(dc.date);
-        this.vendorName = dc.customerName || '-';
-        this.description = dc.description || '';
-        this.ratesAdded = dc.ratesAdded;
-        this.lines = dc.lines;
-        this.cartage = dc.cartage;
-        this.journalVouchers = dc.journalVouchers || [];
+    this.purchaseService.getById(this.challanId!).subscribe({
+      next: dc => {
+        if (dc) {
+          this.dcNumber = dc.dcNumber;
+          this.dcDate = new Date(dc.date);
+          this.vendorName = dc.customerName || '-';
+          this.description = dc.description || '';
+          this.ratesAdded = dc.ratesAdded;
+          this.lines = dc.lines;
+          this.cartage = dc.cartage;
+          this.journalVouchers = dc.journalVouchers || [];
+        }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load purchase voucher details.');
+        this.loading = false;
+        this.cdr.detectChanges();
       }
-      this.loading = false;
-      this.cdr.detectChanges();
     });
   }
 
@@ -73,7 +82,9 @@ export class AddPurchaseRateComponent implements OnInit {
   }
 
   get totalBags(): number {
-    return this.lines.reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
+    return this.lines
+      .filter((line: any) => line.rbp === 'Yes')
+      .reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
   }
 
   get totalWeight(): number {
@@ -87,11 +98,16 @@ export class AddPurchaseRateComponent implements OnInit {
   saveRates(): void {
     if (this.challanId) {
       const rateUpdates = this.lines.map((l: any) => ({ entryId: l.id, rate: l.rate }));
-      this.purchaseService.updateRates(this.challanId, { lines: rateUpdates }).subscribe(updatedDc => {
-        this.journalVouchers = updatedDc.journalVouchers || [];
-        this.ratesAdded = updatedDc.ratesAdded;
-        alert('Rates saved successfully. Journal entries updated.');
-        this.router.navigate(['/pending-purchases']);
+      this.purchaseService.updateRates(this.challanId, { lines: rateUpdates }).subscribe({
+        next: updatedDc => {
+          this.journalVouchers = updatedDc.journalVouchers || [];
+          this.ratesAdded = updatedDc.ratesAdded;
+          this.toast.success(`${this.dcNumber} rates saved successfully.`);
+          this.router.navigate(['/pending-purchases']);
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to save rates.');
+        }
       });
     }
   }

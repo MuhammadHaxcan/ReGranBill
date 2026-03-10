@@ -1,28 +1,24 @@
-﻿<!-- Top Bar -->
-<header class="top-bar">
-  <div class="breadcrumb">
-    <a class="breadcrumb-link" routerLink="/pending-challans">Pending Challans</a>
-    <span class="breadcrumb-sep">/</span>
-    <span class="page-name">Add Rate</span>
-  </div>
-  <div class="badges">
-    <span class="badge badge-admin">Admin</span>
-    <span class="badge" [class.badge-rated]="ratesAdded" [class.badge-draft]="!ratesAdded">
-      {{ ratesAdded ? 'Rates Added' : 'Pending Rates' }}
-    </span>
-  </div>
-</header>
-
-<!-- DC Header Card -->
+﻿<!-- DC Header Card -->
 <section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
     <div>
+      <div class="breadcrumb">
+        <a class="breadcrumb-link" routerLink="/pending-challans">Pending Challans</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Add Rate</span>
+      </div>
       <h1 class="invoice-title">Add Rate</h1>
       <p class="invoice-subtitle">Enter rates for delivery challan products</p>
     </div>
     <div class="invoice-meta">
       <div class="invoice-number">{{ dcNumber }}</div>
       <div class="invoice-date">{{ formattedDate }}</div>
+      <div class="badges">
+        <span class="badge badge-admin">Admin</span>
+        <span class="badge" [class.badge-rated]="ratesAdded" [class.badge-draft]="!ratesAdded">
+          {{ ratesAdded ? 'Rates Added' : 'Pending Rates' }}
+        </span>
+      </div>
     </div>
   </div>
 

@@ -6,6 +6,7 @@ import { Account } from '../../models/account.model';
 import { CreateJournalVoucherRequest, JournalVoucher } from '../../models/journal-voucher.model';
 import { AccountService } from '../../services/account.service';
 import { JournalVoucherService } from '../../services/journal-voucher.service';
+import { ToastService } from '../../services/toast.service';
 
 interface EditableJournalLine {
   id?: number;
@@ -29,8 +30,6 @@ export class JournalVoucherComponent implements OnInit {
   isEditMode = false;
   loading = true;
   saving = false;
-  errorMessage = '';
-  successMessage = '';
 
   voucherNumber = '';
   voucherDate = new Date();
@@ -44,7 +43,8 @@ export class JournalVoucherComponent implements OnInit {
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private accountService: AccountService,
-    private journalVoucherService: JournalVoucherService
+    private journalVoucherService: JournalVoucherService,
+    private toast: ToastService
   ) {}
 
   get voucherDateIso(): string {
@@ -94,8 +94,6 @@ export class JournalVoucherComponent implements OnInit {
 
   private loadData(): void {
     this.loading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     const idParam = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!idParam;
@@ -113,7 +111,7 @@ export class JournalVoucherComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: () => {
-          this.errorMessage = 'Unable to load journal voucher.';
+          this.toast.error('Unable to load journal voucher.');
           this.loading = false;
           this.cdr.detectChanges();
         }
@@ -135,7 +133,7 @@ export class JournalVoucherComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
-        this.errorMessage = 'Unable to initialize journal voucher.';
+        this.toast.error('Unable to initialize journal voucher.');
         this.loading = false;
         this.cdr.detectChanges();
       }
@@ -186,19 +184,17 @@ export class JournalVoucherComponent implements OnInit {
 
     const request = this.buildRequest();
     this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     if (this.isEditMode && this.voucherId) {
       this.journalVoucherService.update(this.voucherId, request).subscribe({
         next: voucher => {
           this.setVoucher(voucher);
-          this.successMessage = 'Journal voucher updated successfully.';
+          this.toast.success(`${voucher.voucherNumber} updated successfully.`);
           this.saving = false;
           this.cdr.detectChanges();
         },
         error: err => {
-          this.errorMessage = err?.error?.message || 'Unable to update journal voucher.';
+          this.toast.error(err?.error?.message || 'Unable to update journal voucher.');
           this.saving = false;
           this.cdr.detectChanges();
         }
@@ -207,13 +203,14 @@ export class JournalVoucherComponent implements OnInit {
     }
 
     this.journalVoucherService.create(request).subscribe({
-      next: () => {
+      next: (voucher: any) => {
         this.saving = false;
-        this.successMessage = 'Journal voucher created successfully.';
+        const num = voucher?.voucherNumber || this.voucherNumber;
+        this.toast.success(`${num} created successfully.`);
         this.resetForNextVoucher();
       },
       error: err => {
-        this.errorMessage = err?.error?.message || 'Unable to create journal voucher.';
+        this.toast.error(err?.error?.message || 'Unable to create journal voucher.');
         this.saving = false;
         this.cdr.detectChanges();
       }
@@ -229,15 +226,13 @@ export class JournalVoucherComponent implements OnInit {
     this.description = '';
     this.voucherDate = new Date();
     this.lines = [this.newLine(), this.newLine()];
-    this.errorMessage = '';
-    this.successMessage = '';
     this.journalVoucherService.getNextNumber().subscribe({
       next: num => {
         this.voucherNumber = num;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.errorMessage = 'Unable to refresh voucher number.';
+        this.toast.error('Unable to refresh voucher number.');
         this.cdr.detectChanges();
       }
     });
@@ -330,7 +325,7 @@ export class JournalVoucherComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
-        this.errorMessage = 'Voucher created, but unable to fetch next number.';
+        this.toast.error('Voucher created, but unable to fetch next number.');
         this.cdr.detectChanges();
       }
     });

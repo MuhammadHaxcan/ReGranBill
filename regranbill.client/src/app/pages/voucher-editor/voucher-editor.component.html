@@ -1,11 +1,12 @@
-﻿<header class="top-bar">
-  <div class="breadcrumb">
-    <span class="page-name">Voucher Editor</span>
+﻿<!-- Header Card -->
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Voucher Editor</h1>
+      <p class="invoice-subtitle">Search and edit voucher ledger entries</p>
+    </div>
   </div>
-</header>
 
-<section class="card search-card">
-  <div class="search-title">Search Voucher</div>
   <div class="search-grid">
     <div class="form-group">
       <label class="form-label">Voucher Type</label>
@@ -32,15 +33,14 @@
   </div>
 </section>
 
-<section class="card invoice-header" *ngIf="hasLoadedVoucher">
-  <div class="header-row">
-    <div>
-      <h1 class="invoice-title">Ledger Edit</h1>
-      <p class="invoice-subtitle">{{ voucher?.voucherType }} | {{ voucher?.voucherNumber }}</p>
-    </div>
+<!-- Voucher Details Card -->
+<section class="card voucher-details" *ngIf="hasLoadedVoucher">
+  <div class="voucher-details-header">
+    <span class="voucher-type-badge">{{ voucher?.voucherType }}</span>
+    <span class="voucher-number-badge">{{ voucher?.voucherNumber }}</span>
   </div>
 
-  <div class="form-row form-row-3">
+  <div class="form-row" [class.form-row-3]="isSaleVoucher">
     <div class="form-group">
       <label class="form-label">Date</label>
       <input type="date" class="form-control" [(ngModel)]="voucherDateIso" />
@@ -51,7 +51,7 @@
     </div>
     <div class="form-group" *ngIf="isSaleVoucher">
       <label class="form-label">Vehicle Number</label>
-      <input type="text" class="form-control" [(ngModel)]="vehicleNumber" placeholder="Vehicle number..." />
+      <input type="text" class="form-control vehicle-input" [(ngModel)]="vehicleNumber" placeholder="e.g. ABC-1234" />
     </div>
   </div>
 </section>
@@ -183,21 +183,17 @@
       <span class="summary-label">Total Credit</span>
       <span class="summary-value">{{ totalCredit | number:'1.2-2' }}</span>
     </div>
-    <div class="summary-item">
+    <div class="summary-item" [class.summary-danger]="difference !== 0">
       <span class="summary-label">Difference</span>
-      <span class="summary-value" [class.bad]="difference !== 0">{{ difference | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ difference | number:'1.2-2' }}</span>
     </div>
-    <div class="summary-item">
-      <span class="status" [class.status-ok]="isBalanced" [class.status-bad]="!isBalanced">
+    <div class="summary-item" [class.summary-balanced]="isBalanced" [class.summary-unbalanced]="!isBalanced">
+      <span class="summary-label">Status</span>
+      <span class="status-badge" [class.status-ok]="isBalanced" [class.status-bad]="!isBalanced">
         {{ isBalanced ? 'Balanced' : 'Unbalanced' }}
       </span>
     </div>
   </div>
-</section>
-
-<section class="card message-card" *ngIf="errorMessage || successMessage">
-  <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
-  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
 </section>
 
 <footer class="bottom-actions" *ngIf="hasLoadedVoucher">

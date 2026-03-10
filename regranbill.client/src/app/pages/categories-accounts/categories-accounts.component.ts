@@ -1,6 +1,7 @@
 import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
+import { ToastService } from '../../services/toast.service';
 import { Category } from '../../models/category.model';
 import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -57,7 +58,8 @@ export class CategoriesAccountsComponent implements OnInit {
   constructor(
     private categoryService: CategoryService,
     private accountService: AccountService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -73,10 +75,15 @@ export class CategoriesAccountsComponent implements OnInit {
 
   // ==================== CATEGORIES ====================
   loadCategories(): void {
-    this.categoryService.getAll().subscribe(cats => {
-      this.categories = cats;
-      this.categoryOptions = cats.map(c => ({ value: c.id, label: c.name }));
-      this.cdr.detectChanges();
+    this.categoryService.getAll().subscribe({
+      next: cats => {
+        this.categories = cats;
+        this.categoryOptions = cats.map(c => ({ value: c.id, label: c.name }));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load categories.');
+      }
     });
   }
 
@@ -120,24 +127,42 @@ export class CategoriesAccountsComponent implements OnInit {
     }
 
     if (this.catEditingId !== null) {
-      this.categoryService.update(this.catEditingId, name).subscribe(() => {
-        this.loadCategories();
-        this.cancelCatForm();
-        this.cdr.detectChanges();
+      this.categoryService.update(this.catEditingId, name).subscribe({
+        next: () => {
+          this.toast.success('Category updated.');
+          this.loadCategories();
+          this.cancelCatForm();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to update category.');
+        }
       });
     } else {
-      this.categoryService.add(name).subscribe(() => {
-        this.loadCategories();
-        this.cancelCatForm();
-        this.cdr.detectChanges();
+      this.categoryService.add(name).subscribe({
+        next: () => {
+          this.toast.success('Category created.');
+          this.loadCategories();
+          this.cancelCatForm();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to create category.');
+        }
       });
     }
   }
 
   deleteCategory(cat: Category): void {
     if (confirm(`Delete category "${cat.name}"?`)) {
-      this.categoryService.delete(cat.id).subscribe(() => {
-        this.loadCategories();
+      this.categoryService.delete(cat.id).subscribe({
+        next: () => {
+          this.toast.success('Category deleted.');
+          this.loadCategories();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to delete category.');
+        }
       });
     }
   }
@@ -149,9 +174,14 @@ export class CategoriesAccountsComponent implements OnInit {
 
   // ==================== ACCOUNTS ====================
   loadAccounts(): void {
-    this.accountService.getAll().subscribe(accts => {
-      this.accounts = accts;
-      this.cdr.detectChanges();
+    this.accountService.getAll().subscribe({
+      next: accts => {
+        this.accounts = accts;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load accounts.');
+      }
     });
   }
 
@@ -263,23 +293,43 @@ export class CategoriesAccountsComponent implements OnInit {
     }
 
     if (this.acctEditingId !== null) {
-      this.accountService.update(this.acctEditingId, data).subscribe(() => {
-        this.loadAccounts();
-        this.closeAcctModal();
-        this.cdr.detectChanges();
+      this.accountService.update(this.acctEditingId, data).subscribe({
+        next: () => {
+          this.toast.success('Account updated.');
+          this.loadAccounts();
+          this.closeAcctModal();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to update account.');
+        }
       });
     } else {
-      this.accountService.add(data).subscribe(() => {
-        this.loadAccounts();
-        this.closeAcctModal();
-        this.cdr.detectChanges();
+      this.accountService.add(data).subscribe({
+        next: () => {
+          this.toast.success('Account created.');
+          this.loadAccounts();
+          this.closeAcctModal();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to create account.');
+        }
       });
     }
   }
 
   deleteAccount(acct: Account): void {
     if (confirm(`Delete account "${acct.name}"?`)) {
-      this.accountService.delete(acct.id).subscribe(() => this.loadAccounts());
+      this.accountService.delete(acct.id).subscribe({
+        next: () => {
+          this.toast.success('Account deleted.');
+          this.loadAccounts();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to delete account.');
+        }
+      });
     }
   }
 

@@ -1,10 +1,4 @@
-﻿<header class="top-bar">
-  <div class="breadcrumb">
-    <span class="page-name">{{ isEditMode ? 'Edit Journal Voucher' : 'Journal Voucher' }}</span>
-  </div>
-</header>
-
-<section class="card invoice-header" *ngIf="!loading">
+﻿<section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
     <div>
       <h1 class="invoice-title">Journal Voucher</h1>
@@ -139,21 +133,17 @@
       <span class="summary-label">Total Credit</span>
       <span class="summary-value">{{ totalCredit | number:'1.2-2' }}</span>
     </div>
-    <div class="summary-item">
+    <div class="summary-item" [class.summary-danger]="difference !== 0">
       <span class="summary-label">Difference</span>
-      <span class="summary-value" [class.bad]="difference !== 0">{{ difference | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ difference | number:'1.2-2' }}</span>
     </div>
-    <div class="summary-item">
-      <span class="status" [class.status-ok]="isBalanced" [class.status-bad]="!isBalanced">
+    <div class="summary-item" [class.summary-balanced]="isBalanced" [class.summary-unbalanced]="!isBalanced">
+      <span class="summary-label">Status</span>
+      <span class="status-badge" [class.status-ok]="isBalanced" [class.status-bad]="!isBalanced">
         {{ isBalanced ? 'Balanced' : 'Unbalanced' }}
       </span>
     </div>
   </div>
-</section>
-
-<section class="card message-card" *ngIf="errorMessage || successMessage">
-  <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
-  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
 </section>
 
 <footer class="bottom-actions" *ngIf="!loading">

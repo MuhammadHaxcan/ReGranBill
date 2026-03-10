@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { StatementService } from '../../services/statement.service';
 import { AccountService } from '../../services/account.service';
+import { ToastService } from '../../services/toast.service';
 import { StatementOfAccount } from '../../models/statement.model';
 import { Account } from '../../models/account.model';
 
@@ -24,7 +25,8 @@ export class SoaComponent implements OnInit {
     private route: ActivatedRoute,
     private statementService: StatementService,
     private accountService: AccountService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -32,11 +34,16 @@ export class SoaComponent implements OnInit {
       customers: this.accountService.getCustomers(),
       vendors: this.accountService.getVendors(),
       transporters: this.accountService.getTransporters()
-    }).subscribe(({ customers, vendors, transporters }) => {
-      const unique = new Map<number, Account>();
-      [...customers, ...vendors, ...transporters].forEach(account => unique.set(account.id, account));
-      this.customers = Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
-      this.cdr.detectChanges();
+    }).subscribe({
+      next: ({ customers, vendors, transporters }) => {
+        const unique = new Map<number, Account>();
+        [...customers, ...vendors, ...transporters].forEach(account => unique.set(account.id, account));
+        this.customers = Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load accounts.');
+      }
     });
 
     const paramId = this.route.snapshot.paramMap.get('accountId');
@@ -60,6 +67,7 @@ export class SoaComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
+        this.toast.error('Unable to load statement.');
         this.loading = false;
         this.cdr.detectChanges();
       }

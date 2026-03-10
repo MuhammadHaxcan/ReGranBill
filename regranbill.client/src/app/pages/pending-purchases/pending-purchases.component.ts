@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-pending-purchases',
@@ -15,7 +16,8 @@ export class PendingPurchasesComponent implements OnInit {
   constructor(
     private purchaseService: PurchaseVoucherService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -24,10 +26,17 @@ export class PendingPurchasesComponent implements OnInit {
 
   loadChallans(): void {
     this.loading = true;
-    this.purchaseService.getAll().subscribe(data => {
-      this.challans = data;
-      this.loading = false;
-      this.cdr.detectChanges();
+    this.purchaseService.getAll().subscribe({
+      next: data => {
+        this.challans = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load pending purchases.');
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 

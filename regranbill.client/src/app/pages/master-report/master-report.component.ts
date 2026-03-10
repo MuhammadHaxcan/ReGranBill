@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MasterReportService } from '../../services/master-report.service';
 import { AccountService } from '../../services/account.service';
+import { ToastService } from '../../services/toast.service';
 import { MasterReport, MasterReportEntry } from '../../models/master-report.model';
 import { Account } from '../../models/account.model';
 import { forkJoin } from 'rxjs';
@@ -36,7 +37,8 @@ export class MasterReportComponent implements OnInit {
     private http: HttpClient,
     private reportService: MasterReportService,
     private accountService: AccountService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -47,11 +49,16 @@ export class MasterReportComponent implements OnInit {
     forkJoin({
       accounts: this.accountService.getAll(),
       categories: this.http.get<Category[]>('/api/categories')
-    }).subscribe(({ accounts, categories }) => {
-      this.accounts = accounts;
-      this.categories = categories;
-      this.filtersLoaded = true;
-      this.cdr.detectChanges();
+    }).subscribe({
+      next: ({ accounts, categories }) => {
+        this.accounts = accounts;
+        this.categories = categories;
+        this.filtersLoaded = true;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load filters.');
+      }
     });
   }
 
@@ -85,6 +92,7 @@ export class MasterReportComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
+        this.toast.error('Unable to load report.');
         this.loading = false;
         this.cdr.detectChanges();
       }

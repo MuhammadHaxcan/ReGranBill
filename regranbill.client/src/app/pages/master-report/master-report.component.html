@@ -1,16 +1,15 @@
-﻿<!-- Top Bar -->
-<header class="top-bar">
-  <div class="breadcrumb">
-    <span class="page-name">Master Report</span>
+﻿<!-- Header Card -->
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Master Report</h1>
+      <p class="invoice-subtitle">Comprehensive ledger report across all accounts and categories</p>
+    </div>
   </div>
-  <div class="badges">
-    <span class="badge badge-admin">Admin</span>
-  </div>
-</header>
+</section>
 
 <!-- Report Parameters -->
 <section class="card filter-card" *ngIf="filtersLoaded">
-  <h3 class="filter-title">Report Parameters</h3>
   <div class="filter-row">
     <div class="filter-field">
       <label>Since</label>

@@ -1,32 +1,14 @@
-/* Top Bar */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 24px;
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.page-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--navy);
-}
+/* ============================================================
+   Journal Voucher — Component Styles
+   Uses design system variables from styles.css
+   ============================================================ */
 
 /* Cards */
 .card {
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   padding: 24px 28px;
   margin-bottom: 20px;
 }
@@ -40,14 +22,16 @@
 }
 
 .invoice-title {
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 24px;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
 .invoice-subtitle {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 14px;
   margin: 4px 0 0 0;
 }
@@ -59,7 +43,7 @@
 .invoice-number {
   font-size: 22px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--text-primary);
   letter-spacing: 1px;
 }
 
@@ -81,27 +65,27 @@
 
 .form-label {
   font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .form-control {
   padding: 10px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  color: var(--text);
+  color: var(--text-primary);
   background: #fff;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
   font-family: inherit;
 }
 
 .form-control:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(55, 90, 200, 0.08);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-muted);
 }
 
 .form-control-sm {
@@ -124,9 +108,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 28px;
-  background: var(--navy);
-  border-radius: 12px 12px 0 0;
+  padding: 13px 24px;
+  background: var(--slate-900);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   color: #fff;
 }
 
@@ -137,8 +121,9 @@
 }
 
 .card-header-title {
-  font-weight: 700;
-  font-size: 15px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
 }
 
 .line-count {
@@ -148,7 +133,7 @@
   min-width: 24px;
   height: 24px;
   padding: 0 7px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
@@ -157,13 +142,14 @@
 /* Buttons */
 .btn {
   padding: 10px 22px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   border: 1.5px solid transparent;
-  transition: all 0.15s;
+  transition: all 0.15s var(--ease);
   font-family: inherit;
+  letter-spacing: -0.01em;
 }
 
 .btn:disabled {
@@ -179,11 +165,11 @@
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s var(--ease);
 }
 
 .btn-add-line:hover {
@@ -213,25 +199,36 @@
 
 .lines-table th {
   font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 14px 8px 10px;
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
+  background: var(--slate-50);
 }
 
 .lines-table td {
   padding: 12px 8px;
   vertical-align: middle;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13.5px;
+  color: var(--text-primary);
+}
+
+.lines-table tbody tr {
+  transition: background 0.1s var(--ease);
+}
+
+.lines-table tbody tr:hover {
+  background: var(--slate-50);
 }
 
 .col-num {
   width: 40px;
   text-align: center;
-  color: #aaa;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -255,28 +252,28 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1.5px solid #f0d0d0;
-  background: #fff5f5;
-  border-radius: 6px;
-  color: #e53e3e;
+  border: 1.5px solid var(--danger-border);
+  background: var(--danger-light);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s var(--ease);
   padding: 0;
 }
 
 .btn-remove:hover {
-  background: #fee2e2;
-  border-color: #e53e3e;
+  background: #fecaca;
+  border-color: var(--danger);
 }
 
 .totals-row {
-  background: #f8f9fc;
+  background: var(--slate-50);
 }
 
 .totals-label {
   text-align: center;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text-primary);
 }
 
 .totals-value {
@@ -290,65 +287,71 @@
   justify-content: flex-end;
   gap: 32px;
   padding: 16px 28px;
-  border-top: 2px solid var(--border-color);
+  border-top: 2px solid var(--border);
+  background: var(--slate-50);
 }
 
 .summary-item {
   text-align: center;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
 }
 
 .summary-label {
   display: block;
   font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
 
 .summary-value {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--navy);
-}
-
-.summary-value.bad {
-  color: #d24747;
-}
-
-.status {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.summary-danger {
+  border-color: var(--danger);
+  background: #fef2f2;
+}
+
+.summary-danger .summary-value {
+  color: var(--danger);
+}
+
+.summary-balanced {
+  border-color: #059669;
+  background: #ecfdf5;
+}
+
+.summary-unbalanced {
+  border-color: var(--danger);
+  background: #fef2f2;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .status-ok {
-  color: #1b8f41;
+  color: #fff;
+  background: #059669;
 }
 
 .status-bad {
-  color: #d24747;
-}
-
-.message-card {
-  padding: 12px 14px;
-}
-
-.message {
-  padding: 10px 12px;
-  border-radius: 8px;
-}
-
-.message.error {
-  background: #fff5f5;
-  border: 1px solid #ffd1d1;
-  color: #b23a3a;
-}
-
-.message.success {
-  background: #f1fff4;
-  border: 1px solid #c8f0d0;
-  color: #1b8f41;
+  color: #fff;
+  background: var(--danger);
 }
 
 /* Bottom Actions */
@@ -356,19 +359,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 14px 0;
   margin-top: 4px;
 }
 
 .btn-outline {
   background: #fff;
-  color: var(--navy);
-  border-color: var(--border-color);
+  color: var(--text-primary);
+  border-color: var(--border);
 }
 
 .btn-outline:hover {
-  background: #f5f6f8;
-  border-color: #ccc;
+  background: var(--slate-50);
+  border-color: var(--slate-300);
 }
 
 .btn-primary {
@@ -378,7 +381,10 @@
 }
 
 .btn-primary:hover {
-  background: #2a4db8;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 }
 
 .btn-submit {
@@ -389,8 +395,8 @@
 .loading-state {
   text-align: center;
   padding: 60px 0;
-  color: #888;
-  font-size: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .edited-tag {
@@ -399,17 +405,17 @@
   text-align: center;
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid #d9dce8;
-  color: #7a8094;
-  background: #f5f6fb;
+  border: 1px solid var(--slate-300);
+  color: var(--text-secondary);
+  background: var(--slate-50);
   font-size: 11px;
   font-weight: 700;
 }
 
 .edited-tag-on {
-  border-color: #c8d8ff;
-  background: #edf3ff;
-  color: #3256b3;
+  border-color: var(--slate-400);
+  background: var(--slate-100);
+  color: var(--slate-700);
 }
 
 /* Responsive */

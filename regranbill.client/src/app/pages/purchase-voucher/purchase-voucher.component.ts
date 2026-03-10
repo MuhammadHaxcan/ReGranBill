@@ -4,6 +4,7 @@ import { forkJoin } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
+import { ToastService } from '../../services/toast.service';
 import { Account } from '../../models/account.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -21,11 +22,6 @@ export class PurchaseVoucherComponent implements OnInit {
   dcDate = new Date();
   selectedVendorId: number | null = null;
   vehicleNumber = '';
-
-  // Toast
-  toastVisible = false;
-  toastMessage = '';
-  toastType: 'success' | 'error' = 'success';
 
   get dcDateIso(): string {
     const y = this.dcDate.getFullYear();
@@ -68,7 +64,8 @@ export class PurchaseVoucherComponent implements OnInit {
     private purchaseService: PurchaseVoucherService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   get isAdmin(): boolean {
@@ -85,29 +82,36 @@ export class PurchaseVoucherComponent implements OnInit {
       products: this.accountService.getProducts(),
       vendors: this.accountService.getVendors(),
       transporters: this.accountService.getTransporters()
-    }).subscribe(({ products, vendors, transporters }) => {
-      this.products = products;
-      this.productOptions = products.map(p => ({
-        value: p.id,
-        label: p.name,
-        sublabel: p.packing || ''
-      }));
+    }).subscribe({
+      next: ({ products, vendors, transporters }) => {
+        this.products = products;
+        this.productOptions = products.map(p => ({
+          value: p.id,
+          label: p.name,
+          sublabel: p.packing || ''
+        }));
 
-      this.vendors = vendors;
-      this.vendorOptions = vendors.map(c => ({
-        value: c.id,
-        label: c.name,
-        sublabel: c.city || ''
-      }));
+        this.vendors = vendors;
+        this.vendorOptions = vendors.map(c => ({
+          value: c.id,
+          label: c.name,
+          sublabel: c.city || ''
+        }));
 
-      this.transporters = transporters;
-      this.transporterOptions = transporters.map(t => ({
-        value: t.id,
-        label: t.name,
-        sublabel: t.city || ''
-      }));
+        this.transporters = transporters;
+        this.transporterOptions = transporters.map(t => ({
+          value: t.id,
+          label: t.name,
+          sublabel: t.city || ''
+        }));
 
-      this.loadChallan();
+        this.loadChallan();
+      },
+      error: () => {
+        this.toast.error('Unable to load form data.');
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -116,42 +120,56 @@ export class PurchaseVoucherComponent implements OnInit {
     if (idParam) {
       this.challanId = +idParam;
       this.isEditMode = true;
-      this.purchaseService.getById(this.challanId).subscribe(dc => {
-        if (dc) {
-          this.dcNumber = dc.dcNumber;
-          this.dcDate = new Date(dc.date);
-          this.selectedVendorId = dc.customerId;
-          this.vehicleNumber = dc.vehicleNumber || '';
-          this.description = dc.description || '';
-          this.lines = dc.lines.map((l: any) => ({
-            id: l.id,
-            product: l.productId ? {
-              id: l.productId,
-              name: l.productName || '',
-              packing: l.packing || '',
-              packingWeightKg: l.packingWeightKg
-            } : null,
-            rbp: l.rbp as 'Yes' | 'No',
-            qty: l.qty,
-            rate: l.rate,
-            sortOrder: l.sortOrder
-          }));
-          this.cartage = dc.cartage ? {
-            transporterId: dc.cartage.transporterId,
-            transporterName: dc.cartage.transporterName || '',
-            city: dc.cartage.city || '',
-            amount: dc.cartage.amount
-          } : null;
+      this.purchaseService.getById(this.challanId).subscribe({
+        next: dc => {
+          if (dc) {
+            this.dcNumber = dc.dcNumber;
+            this.dcDate = new Date(dc.date);
+            this.selectedVendorId = dc.customerId;
+            this.vehicleNumber = dc.vehicleNumber || '';
+            this.description = dc.description || '';
+            this.lines = dc.lines.map((l: any) => ({
+              id: l.id,
+              product: l.productId ? {
+                id: l.productId,
+                name: l.productName || '',
+                packing: l.packing || '',
+                packingWeightKg: l.packingWeightKg
+              } : null,
+              rbp: l.rbp as 'Yes' | 'No',
+              qty: l.qty,
+              rate: l.rate,
+              sortOrder: l.sortOrder
+            }));
+            this.cartage = dc.cartage ? {
+              transporterId: dc.cartage.transporterId,
+              transporterName: dc.cartage.transporterName || '',
+              city: dc.cartage.city || '',
+              amount: dc.cartage.amount
+            } : null;
+          }
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.toast.error('Unable to load purchase voucher.');
+          this.loading = false;
+          this.cdr.detectChanges();
         }
-        this.loading = false;
-        this.cdr.detectChanges();
       });
     } else {
-      this.purchaseService.getNextNumber().subscribe(num => {
-        this.dcNumber = num;
-        this.addLine();
-        this.loading = false;
-        this.cdr.detectChanges();
+      this.purchaseService.getNextNumber().subscribe({
+        next: num => {
+          this.dcNumber = num;
+          this.addLine();
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.toast.error('Unable to get next voucher number.');
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -211,7 +229,9 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   get totalBags(): number {
-    return this.lines.reduce((sum, l) => sum + (l.qty || 0), 0);
+    return this.lines
+      .filter(l => l.rbp === 'Yes')
+      .reduce((sum, l) => sum + (l.qty || 0), 0);
   }
 
   get totalWeight(): number {
@@ -283,6 +303,31 @@ export class PurchaseVoucherComponent implements OnInit {
     };
   }
 
+  get validLines(): any[] {
+    return this.lines.filter(l => l.product && l.qty > 0);
+  }
+
+  get canSave(): boolean {
+    return !!this.selectedVendorId && this.validLines.length > 0;
+  }
+
+  private validate(): boolean {
+    if (!this.selectedVendorId) {
+      this.toast.error('Please select a vendor.');
+      return false;
+    }
+    const linesWithProduct = this.lines.filter(l => l.product);
+    if (linesWithProduct.length === 0) {
+      this.toast.error('Please add at least one line item with a product.');
+      return false;
+    }
+    if (linesWithProduct.some(l => !l.qty || l.qty <= 0)) {
+      this.toast.error('All line items must have a quantity greater than zero.');
+      return false;
+    }
+    return true;
+  }
+
   discard(): void {
     if (confirm('Are you sure you want to discard this purchase voucher?')) {
       this.resetForm();
@@ -290,35 +335,57 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   save(): void {
+    if (!this.validate()) return;
     const req = this.buildRequest();
 
     if (this.isEditMode && this.challanId) {
-      this.purchaseService.update(this.challanId, req).subscribe(() => {
-        this.showToast('Purchase voucher saved successfully');
-        this.router.navigate(['/pending-purchases']);
+      this.purchaseService.update(this.challanId, req).subscribe({
+        next: () => {
+          this.toast.success('Purchase voucher updated successfully.');
+          this.router.navigate(['/pending-purchases']);
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to save purchase voucher.');
+        }
       });
     } else {
-      this.purchaseService.create(req).subscribe(dc => {
-        this.showToast(`${dc.dcNumber} saved successfully`);
-        this.resetForm();
+      this.purchaseService.create(req).subscribe({
+        next: dc => {
+          this.toast.success(`${dc.dcNumber} created successfully.`);
+          this.resetForm();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to create purchase voucher.');
+        }
       });
     }
   }
 
   saveAndPrint(): void {
+    if (!this.validate()) return;
     const req = this.buildRequest();
 
     if (this.isEditMode && this.challanId) {
-      this.purchaseService.update(this.challanId, req).subscribe(dc => {
-        this.showToast('Purchase voucher saved successfully');
-        this.purchaseService.openPdfInNewTab(dc.id);
-        this.router.navigate(['/pending-purchases']);
+      this.purchaseService.update(this.challanId, req).subscribe({
+        next: dc => {
+          this.toast.success('Purchase voucher updated successfully.');
+          this.purchaseService.openPdfInNewTab(dc.id);
+          this.router.navigate(['/pending-purchases']);
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to save purchase voucher.');
+        }
       });
     } else {
-      this.purchaseService.create(req).subscribe(dc => {
-        this.showToast(`${dc.dcNumber} saved successfully`);
-        this.purchaseService.openPdfInNewTab(dc.id);
-        this.resetForm();
+      this.purchaseService.create(req).subscribe({
+        next: dc => {
+          this.toast.success(`${dc.dcNumber} created successfully.`);
+          this.purchaseService.openPdfInNewTab(dc.id);
+          this.resetForm();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to create purchase voucher.');
+        }
       });
     }
   }
@@ -332,20 +399,14 @@ export class PurchaseVoucherComponent implements OnInit {
     this.showCartageForm = false;
     this.lines = [];
     this.addLine();
-    this.purchaseService.getNextNumber().subscribe(num => {
-      this.dcNumber = num;
-      this.cdr.detectChanges();
+    this.purchaseService.getNextNumber().subscribe({
+      next: num => {
+        this.dcNumber = num;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to get next voucher number.');
+      }
     });
-  }
-
-  showToast(message: string, type: 'success' | 'error' = 'success'): void {
-    this.toastMessage = message;
-    this.toastType = type;
-    this.toastVisible = true;
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      this.toastVisible = false;
-      this.cdr.detectChanges();
-    }, 3500);
   }
 }

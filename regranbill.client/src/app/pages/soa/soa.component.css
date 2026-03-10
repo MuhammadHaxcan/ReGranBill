@@ -1,51 +1,43 @@
-/* Top Bar */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 24px;
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+/* ===== Header Card ===== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   margin-bottom: 20px;
 }
 
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.invoice-header {
+  padding: 24px 28px;
 }
 
-.page-name {
-  font-size: 16px;
+.invoice-header .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.invoice-title {
+  font-family: var(--font-display);
+  font-size: 24px;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
 }
 
-.badges {
-  display: flex;
-  gap: 10px;
+.invoice-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 4px 0 0 0;
 }
 
-.badge {
-  padding: 4px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1.5px solid transparent;
-}
-
-.badge-admin {
-  color: var(--navy);
-  background: #f0f4ff;
-  border-color: var(--primary);
-}
-
-/* Filter Card */
+/* ===== Filter Card ===== */
 .filter-card {
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--radius-lg);
   padding: 20px 28px;
   margin-bottom: 20px;
 }
@@ -64,26 +56,29 @@
 }
 
 .filter-field label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
 }
 
 .filter-input {
   padding: 8px 12px;
-  border: 1.5px solid var(--border-color);
-  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-family: inherit;
-  color: var(--navy);
+  color: var(--text-primary);
+  background: var(--card-bg);
   min-width: 180px;
+  transition: border-color 0.2s var(--ease);
 }
 
 .filter-input:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
 }
 
 .filter-actions {
@@ -91,14 +86,15 @@
   gap: 8px;
 }
 
+/* ===== Buttons ===== */
 .btn {
   padding: 10px 22px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   border: 1.5px solid transparent;
-  transition: all 0.15s;
+  transition: all 0.2s var(--ease);
   font-family: inherit;
 }
 
@@ -109,30 +105,41 @@
 }
 
 .btn-primary:hover {
-  background: #2a4db8;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-secondary {
   background: #fff;
-  color: var(--navy);
-  border-color: var(--border-color);
+  color: var(--text-primary);
+  border-color: var(--border);
 }
 
 .btn-secondary:hover {
-  background: #f5f6f8;
-  border-color: var(--navy);
+  background: var(--border-light);
+  border-color: var(--text-secondary);
 }
 
-/* Header Card */
+/* ===== Header / Info Card ===== */
 .card {
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--radius-lg);
   padding: 24px 28px;
   margin-bottom: 20px;
 }
@@ -145,14 +152,16 @@
 }
 
 .invoice-title {
-  font-size: 22px;
+  font-family: var(--font-display), serif;
+  font-size: 24px;
   font-weight: 700;
-  color: var(--navy);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .invoice-subtitle {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 14px;
   margin: 4px 0 0 0;
 }
@@ -162,27 +171,28 @@
 }
 
 .net-balance {
+  font-family: var(--font-display), serif;
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .total-label {
-  color: #999;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
 }
 
 .balance-positive {
-  color: #1a7f37;
+  color: var(--success);
 }
 
 .balance-negative {
-  color: #d1242f;
+  color: var(--danger);
 }
 
-/* Grid Card */
+/* ===== Grid Card ===== */
 .grid-card {
   padding: 0;
 }
@@ -192,8 +202,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 28px;
-  background: var(--navy);
-  border-radius: 12px 12px 0 0;
+  background: var(--slate-900);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   color: #fff;
 }
 
@@ -215,13 +225,13 @@
   min-width: 24px;
   height: 24px;
   padding: 0 7px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
 }
 
-/* Table */
+/* ===== Table ===== */
 .table-wrapper {
   overflow-x: auto;
   padding: 0;
@@ -234,37 +244,40 @@
 
 .grid-table th {
   font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 14px 12px 10px;
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .grid-table td {
   padding: 14px 12px;
   vertical-align: middle;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13.5px;
+  transition: background 0.15s var(--ease);
 }
 
-.grid-table tbody tr:hover {
-  background: #f8f9fb;
+.grid-table tbody tr:hover td {
+  background: var(--slate-50);
 }
 
+/* Column styles */
 .col-num {
   width: 40px;
   text-align: center;
-  color: #aaa;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
 .col-date {
   width: 120px;
-  color: #555;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -275,12 +288,12 @@
 .invoice-number-badge {
   display: inline-block;
   padding: 4px 12px;
-  background: #f0f4ff;
-  color: var(--navy);
-  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03em;
 }
 
 .col-type {
@@ -290,38 +303,40 @@
 .type-badge {
   display: inline-block;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
-  background: #f0f0f0;
-  color: #555;
+  background: var(--slate-100, #f1f5f9);
+  color: var(--text-secondary);
 }
 
 .type-salevoucher {
-  background: #e6f9ed;
-  color: #1a7f37;
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success-border);
 }
 
 .type-cartagevoucher {
-  background: #fef9e7;
-  color: #b8860b;
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
 }
 
 .type-journalvoucher {
-  background: #f0f4ff;
-  color: var(--navy);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .col-description {
   min-width: 180px;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .col-debit {
   width: 120px;
   text-align: right;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
@@ -329,7 +344,7 @@
   width: 120px;
   text-align: right;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
@@ -341,13 +356,13 @@
 }
 
 .zero-amount {
-  color: #ccc;
+  color: var(--text-muted);
 }
 
-/* Totals Row */
+/* ===== Totals Row ===== */
 .totals-row {
-  background: #f8f9fb;
-  border-top: 2px solid var(--border-color);
+  background: var(--slate-50);
+  border-top: 2px solid var(--border);
 }
 
 .totals-row td {
@@ -360,15 +375,15 @@
   text-align: right;
   font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #888;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
 }
 
 .totals-value {
   font-size: 14px;
 }
 
-/* Empty State */
+/* ===== Empty State ===== */
 .empty-state {
   text-align: center;
   padding: 60px 28px;
@@ -381,25 +396,25 @@
 .empty-text {
   font-size: 16px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text-primary);
   margin: 0 0 4px;
 }
 
 .empty-subtext {
   font-size: 14px;
-  color: #999;
+  color: var(--text-muted);
   margin: 0;
 }
 
-/* Loading */
+/* ===== Loading State ===== */
 .loading-state {
   text-align: center;
   padding: 60px 0;
-  color: #888;
-  font-size: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
-/* Responsive */
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .filter-row {
     flex-direction: column;

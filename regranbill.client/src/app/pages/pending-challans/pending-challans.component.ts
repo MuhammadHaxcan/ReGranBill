@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-pending-challans',
@@ -15,7 +16,8 @@ export class PendingChallansComponent implements OnInit {
   constructor(
     private dcService: DeliveryChallanService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -24,10 +26,17 @@ export class PendingChallansComponent implements OnInit {
 
   loadChallans(): void {
     this.loading = true;
-    this.dcService.getAll().subscribe(data => {
-      this.challans = data;
-      this.loading = false;
-      this.cdr.detectChanges();
+    this.dcService.getAll().subscribe({
+      next: data => {
+        this.challans = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load pending challans.');
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 

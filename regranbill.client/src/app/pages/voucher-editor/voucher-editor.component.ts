@@ -9,6 +9,7 @@ import {
 } from '../../models/voucher-editor.model';
 import { AccountService } from '../../services/account.service';
 import { VoucherEditorService } from '../../services/voucher-editor.service';
+import { ToastService } from '../../services/toast.service';
 
 interface EditableLedgerLine {
   id?: number;
@@ -34,8 +35,6 @@ export class VoucherEditorComponent implements OnInit {
   loadingAccounts = true;
   searching = false;
   saving = false;
-  errorMessage = '';
-  successMessage = '';
 
   searchVoucherType: VoucherType = 'JournalVoucher';
   searchVoucherNumber = '';
@@ -65,7 +64,8 @@ export class VoucherEditorComponent implements OnInit {
   constructor(
     private cdr: ChangeDetectorRef,
     private accountService: AccountService,
-    private voucherEditorService: VoucherEditorService
+    private voucherEditorService: VoucherEditorService,
+    private toast: ToastService
   ) {}
 
   get voucherDateIso(): string {
@@ -130,13 +130,11 @@ export class VoucherEditorComponent implements OnInit {
   search(): void {
     const voucherNumber = this.searchVoucherNumber.trim();
     if (!voucherNumber) {
-      this.errorMessage = 'Enter a voucher number.';
+      this.toast.error('Enter a voucher number.');
       return;
     }
 
     this.searching = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     this.voucherEditorService.search(this.searchVoucherType, voucherNumber).subscribe({
       next: voucher => {
@@ -146,9 +144,9 @@ export class VoucherEditorComponent implements OnInit {
       },
       error: err => {
         if (err?.status === 404) {
-          this.errorMessage = 'Voucher not found for this type and number.';
+          this.toast.error('Voucher not found for this type and number.');
         } else {
-          this.errorMessage = err?.error?.message || 'Unable to load voucher.';
+          this.toast.error(err?.error?.message || 'Unable to load voucher.');
         }
         this.searching = false;
         this.cdr.detectChanges();
@@ -206,19 +204,17 @@ export class VoucherEditorComponent implements OnInit {
     if (!this.voucher || !this.canSave) return;
 
     this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
 
     const request = this.buildUpdateRequest();
     this.voucherEditorService.update(request).subscribe({
       next: voucher => {
         this.setVoucher(voucher);
-        this.successMessage = 'Voucher updated successfully.';
+        this.toast.success(`${voucher.voucherNumber} updated successfully.`);
         this.saving = false;
         this.cdr.detectChanges();
       },
       error: err => {
-        this.errorMessage = err?.error?.message || 'Unable to update voucher.';
+        this.toast.error(err?.error?.message || 'Unable to update voucher.');
         this.saving = false;
         this.cdr.detectChanges();
       }
@@ -227,7 +223,6 @@ export class VoucherEditorComponent implements OnInit {
 
   private loadAccounts(): void {
     this.loadingAccounts = true;
-    this.errorMessage = '';
 
     forkJoin({
       journal: this.accountService.getJournalAccounts(),
@@ -255,7 +250,7 @@ export class VoucherEditorComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
-        this.errorMessage = 'Unable to load account lists.';
+        this.toast.error('Unable to load account lists.');
         this.loadingAccounts = false;
         this.cdr.detectChanges();
       }

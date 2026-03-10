@@ -1,21 +1,72 @@
-/* Design Tokens */
+/* ============================================================
+   REGRANBBOOKS — Design System
+   Aesthetic: Refined Ledger — warm, sophisticated fintech
+   ============================================================ */
+
 :root {
-  --navy: #1f2937;
-  --primary: #3558c8;
-  --primary-strong: #2e4cb0;
-  --text: #2b3443;
-  --text-light: #6f7a8d;
-  --border-color: #dde3ec;
-  --bg: #f2f5f9;
+  /* Palette */
+  --slate-950: #0c1222;
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
+
+  /* Primary — warm indigo */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --primary-muted: rgba(79, 70, 229, 0.08);
+
+  /* Semantic */
+  --success: #059669;
+  --success-light: #ecfdf5;
+  --success-border: #a7f3d0;
+  --warning: #d97706;
+  --warning-light: #fffbeb;
+  --warning-border: #fde68a;
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
+  --danger-border: #fecaca;
+
+  /* Surfaces */
+  --bg: #f6f8fb;
   --card-bg: #ffffff;
-  --surface-soft: #f8fafd;
-  --shadow-soft: 0 6px 20px rgba(27, 39, 66, 0.06);
+  --card-border: #e5e7eb;
+  --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03);
+  --card-shadow-lg: 0 4px 6px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.06);
+
+  /* Text */
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* Borders */
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --border-focus: var(--primary);
+
+  /* Radii */
+  --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --radius-xl: 18px;
+
+  /* Typography */
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Reset */
+/* ==================== Reset ==================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -24,12 +75,13 @@
 
 html, body {
   height: 100%;
-  font-family: var(--font);
-  font-size: 14px;
-  color: var(--text);
-  background: radial-gradient(circle at 15% 0%, #f7f9fc 0%, var(--bg) 42%, #edf1f7 100%);
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
 }
 
 input, select, button, textarea {
@@ -41,55 +93,82 @@ a {
   text-decoration: none;
 }
 
-/* Shared Layout Surface */
+/* ==================== Scrollbar ==================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--slate-300);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-400);
+}
+
+/* ==================== Global Card System ==================== */
 .main-content .top-bar {
   background: var(--card-bg) !important;
-  border: 1px solid var(--border-color) !important;
+  border: 1px solid var(--card-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-soft);
-  padding: 10px 16px !important;
+  box-shadow: var(--card-shadow);
+  padding: 12px 20px !important;
 }
 
 .main-content .page-name {
-  font-size: 16px !important;
-  letter-spacing: 0.2px;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--text-primary) !important;
 }
 
 .main-content .card {
-  border: 1px solid var(--border-color) !important;
+  border: 1px solid var(--card-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg) !important;
 }
 
 .main-content .card-header {
-  background: linear-gradient(180deg, #fbfcff 0%, #f5f8fc 100%) !important;
-  color: var(--navy) !important;
-  border-bottom: 1px solid var(--border-color) !important;
+  background: var(--slate-900) !important;
+  color: var(--text-inverse) !important;
+  border-bottom: none !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  padding: 14px 24px !important;
 }
 
 .main-content .card-header-title {
-  color: var(--navy) !important;
+  color: var(--text-inverse) !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  letter-spacing: -0.01em !important;
 }
 
 .main-content .line-count,
 .main-content .item-count,
 .main-content .tab-count {
-  background: #e8efff !important;
-  color: var(--primary) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
 }
 
-/* Shared Form Controls */
+/* ==================== Form Controls ==================== */
 .main-content .form-control,
 .main-content .filter-input,
 .main-content .search-input,
 .main-content .search-bar input,
 .main-content .readonly-value {
-  border: 1px solid var(--border-color) !important;
+  border: 1.5px solid var(--border) !important;
   border-radius: var(--radius-md) !important;
   background: #fff !important;
-  color: var(--text) !important;
-  min-height: 38px;
+  color: var(--text-primary) !important;
+  min-height: 42px;
+  font-size: 15px !important;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease) !important;
 }
 
 .main-content .form-control:focus,
@@ -97,14 +176,31 @@ a {
 .main-content .search-input:focus,
 .main-content .search-bar input:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(53, 88, 200, 0.12) !important;
+  box-shadow: 0 0 0 3px var(--primary-muted) !important;
   outline: none;
 }
 
-/* Shared Buttons */
+.main-content .form-label,
+.main-content .field-label,
+.main-content .filter-field label,
+.main-content .summary-label,
+.main-content .totals-label,
+.main-content table th,
+.login-page .form-label {
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ==================== Buttons ==================== */
 .main-content .btn {
   border-radius: var(--radius-md) !important;
   font-weight: 600 !important;
+  font-size: 14px !important;
+  letter-spacing: -0.01em !important;
+  transition: all 0.15s var(--ease) !important;
 }
 
 .main-content .btn-primary,
@@ -116,91 +212,109 @@ a {
 
 .main-content .btn-primary:hover,
 .main-content .btn-rate:hover {
-  background: var(--primary-strong) !important;
-  border-color: var(--primary-strong) !important;
+  background: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25) !important;
 }
 
 .main-content .btn-outline,
 .main-content .btn-secondary,
 .main-content .btn-edit {
   background: #fff !important;
-  border-color: var(--border-color) !important;
-  color: var(--text) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
 }
 
 .main-content .btn-outline:hover,
 .main-content .btn-secondary:hover,
 .main-content .btn-edit:hover {
-  background: var(--surface-soft) !important;
-  border-color: #cfd6e2 !important;
+  background: var(--slate-50) !important;
+  border-color: var(--slate-300) !important;
 }
 
 .main-content .btn-add-line,
 .main-content .btn-add {
-  background: #e9efff !important;
-  color: var(--primary) !important;
-  border: 1px solid #ccdafc !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
 }
 
 .main-content .btn-add-line:hover,
 .main-content .btn-add:hover {
-  background: #dee8ff !important;
+  background: rgba(255, 255, 255, 0.18) !important;
 }
 
 .main-content .btn-add-line kbd {
-  background: #f4f7ff !important;
-  border-color: #d5dff6 !important;
-  color: #4f5fa2 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 10px !important;
 }
 
-/* Shared Tables */
+/* ==================== Tables ==================== */
 .main-content .table-wrapper {
-  padding-left: 14px !important;
-  padding-right: 14px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .main-content table th {
-  background: #fbfcfe;
-  color: #667083 !important;
-  font-size: 11px !important;
+  background: var(--slate-50);
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
 .main-content table td {
-  color: #2f3948;
+  color: var(--text-primary);
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  font-size: 14px !important;
+}
+
+.main-content table tbody tr {
+  transition: background 0.1s var(--ease);
 }
 
 .main-content table tbody tr:hover {
-  background: #f7f9fd !important;
+  background: var(--slate-50) !important;
 }
 
 .main-content .totals-row,
 .main-content .summary-strip {
-  background: var(--surface-soft) !important;
+  background: var(--slate-50) !important;
 }
 
 .main-content .summary-item {
-  border: 1px solid var(--border-color) !important;
+  border: 1px solid var(--border) !important;
   background: #fff !important;
+  border-radius: var(--radius-md) !important;
 }
 
 .main-content .loading-state {
-  color: #748096 !important;
+  color: var(--text-muted) !important;
 }
 
-/* Tabs and badges */
+/* ==================== Tabs & Badges ==================== */
 .main-content .tabs {
-  border: 1px solid var(--border-color) !important;
+  border: 1px solid var(--card-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--card-shadow);
+  background: var(--card-bg) !important;
 }
 
 .main-content .tab-active {
-  background: #e8efff !important;
-  color: var(--primary) !important;
+  background: var(--slate-900) !important;
+  color: #fff !important;
 }
 
 .main-content .tab:hover {
-  background: #f3f6fc !important;
+  background: var(--slate-50) !important;
 }
 
 .main-content .badge,
@@ -209,18 +323,54 @@ a {
 .main-content .rbp-badge,
 .main-content .invoice-number-badge,
 .main-content .voucher-badge {
-  border-radius: 7px !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
 }
 
-/* Text label consistency */
-.main-content .form-label,
-.main-content .field-label,
-.main-content .filter-field label,
-.main-content .summary-label,
-.main-content .totals-label,
-.main-content table th,
-.login-page .form-label {
-  text-transform: none !important;
-  letter-spacing: 0.2px !important;
+/* ==================== Invoice Titles ==================== */
+.main-content .invoice-title {
+  font-family: var(--font-display) !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.02em !important;
 }
 
+.main-content .invoice-subtitle {
+  color: var(--text-secondary) !important;
+  font-size: 15px !important;
+}
+
+.main-content .invoice-number {
+  font-family: var(--font-body) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--primary) !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ==================== Summary Values ==================== */
+.main-content .summary-value {
+  font-family: var(--font-body) !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.02em !important;
+}
+
+.main-content .total-count {
+  font-family: var(--font-display) !important;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+}
+
+.main-content .net-balance {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+}
+
+/* ==================== Selection & Focus ==================== */
+::selection {
+  background: rgba(79, 70, 229, 0.15);
+  color: var(--text-primary);
+}
