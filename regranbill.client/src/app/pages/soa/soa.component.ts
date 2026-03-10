@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { StatementService } from '../../services/statement.service';
 import { AccountService } from '../../services/account.service';
 import { StatementOfAccount } from '../../models/statement.model';
@@ -27,8 +28,14 @@ export class SoaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.accountService.getCustomers().subscribe(data => {
-      this.customers = data;
+    forkJoin({
+      customers: this.accountService.getCustomers(),
+      vendors: this.accountService.getVendors(),
+      transporters: this.accountService.getTransporters()
+    }).subscribe(({ customers, vendors, transporters }) => {
+      const unique = new Map<number, Account>();
+      [...customers, ...vendors, ...transporters].forEach(account => unique.set(account.id, account));
+      this.customers = Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
       this.cdr.detectChanges();
     });
 

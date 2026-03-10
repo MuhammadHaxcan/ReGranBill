@@ -3,23 +3,23 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
-import { DeliveryChallanService } from '../../services/delivery-challan.service';
+import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { Account } from '../../models/account.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
 
 @Component({
-  selector: 'app-delivery-challan',
-  templateUrl: './delivery-challan.component.html',
-  styleUrl: './delivery-challan.component.css',
+  selector: 'app-purchase-voucher',
+  templateUrl: './purchase-voucher.component.html',
+  styleUrl: './purchase-voucher.component.css',
   standalone: false
 })
-export class DeliveryChallanComponent implements OnInit {
+export class PurchaseVoucherComponent implements OnInit {
   challanId: number | null = null;
   isEditMode = false;
   dcNumber = '';
   dcDate = new Date();
-  selectedCustomerId: number | null = null;
+  selectedVendorId: number | null = null;
   vehicleNumber = '';
 
   // Toast
@@ -42,13 +42,13 @@ export class DeliveryChallanComponent implements OnInit {
   description = '';
 
   products: Account[] = [];
-  customers: Account[] = [];
+  vendors: Account[] = [];
   transporters: Account[] = [];
   lines: ProductLine[] = [];
   loading = true;
 
   // Dropdown options
-  customerOptions: SelectOption[] = [];
+  vendorOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
   transporterOptions: SelectOption[] = [];
   rbpOptions: SelectOption[] = [
@@ -65,7 +65,7 @@ export class DeliveryChallanComponent implements OnInit {
   constructor(
     private accountService: AccountService,
     private authService: AuthService,
-    private dcService: DeliveryChallanService,
+    private purchaseService: PurchaseVoucherService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef
@@ -83,9 +83,9 @@ export class DeliveryChallanComponent implements OnInit {
     this.loading = true;
     forkJoin({
       products: this.accountService.getProducts(),
-      customers: this.accountService.getCustomers(),
+      vendors: this.accountService.getVendors(),
       transporters: this.accountService.getTransporters()
-    }).subscribe(({ products, customers, transporters }) => {
+    }).subscribe(({ products, vendors, transporters }) => {
       this.products = products;
       this.productOptions = products.map(p => ({
         value: p.id,
@@ -93,8 +93,8 @@ export class DeliveryChallanComponent implements OnInit {
         sublabel: p.packing || ''
       }));
 
-      this.customers = customers;
-      this.customerOptions = customers.map(c => ({
+      this.vendors = vendors;
+      this.vendorOptions = vendors.map(c => ({
         value: c.id,
         label: c.name,
         sublabel: c.city || ''
@@ -116,11 +116,11 @@ export class DeliveryChallanComponent implements OnInit {
     if (idParam) {
       this.challanId = +idParam;
       this.isEditMode = true;
-      this.dcService.getById(this.challanId).subscribe(dc => {
+      this.purchaseService.getById(this.challanId).subscribe(dc => {
         if (dc) {
           this.dcNumber = dc.dcNumber;
           this.dcDate = new Date(dc.date);
-          this.selectedCustomerId = dc.customerId;
+          this.selectedVendorId = dc.customerId;
           this.vehicleNumber = dc.vehicleNumber || '';
           this.description = dc.description || '';
           this.lines = dc.lines.map((l: any) => ({
@@ -147,7 +147,7 @@ export class DeliveryChallanComponent implements OnInit {
         this.cdr.detectChanges();
       });
     } else {
-      this.dcService.getNextNumber().subscribe(num => {
+      this.purchaseService.getNextNumber().subscribe(num => {
         this.dcNumber = num;
         this.addLine();
         this.loading = false;
@@ -264,7 +264,7 @@ export class DeliveryChallanComponent implements OnInit {
   private buildRequest() {
     return {
       date: this.dcDate,
-      customerId: this.selectedCustomerId!,
+      customerId: this.selectedVendorId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,
       lines: this.lines
@@ -284,7 +284,7 @@ export class DeliveryChallanComponent implements OnInit {
   }
 
   discard(): void {
-    if (confirm('Are you sure you want to discard this delivery challan?')) {
+    if (confirm('Are you sure you want to discard this purchase voucher?')) {
       this.resetForm();
     }
   }
@@ -293,12 +293,12 @@ export class DeliveryChallanComponent implements OnInit {
     const req = this.buildRequest();
 
     if (this.isEditMode && this.challanId) {
-      this.dcService.update(this.challanId, req).subscribe(() => {
-        this.showToast('Challan saved successfully');
-        this.router.navigate(['/pending-challans']);
+      this.purchaseService.update(this.challanId, req).subscribe(() => {
+        this.showToast('Purchase voucher saved successfully');
+        this.router.navigate(['/pending-purchases']);
       });
     } else {
-      this.dcService.create(req).subscribe(dc => {
+      this.purchaseService.create(req).subscribe(dc => {
         this.showToast(`${dc.dcNumber} saved successfully`);
         this.resetForm();
       });
@@ -309,22 +309,22 @@ export class DeliveryChallanComponent implements OnInit {
     const req = this.buildRequest();
 
     if (this.isEditMode && this.challanId) {
-      this.dcService.update(this.challanId, req).subscribe(dc => {
-        this.showToast('Challan saved successfully');
-        this.dcService.openPdfInNewTab(dc.id);
-        this.router.navigate(['/pending-challans']);
+      this.purchaseService.update(this.challanId, req).subscribe(dc => {
+        this.showToast('Purchase voucher saved successfully');
+        this.purchaseService.openPdfInNewTab(dc.id);
+        this.router.navigate(['/pending-purchases']);
       });
     } else {
-      this.dcService.create(req).subscribe(dc => {
+      this.purchaseService.create(req).subscribe(dc => {
         this.showToast(`${dc.dcNumber} saved successfully`);
-        this.dcService.openPdfInNewTab(dc.id);
+        this.purchaseService.openPdfInNewTab(dc.id);
         this.resetForm();
       });
     }
   }
 
   private resetForm(): void {
-    this.selectedCustomerId = null;
+    this.selectedVendorId = null;
     this.vehicleNumber = '';
     this.description = '';
     this.dcDate = new Date();
@@ -332,7 +332,7 @@ export class DeliveryChallanComponent implements OnInit {
     this.showCartageForm = false;
     this.lines = [];
     this.addLine();
-    this.dcService.getNextNumber().subscribe(num => {
+    this.purchaseService.getNextNumber().subscribe(num => {
       this.dcNumber = num;
       this.cdr.detectChanges();
     });

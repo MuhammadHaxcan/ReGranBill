@@ -19,6 +19,10 @@ export class AccountService {
     return this.http.get<Account[]>(`${this.url}/customers`);
   }
 
+  getVendors(): Observable<Account[]> {
+    return this.http.get<Account[]>(`${this.url}/vendors`);
+  }
+
   getTransporters(): Observable<Account[]> {
     return this.http.get<Account[]>(`${this.url}/transporters`);
   }

@@ -92,7 +92,7 @@
 }
 
 .btn {
-  padding: 8px 20px;
+  padding: 10px 22px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -141,6 +141,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: 24px;
 }
 
 .invoice-title {

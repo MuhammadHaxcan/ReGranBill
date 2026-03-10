@@ -1,9 +1,9 @@
-﻿<!-- Top Bar -->
+<!-- Top Bar -->
 <header class="top-bar">
   <div class="breadcrumb">
-    <a *ngIf="isEditMode" class="breadcrumb-link" routerLink="/pending-challans">Pending Challans</a>
+    <a *ngIf="isEditMode" class="breadcrumb-link" routerLink="/pending-purchases">Pending Purchases</a>
     <span *ngIf="isEditMode" class="breadcrumb-sep">/</span>
-    <span class="page-name">{{ isEditMode ? 'Edit Challan' : 'Delivery Challan' }}</span>
+    <span class="page-name">{{ isEditMode ? 'Edit Purchase Voucher' : 'Purchase Voucher' }}</span>
   </div>
 </header>
 
@@ -11,8 +11,8 @@
 <section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
     <div>
-      <h1 class="invoice-title">{{ isEditMode ? 'Edit Delivery Challan' : 'Delivery Challan Voucher' }}</h1>
-      <p class="invoice-subtitle">{{ isEditMode ? 'Edit delivery challan details' : 'Create a new delivery challan' }}</p>
+      <h1 class="invoice-title">{{ isEditMode ? 'Edit Purchase Voucher' : 'Purchase Voucher' }}</h1>
+      <p class="invoice-subtitle">{{ isEditMode ? 'Edit purchase voucher details' : 'Create a new purchase voucher' }}</p>
     </div>
     <div class="invoice-meta">
       <div class="invoice-number">{{ dcNumber }}</div>
@@ -37,11 +37,11 @@
       />
     </div>
     <div class="form-group">
-      <label class="form-label">Customer</label>
+      <label class="form-label">Vendor</label>
       <app-searchable-select
-        [options]="customerOptions"
-        [placeholder]="'Select customer...'"
-        [(ngModel)]="selectedCustomerId"
+        [options]="vendorOptions"
+        [placeholder]="'Select vendor...'"
+        [(ngModel)]="selectedVendorId"
       ></app-searchable-select>
     </div>
     <div class="form-group">
@@ -229,5 +229,3 @@
   <span class="toast-icon">{{ toastType === 'success' ? '&#x2714;' : '&#x2716;' }}</span>
   <span class="toast-message">{{ toastMessage }}</span>
 </div>
-
-

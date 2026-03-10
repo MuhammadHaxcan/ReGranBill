@@ -61,6 +61,7 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDeliveryChallanService, DeliveryChallanService>();
 builder.Services.AddScoped<IJournalVoucherService, JournalVoucherService>();
 builder.Services.AddScoped<IVoucherEditorService, VoucherEditorService>();
+builder.Services.AddScoped<IPurchaseVoucherService, PurchaseVoucherService>();
 builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IMasterReportService, MasterReportService>();
 builder.Services.AddScoped<IPdfService, PdfService>();

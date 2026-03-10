@@ -32,11 +32,11 @@
   </div>
 </section>
 
-<section class="card editor-header" *ngIf="hasLoadedVoucher">
+<section class="card invoice-header" *ngIf="hasLoadedVoucher">
   <div class="header-row">
-    <div class="header-block">
-      <h1 class="editor-title">Ledger Edit</h1>
-      <p class="editor-subtitle">{{ voucher?.voucherType }} | {{ voucher?.voucherNumber }}</p>
+    <div>
+      <h1 class="invoice-title">Ledger Edit</h1>
+      <p class="invoice-subtitle">{{ voucher?.voucherType }} | {{ voucher?.voucherNumber }}</p>
     </div>
   </div>
 
@@ -174,7 +174,7 @@
     </table>
   </div>
 
-  <div class="summary-strip">
+  <div class="lines-summary">
     <div class="summary-item">
       <span class="summary-label">Total Debit</span>
       <span class="summary-value">{{ totalDebit | number:'1.2-2' }}</span>

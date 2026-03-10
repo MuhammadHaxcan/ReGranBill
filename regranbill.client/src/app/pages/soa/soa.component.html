@@ -12,9 +12,9 @@
 <section class="card filter-card">
   <div class="filter-row">
     <div class="filter-field">
-      <label>Customer</label>
+      <label>Customer / Vendor / Transporter</label>
       <select [(ngModel)]="selectedAccountId" class="filter-input">
-        <option [ngValue]="null" disabled>Select Customer</option>
+        <option [ngValue]="null" disabled>Select Customer / Vendor / Transporter</option>
         <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
       </select>
     </div>
@@ -124,7 +124,7 @@
       </svg>
     </div>
     <p class="empty-text">No entries found</p>
-    <p class="empty-subtext">No journal entries for this customer in the selected period</p>
+    <p class="empty-subtext">No journal entries for this account in the selected period</p>
   </div>
 </section>
 

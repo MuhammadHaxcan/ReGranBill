@@ -99,7 +99,7 @@
 }
 
 .btn {
-  padding: 8px 20px;
+  padding: 10px 22px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -168,7 +168,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 12px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   font-size: 12px;
@@ -199,29 +201,29 @@
 /* Summary Strip */
 .summary-strip {
   display: flex;
+  justify-content: flex-end;
   gap: 32px;
-  padding: 14px 28px;
-  background: #f8f9fb;
-  border-bottom: 1px solid var(--border-color);
+  padding: 16px 28px;
+  border-top: 2px solid var(--border-color);
 }
 
 .summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  text-align: center;
 }
 
 .summary-label {
+  display: block;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: #888;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .summary-value {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   color: var(--navy);
 }
 
@@ -429,7 +431,6 @@
   }
 
   .summary-strip {
-    flex-direction: column;
-    gap: 12px;
+    gap: 20px;
   }
 }

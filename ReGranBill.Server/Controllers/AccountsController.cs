@@ -27,6 +27,12 @@ public class AccountsController : ControllerBase
         return Ok(await _accountService.GetCustomersAsync());
     }
 
+    [HttpGet("vendors")]
+    public async Task<IActionResult> GetVendors()
+    {
+        return Ok(await _accountService.GetVendorsAsync());
+    }
+
     [HttpGet("transporters")]
     public async Task<IActionResult> GetTransporters()
     {

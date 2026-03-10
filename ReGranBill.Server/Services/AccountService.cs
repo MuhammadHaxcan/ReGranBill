@@ -34,6 +34,17 @@ public class AccountService : IAccountService
         return accounts.Select(MapToDto).ToList();
     }
 
+    public async Task<List<AccountDto>> GetVendorsAsync()
+    {
+        var accounts = await _db.Accounts
+            .Include(a => a.PartyDetail)
+            .Where(a => a.AccountType == AccountType.Party && a.PartyDetail != null &&
+                        (a.PartyDetail.PartyRole == PartyRole.Vendor || a.PartyDetail.PartyRole == PartyRole.Both))
+            .OrderBy(a => a.Name)
+            .ToListAsync();
+        return accounts.Select(MapToDto).ToList();
+    }
+
     public async Task<List<AccountDto>> GetTransportersAsync()
     {
         var accounts = await _db.Accounts

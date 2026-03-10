@@ -6,55 +6,55 @@ using ReGranBill.Server.Enums;
 
 namespace ReGranBill.Server.Services;
 
-public class DeliveryChallanService : IDeliveryChallanService
+public class PurchaseVoucherService : IPurchaseVoucherService
 {
     private readonly AppDbContext _db;
 
-    public DeliveryChallanService(AppDbContext db) => _db = db;
+    public PurchaseVoucherService(AppDbContext db) => _db = db;
 
     public async Task<List<DeliveryChallanDto>> GetAllAsync()
     {
-        var saleJvs = await _db.JournalVouchers
-            .Where(j => j.VoucherType == VoucherType.SaleVoucher)
+        var purchaseJvs = await _db.JournalVouchers
+            .Where(j => j.VoucherType == VoucherType.PurchaseVoucher)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .OrderByDescending(j => j.CreatedAt)
             .ToListAsync();
 
-        var saleJvIds = saleJvs.Select(j => j.Id).ToList();
+        var purchaseJvIds = purchaseJvs.Select(j => j.Id).ToList();
 
         var refs = await _db.JournalVoucherReferences
-            .Where(r => saleJvIds.Contains(r.MainVoucherId))
+            .Where(r => purchaseJvIds.Contains(r.MainVoucherId))
             .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .ToListAsync();
 
         var cartageMap = refs.ToDictionary(r => r.MainVoucherId, r => r.ReferenceVoucher);
 
-        return saleJvs.Select(jv => MapToDto(jv, cartageMap.GetValueOrDefault(jv.Id))).ToList();
+        return purchaseJvs.Select(jv => MapToDto(jv, cartageMap.GetValueOrDefault(jv.Id))).ToList();
     }
 
     public async Task<DeliveryChallanDto?> GetByIdAsync(int id)
     {
-        var saleJv = await _db.JournalVouchers
-            .Where(j => j.Id == id && j.VoucherType == VoucherType.SaleVoucher)
+        var purchaseJv = await _db.JournalVouchers
+            .Where(j => j.Id == id && j.VoucherType == VoucherType.PurchaseVoucher)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .FirstOrDefaultAsync();
 
-        if (saleJv == null) return null;
+        if (purchaseJv == null) return null;
 
         var cartageRef = await _db.JournalVoucherReferences
-            .Where(r => r.MainVoucherId == saleJv.Id)
+            .Where(r => r.MainVoucherId == purchaseJv.Id)
             .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .FirstOrDefaultAsync();
 
-        return MapToDto(saleJv, cartageRef?.ReferenceVoucher);
+        return MapToDto(purchaseJv, cartageRef?.ReferenceVoucher);
     }
 
     public async Task<string> GetNextNumberAsync()
     {
-        var lastNumber = await GetLastDcNumberAsync();
-        return $"DC-{lastNumber + 1:D4}";
+        var lastNumber = await GetLastPvNumberAsync();
+        return $"PV-{lastNumber + 1:D4}";
     }
 
     private static DateTime NormalizeToUtc(DateTime date)
@@ -67,15 +67,15 @@ public class DeliveryChallanService : IDeliveryChallanService
         };
     }
 
-    private async Task<int> GetLastDcNumberAsync()
+    private async Task<int> GetLastPvNumberAsync()
     {
-        var dcNumbers = await _db.JournalVouchers
-            .Where(j => j.VoucherType == VoucherType.SaleVoucher && j.VoucherNumber.StartsWith("DC-"))
+        var pvNumbers = await _db.JournalVouchers
+            .Where(j => j.VoucherType == VoucherType.PurchaseVoucher && j.VoucherNumber.StartsWith("PV-"))
             .Select(j => j.VoucherNumber)
             .ToListAsync();
 
         var max = 0;
-        foreach (var number in dcNumbers)
+        foreach (var number in pvNumbers)
         {
             if (number.Length > 3 && int.TryParse(number.AsSpan(3), out var parsed))
                 max = Math.Max(max, parsed);
@@ -101,24 +101,21 @@ public class DeliveryChallanService : IDeliveryChallanService
 
     public async Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId)
     {
-        // Derive next number from last SaleVoucher
-        var lastNumber = await GetLastDcNumberAsync();
+        var lastNumber = await GetLastPvNumberAsync();
         var nextNumber = lastNumber + 1;
-        var dcNumber = $"DC-{nextNumber:D4}";
+        var pvNumber = $"PV-{nextNumber:D4}";
 
-        // Load product accounts with ProductDetail for weight calculation
         var productIds = request.Lines.Select(l => l.ProductId).Distinct().ToList();
         var productAccounts = await _db.Accounts
             .Include(a => a.ProductDetail)
             .Where(a => productIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id);
 
-        // Build Sale JV
-        var saleJv = new JournalVoucher
+        var purchaseJv = new JournalVoucher
         {
-            VoucherNumber = $"_ts_{Guid.NewGuid().ToString("N")[..16]}",
+            VoucherNumber = $"_tp_{Guid.NewGuid().ToString("N")[..16]}",
             Date = NormalizeToUtc(request.Date),
-            VoucherType = VoucherType.SaleVoucher,
+            VoucherType = VoucherType.PurchaseVoucher,
             VehicleNumber = request.VehicleNumber,
             Description = request.Description,
             RatesAdded = false,
@@ -137,12 +134,12 @@ public class DeliveryChallanService : IDeliveryChallanService
                 : line.Qty * line.Rate;
             totalProductAmount += lineAmount;
 
-            saleJv.Entries.Add(new JournalEntry
+            purchaseJv.Entries.Add(new JournalEntry
             {
                 AccountId = line.ProductId,
                 Description = $"{product?.Name} - {line.Qty} bags",
-                Debit = 0,
-                Credit = lineAmount,
+                Debit = lineAmount,
+                Credit = 0,
                 Qty = line.Qty,
                 Rbp = line.Rbp,
                 Rate = line.Rate > 0 ? line.Rate : null,
@@ -151,21 +148,19 @@ public class DeliveryChallanService : IDeliveryChallanService
             });
         }
 
-        // DEBIT customer at SortOrder=0
-        saleJv.Entries.Add(new JournalEntry
+        purchaseJv.Entries.Add(new JournalEntry
         {
             AccountId = request.CustomerId,
-            Description = $"Delivery to customer - {dcNumber}",
-            Debit = totalProductAmount,
-            Credit = 0,
+            Description = $"Purchase from vendor - {pvNumber}",
+            Debit = 0,
+            Credit = totalProductAmount,
             IsEdited = false,
             SortOrder = 0
         });
 
-        saleJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
-        _db.JournalVouchers.Add(saleJv);
+        purchaseJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
+        _db.JournalVouchers.Add(purchaseJv);
 
-        // Cartage JV (if cartage exists with amount > 0)
         JournalVoucher? cartageJv = null;
         if (request.Cartage != null && request.Cartage.Amount > 0)
         {
@@ -174,7 +169,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 VoucherNumber = $"_tc_{Guid.NewGuid().ToString("N")[..16]}",
                 Date = NormalizeToUtc(request.Date),
                 VoucherType = VoucherType.CartageVoucher,
-                Description = $"Cartage entries for {dcNumber}",
+                Description = $"Cartage entries for {pvNumber}",
                 RatesAdded = true,
                 CreatedBy = userId,
             };
@@ -182,7 +177,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             cartageJv.Entries.Add(new JournalEntry
             {
                 AccountId = request.CustomerId,
-                Description = $"Cartage charge - {dcNumber}",
+                Description = $"Cartage charge - {pvNumber}",
                 Debit = request.Cartage.Amount,
                 Credit = 0,
                 IsEdited = false,
@@ -192,7 +187,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             cartageJv.Entries.Add(new JournalEntry
             {
                 AccountId = request.Cartage.TransporterId,
-                Description = $"Cartage for {dcNumber}",
+                Description = $"Cartage for {pvNumber}",
                 Debit = 0,
                 Credit = request.Cartage.Amount,
                 IsEdited = false,
@@ -204,49 +199,45 @@ public class DeliveryChallanService : IDeliveryChallanService
 
         await _db.SaveChangesAsync();
 
-        // Assign voucher numbers
-        saleJv.VoucherNumber = dcNumber;
+        purchaseJv.VoucherNumber = pvNumber;
         if (cartageJv != null)
         {
             var lastCvNumber = await GetLastCvNumberAsync();
             cartageJv.VoucherNumber = $"CV-{lastCvNumber + 1:D4}";
             _db.JournalVoucherReferences.Add(new JournalVoucherReference
             {
-                MainVoucherId = saleJv.Id,
+                MainVoucherId = purchaseJv.Id,
                 ReferenceVoucherId = cartageJv.Id
             });
         }
 
         await _db.SaveChangesAsync();
 
-        return (await GetByIdAsync(saleJv.Id))!;
+        return (await GetByIdAsync(purchaseJv.Id))!;
     }
 
     public async Task<DeliveryChallanDto?> UpdateAsync(int id, CreateDcRequest request)
     {
-        var saleJv = await _db.JournalVouchers
-            .Where(j => j.Id == id && j.VoucherType == VoucherType.SaleVoucher)
+        var purchaseJv = await _db.JournalVouchers
+            .Where(j => j.Id == id && j.VoucherType == VoucherType.PurchaseVoucher)
             .Include(j => j.Entries)
             .FirstOrDefaultAsync();
 
-        if (saleJv == null) return null;
+        if (purchaseJv == null) return null;
 
-        // Update header fields
-        saleJv.Date = NormalizeToUtc(request.Date);
-        saleJv.VehicleNumber = request.VehicleNumber;
-        saleJv.Description = request.Description;
-        saleJv.UpdatedAt = DateTime.UtcNow;
+        purchaseJv.Date = NormalizeToUtc(request.Date);
+        purchaseJv.VehicleNumber = request.VehicleNumber;
+        purchaseJv.Description = request.Description;
+        purchaseJv.UpdatedAt = DateTime.UtcNow;
 
-        // Load product accounts
         var productIds = request.Lines.Select(l => l.ProductId).Distinct().ToList();
         var productAccounts = await _db.Accounts
             .Include(a => a.ProductDetail)
             .Where(a => productIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id);
 
-        // Rebuild all entries
-        _db.JournalEntries.RemoveRange(saleJv.Entries);
-        saleJv.Entries.Clear();
+        _db.JournalEntries.RemoveRange(purchaseJv.Entries);
+        purchaseJv.Entries.Clear();
 
         int sortOrder = 0;
         decimal totalProductAmount = 0;
@@ -260,12 +251,12 @@ public class DeliveryChallanService : IDeliveryChallanService
                 : line.Qty * line.Rate;
             totalProductAmount += lineAmount;
 
-            saleJv.Entries.Add(new JournalEntry
+            purchaseJv.Entries.Add(new JournalEntry
             {
                 AccountId = line.ProductId,
                 Description = $"{product?.Name} - {line.Qty} bags",
-                Debit = 0,
-                Credit = lineAmount,
+                Debit = lineAmount,
+                Credit = 0,
                 Qty = line.Qty,
                 Rbp = line.Rbp,
                 Rate = line.Rate > 0 ? line.Rate : null,
@@ -274,71 +265,67 @@ public class DeliveryChallanService : IDeliveryChallanService
             });
         }
 
-        saleJv.Entries.Add(new JournalEntry
+        purchaseJv.Entries.Add(new JournalEntry
         {
             AccountId = request.CustomerId,
-            Description = $"Delivery to customer - {saleJv.VoucherNumber}",
-            Debit = totalProductAmount,
-            Credit = 0,
+            Description = $"Purchase from vendor - {purchaseJv.VoucherNumber}",
+            Debit = 0,
+            Credit = totalProductAmount,
             IsEdited = true,
             SortOrder = 0
         });
 
-        saleJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
+        purchaseJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
 
-        // Handle cartage JV
-        await RebuildCartageVoucherAsync(saleJv, request.CustomerId, request.Cartage);
+        await RebuildCartageVoucherAsync(purchaseJv, request.CustomerId, request.Cartage);
 
         await _db.SaveChangesAsync();
 
-        return (await GetByIdAsync(saleJv.Id))!;
+        return (await GetByIdAsync(purchaseJv.Id))!;
     }
 
     public async Task<bool> UpdateRatesAsync(int id, UpdateDcRatesRequest request)
     {
-        var saleJv = await _db.JournalVouchers
-            .Where(j => j.Id == id && j.VoucherType == VoucherType.SaleVoucher)
+        var purchaseJv = await _db.JournalVouchers
+            .Where(j => j.Id == id && j.VoucherType == VoucherType.PurchaseVoucher)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
             .FirstOrDefaultAsync();
 
-        if (saleJv == null) return false;
+        if (purchaseJv == null) return false;
 
-        // Update rates on product CREDIT entries (SortOrder > 0)
         foreach (var update in request.Lines)
         {
-            var entry = saleJv.Entries.FirstOrDefault(e => e.Id == update.EntryId);
+            var entry = purchaseJv.Entries.FirstOrDefault(e => e.Id == update.EntryId);
             if (entry != null && entry.SortOrder > 0)
             {
                 entry.Rate = update.Rate;
                 entry.IsEdited = true;
 
-                // Recalculate credit amount
                 var weight = entry.Account?.ProductDetail?.PackingWeightKg ?? 0;
-                entry.Credit = entry.Rbp == "Yes"
+                entry.Debit = entry.Rbp == "Yes"
                     ? weight * (entry.Qty ?? 0) * update.Rate
                     : (entry.Qty ?? 0) * update.Rate;
             }
         }
 
-        // Update customer DEBIT total (SortOrder=0)
-        var customerEntry = saleJv.Entries.FirstOrDefault(e => e.SortOrder == 0);
-        if (customerEntry != null)
+        var vendorEntry = purchaseJv.Entries.FirstOrDefault(e => e.SortOrder == 0);
+        if (vendorEntry != null)
         {
-            customerEntry.Debit = saleJv.Entries.Where(e => e.SortOrder > 0).Sum(e => e.Credit);
-            customerEntry.IsEdited = true;
+            vendorEntry.Credit = purchaseJv.Entries.Where(e => e.SortOrder > 0).Sum(e => e.Debit);
+            vendorEntry.IsEdited = true;
         }
 
-        saleJv.RatesAdded = saleJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
-        saleJv.UpdatedAt = DateTime.UtcNow;
+        purchaseJv.RatesAdded = purchaseJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
+        purchaseJv.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return true;
     }
 
-    private async Task RebuildCartageVoucherAsync(JournalVoucher saleJv, int customerId, CreateDcCartageRequest? cartageRequest)
+    private async Task RebuildCartageVoucherAsync(JournalVoucher purchaseJv, int vendorId, CreateDcCartageRequest? cartageRequest)
     {
         var cartageRef = await _db.JournalVoucherReferences
-            .Where(r => r.MainVoucherId == saleJv.Id)
+            .Where(r => r.MainVoucherId == purchaseJv.Id)
             .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries)
             .FirstOrDefaultAsync();
 
@@ -349,21 +336,19 @@ public class DeliveryChallanService : IDeliveryChallanService
         {
             if (cartageJv == null)
             {
-                // Create new Cartage JV
                 cartageJv = new JournalVoucher
                 {
                     VoucherNumber = $"_tc_{Guid.NewGuid().ToString("N")[..16]}",
-                    Date = saleJv.Date,
+                    Date = purchaseJv.Date,
                     VoucherType = VoucherType.CartageVoucher,
-                    Description = $"Cartage entries for {saleJv.VoucherNumber}",
+                    Description = $"Cartage entries for {purchaseJv.VoucherNumber}",
                     RatesAdded = true,
-                    CreatedBy = saleJv.CreatedBy,
+                    CreatedBy = purchaseJv.CreatedBy,
                 };
                 _db.JournalVouchers.Add(cartageJv);
             }
             else
             {
-                // Rebuild existing entries
                 _db.JournalEntries.RemoveRange(cartageJv.Entries);
                 cartageJv.Entries.Clear();
                 cartageJv.UpdatedAt = DateTime.UtcNow;
@@ -371,8 +356,8 @@ public class DeliveryChallanService : IDeliveryChallanService
 
             cartageJv.Entries.Add(new JournalEntry
             {
-                AccountId = customerId,
-                Description = $"Cartage charge - {saleJv.VoucherNumber}",
+                AccountId = vendorId,
+                Description = $"Cartage charge - {purchaseJv.VoucherNumber}",
                 Debit = cartageAmount,
                 Credit = 0,
                 IsEdited = true,
@@ -382,7 +367,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             cartageJv.Entries.Add(new JournalEntry
             {
                 AccountId = cartageRequest.TransporterId,
-                Description = $"Cartage for {saleJv.VoucherNumber}",
+                Description = $"Cartage for {purchaseJv.VoucherNumber}",
                 Debit = 0,
                 Credit = cartageAmount,
                 IsEdited = true,
@@ -391,7 +376,6 @@ public class DeliveryChallanService : IDeliveryChallanService
 
             await _db.SaveChangesAsync();
 
-            // Assign voucher number and create reference for newly created cartage JV
             if (cartageJv.VoucherNumber.StartsWith("_tc_"))
             {
                 var lastCvNumber = await GetLastCvNumberAsync();
@@ -399,7 +383,7 @@ public class DeliveryChallanService : IDeliveryChallanService
 
                 _db.JournalVoucherReferences.Add(new JournalVoucherReference
                 {
-                    MainVoucherId = saleJv.Id,
+                    MainVoucherId = purchaseJv.Id,
                     ReferenceVoucherId = cartageJv.Id
                 });
 
@@ -408,7 +392,6 @@ public class DeliveryChallanService : IDeliveryChallanService
         }
         else if (cartageJv != null)
         {
-            // Cartage removed — delete reference then Cartage JV
             if (cartageRef != null)
                 _db.JournalVoucherReferences.Remove(cartageRef);
 
@@ -417,24 +400,22 @@ public class DeliveryChallanService : IDeliveryChallanService
         }
     }
 
-    private static DeliveryChallanDto MapToDto(JournalVoucher saleJv, JournalVoucher? cartageJv)
+    private static DeliveryChallanDto MapToDto(JournalVoucher purchaseJv, JournalVoucher? cartageJv)
     {
-        // Customer = DEBIT entry at SortOrder=0
-        var customerEntry = saleJv.Entries.FirstOrDefault(e => e.SortOrder == 0 && e.Debit > 0);
-        // Product lines = CREDIT entries at SortOrder > 0
-        var productEntries = saleJv.Entries.Where(e => e.SortOrder > 0).OrderBy(e => e.SortOrder).ToList();
+        var vendorEntry = purchaseJv.Entries.FirstOrDefault(e => e.SortOrder == 0 && e.Credit > 0);
+        var productEntries = purchaseJv.Entries.Where(e => e.SortOrder > 0).OrderBy(e => e.SortOrder).ToList();
 
         var dto = new DeliveryChallanDto
         {
-            Id = saleJv.Id,
-            DcNumber = saleJv.VoucherNumber,
-            Date = saleJv.Date,
-            CustomerId = customerEntry?.AccountId ?? 0,
-            CustomerName = customerEntry?.Account?.Name,
-            VehicleNumber = saleJv.VehicleNumber,
-            Description = saleJv.Description,
-            VoucherType = saleJv.VoucherType.ToString(),
-            RatesAdded = saleJv.RatesAdded,
+            Id = purchaseJv.Id,
+            DcNumber = purchaseJv.VoucherNumber,
+            Date = purchaseJv.Date,
+            CustomerId = vendorEntry?.AccountId ?? 0,
+            CustomerName = vendorEntry?.Account?.Name,
+            VehicleNumber = purchaseJv.VehicleNumber,
+            Description = purchaseJv.Description,
+            VoucherType = purchaseJv.VoucherType.ToString(),
+            RatesAdded = purchaseJv.RatesAdded,
             Lines = productEntries.Select(e => new DcLineDto
             {
                 Id = e.Id,
@@ -449,7 +430,6 @@ public class DeliveryChallanService : IDeliveryChallanService
             }).ToList(),
         };
 
-        // Cartage from linked CartageVoucher
         if (cartageJv != null)
         {
             var cartageCredit = cartageJv.Entries.FirstOrDefault(e => e.SortOrder == 1 && e.Credit > 0);
@@ -465,9 +445,8 @@ public class DeliveryChallanService : IDeliveryChallanService
             }
         }
 
-        // Build JournalVouchers summary list
         var jvSummaries = new List<JournalVoucherSummaryDto>();
-        jvSummaries.Add(MapJvSummary(saleJv));
+        jvSummaries.Add(MapJvSummary(purchaseJv));
         if (cartageJv != null)
             jvSummaries.Add(MapJvSummary(cartageJv));
 

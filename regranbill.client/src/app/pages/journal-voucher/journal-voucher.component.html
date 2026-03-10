@@ -6,11 +6,11 @@
 
 <section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
-    <div class="header-block">
+    <div>
       <h1 class="invoice-title">Journal Voucher</h1>
       <p class="invoice-subtitle">Manual double-entry voucher for payments, receipts, and purchases</p>
     </div>
-    <div class="invoice-meta header-block">
+    <div class="invoice-meta">
       <div class="invoice-number">{{ voucherNumber }}</div>
     </div>
   </div>
@@ -21,7 +21,7 @@
       <input type="date" class="form-control" [(ngModel)]="voucherDateIso" />
     </div>
     <div class="form-group">
-      <label class="form-label">Narration</label>
+      <label class="form-label">Description</label>
       <input
         type="text"
         class="form-control"
@@ -130,7 +130,7 @@
     </table>
   </div>
 
-  <div class="summary-strip">
+  <div class="lines-summary">
     <div class="summary-item">
       <span class="summary-label">Total Debit</span>
       <span class="summary-value">{{ totalDebit | number:'1.2-2' }}</span>

@@ -16,7 +16,7 @@ export class App {
   }
 
   get isPrintPage(): boolean {
-    return this.router.url.startsWith('/print-dc');
+    return this.router.url.startsWith('/print-dc') || this.router.url.startsWith('/print-pv');
   }
 
   get isAdmin(): boolean {
