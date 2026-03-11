@@ -96,7 +96,13 @@
       <tbody>
         <tr *ngFor="let entry of filteredEntries">
           <td class="col-id">
-            <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            <a *ngIf="entry.voucherType === 'SaleVoucher'" [routerLink]="['/print-dc', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <a *ngIf="entry.voucherType === 'PurchaseVoucher'" [routerLink]="['/print-pv', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             <div class="entry-id">Entry: {{ entry.entryId }}</div>
           </td>
           <td class="col-date">{{ getFormattedDate(entry.date) }}</td>

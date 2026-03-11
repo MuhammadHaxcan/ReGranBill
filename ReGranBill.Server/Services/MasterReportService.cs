@@ -16,14 +16,19 @@ public class MasterReportService : IMasterReportService
         var query = _db.JournalEntries
             .Include(e => e.JournalVoucher)
             .Include(e => e.Account)
-            .Where(e => e.JournalVoucher.RatesAdded
-                || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher);
+            .Where(e =>
+                (e.JournalVoucher.RatesAdded
+                    || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher)
+                && !(e.JournalVoucher.VoucherType == VoucherType.CartageVoucher
+                    && _db.JournalVoucherReferences.Any(r =>
+                        r.ReferenceVoucherId == e.VoucherId
+                        && !r.MainVoucher.RatesAdded)));
 
         if (from.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date >= from.Value);
+            query = query.Where(e => e.JournalVoucher.Date >= from.Value.Date);
 
         if (to.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date <= to.Value);
+            query = query.Where(e => e.JournalVoucher.Date < to.Value.Date.AddDays(1));
 
         if (categoryId.HasValue)
             query = query.Where(e => e.Account.CategoryId == categoryId.Value);
@@ -46,6 +51,7 @@ public class MasterReportService : IMasterReportService
             entryDtos.Add(new MasterReportEntryDto
             {
                 EntryId = e.Id,
+                VoucherId = e.VoucherId,
                 VoucherNumber = e.JournalVoucher.VoucherNumber,
                 VoucherType = e.JournalVoucher.VoucherType.ToString(),
                 Date = e.JournalVoucher.Date,

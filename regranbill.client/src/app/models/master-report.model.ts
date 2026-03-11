@@ -1,5 +1,6 @@
 export interface MasterReportEntry {
   entryId: number;
+  voucherId: number;
   voucherNumber: string;
   voucherType: string;
   date: string;

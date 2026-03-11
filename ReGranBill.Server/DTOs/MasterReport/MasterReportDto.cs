@@ -12,6 +12,7 @@ public class MasterReportDto
 public class MasterReportEntryDto
 {
     public int EntryId { get; set; }
+    public int VoucherId { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;
     public DateTime Date { get; set; }

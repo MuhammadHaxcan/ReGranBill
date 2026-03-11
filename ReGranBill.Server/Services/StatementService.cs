@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.SOA;
+using ReGranBill.Server.Enums;
 
 namespace ReGranBill.Server.Services;
 
@@ -20,13 +21,20 @@ public class StatementService : IStatementService
 
         var query = _db.JournalEntries
             .Include(e => e.JournalVoucher)
-            .Where(e => e.AccountId == accountId);
+            .Where(e => e.AccountId == accountId)
+            .Where(e =>
+                (e.JournalVoucher.RatesAdded
+                    || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher)
+                && !(e.JournalVoucher.VoucherType == VoucherType.CartageVoucher
+                    && _db.JournalVoucherReferences.Any(r =>
+                        r.ReferenceVoucherId == e.VoucherId
+                        && !r.MainVoucher.RatesAdded)));
 
         if (from.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date >= from.Value);
+            query = query.Where(e => e.JournalVoucher.Date >= from.Value.Date);
 
         if (to.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date <= to.Value);
+            query = query.Where(e => e.JournalVoucher.Date < to.Value.Date.AddDays(1));
 
         var entries = await query
             .OrderBy(e => e.JournalVoucher.Date)

@@ -105,7 +105,7 @@ export class MasterReportComponent implements OnInit {
     this.selectedCategoryId = null;
     this.selectedAccountId = null;
     this.searchText = '';
-    this.report = null;
+    this.loadReport();
   }
 
   onCategoryChange(): void {

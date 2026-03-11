@@ -63,6 +63,7 @@
   font-size: 14px;
   font-family: inherit;
   color: var(--text-primary);
+  background: var(--card-bg);
   min-width: 180px;
   transition: border-color 0.15s var(--ease);
 }
@@ -350,6 +351,16 @@
 
 .vtype-productionvoucher {
   background: #2563eb;
+}
+
+.voucher-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.voucher-link:hover .voucher-badge {
+  opacity: 0.85;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .entry-id {
