@@ -80,4 +80,14 @@ public class PurchaseVouchersController : ControllerBase
         if (!await _purchaseService.UpdateRatesAsync(id, request)) return NotFound();
         return Ok(await _purchaseService.GetByIdAsync(id));
     }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var (success, error) = await _purchaseService.SoftDeleteAsync(id);
+        if (error != null) return Conflict(new { message = error });
+        if (!success) return NotFound();
+        return NoContent();
+    }
 }

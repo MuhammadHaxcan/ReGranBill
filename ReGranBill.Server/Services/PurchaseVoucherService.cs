@@ -322,6 +322,35 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         return true;
     }
 
+    public async Task<(bool Success, string? Error)> SoftDeleteAsync(int id)
+    {
+        var purchaseJv = await _db.JournalVouchers
+            .FirstOrDefaultAsync(j => j.Id == id && j.VoucherType == VoucherType.PurchaseVoucher);
+
+        if (purchaseJv == null) return (false, null);
+
+        if (purchaseJv.RatesAdded)
+            return (false, "Cannot delete a rated purchase voucher. Only pending vouchers can be deleted.");
+
+        purchaseJv.IsDeleted = true;
+        purchaseJv.UpdatedAt = DateTime.UtcNow;
+
+        // Also soft-delete any associated cartage voucher
+        var cartageRef = await _db.JournalVoucherReferences
+            .Where(r => r.MainVoucherId == purchaseJv.Id)
+            .Include(r => r.ReferenceVoucher)
+            .FirstOrDefaultAsync();
+
+        if (cartageRef?.ReferenceVoucher != null)
+        {
+            cartageRef.ReferenceVoucher.IsDeleted = true;
+            cartageRef.ReferenceVoucher.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
     private async Task RebuildCartageVoucherAsync(JournalVoucher purchaseJv, int vendorId, CreateDcCartageRequest? cartageRequest)
     {
         var cartageRef = await _db.JournalVoucherReferences
@@ -402,7 +431,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 
     private static DeliveryChallanDto MapToDto(JournalVoucher purchaseJv, JournalVoucher? cartageJv)
     {
-        var vendorEntry = purchaseJv.Entries.FirstOrDefault(e => e.SortOrder == 0 && e.Credit > 0);
+        var vendorEntry = purchaseJv.Entries.FirstOrDefault(e => e.SortOrder == 0);
         var productEntries = purchaseJv.Entries.Where(e => e.SortOrder > 0).OrderBy(e => e.SortOrder).ToList();
 
         var dto = new DeliveryChallanDto

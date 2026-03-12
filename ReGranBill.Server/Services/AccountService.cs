@@ -120,7 +120,7 @@ public class AccountService : IAccountService
         return await GetByIdAsync(account.Id);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<(bool Success, string? Error)> DeleteAsync(int id)
     {
         var account = await _db.Accounts
             .Include(a => a.ProductDetail)
@@ -128,10 +128,15 @@ public class AccountService : IAccountService
             .Include(a => a.PartyDetail)
             .FirstOrDefaultAsync(a => a.Id == id);
 
-        if (account == null) return false;
+        if (account == null) return (false, null);
+
+        var hasEntries = await _db.JournalEntries.AnyAsync(je => je.AccountId == id);
+        if (hasEntries)
+            return (false, $"Cannot delete \"{account.Name}\" because it is used in voucher entries.");
+
         _db.Accounts.Remove(account);
         await _db.SaveChangesAsync();
-        return true;
+        return (true, null);
     }
 
     private async Task CreateDetailRow(int accountId, CreateAccountRequest request, AccountType accountType)

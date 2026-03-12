@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 
 @Component({
   selector: 'app-pending-purchases',
@@ -17,7 +18,8 @@ export class PendingPurchasesComponent implements OnInit {
     private purchaseService: PurchaseVoucherService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   ngOnInit(): void {
@@ -82,5 +84,26 @@ export class PendingPurchasesComponent implements OnInit {
 
   printChallan(dc: any): void {
     this.purchaseService.openPdfInNewTab(dc.id);
+  }
+
+  async deleteVoucher(dc: any): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Delete Purchase Voucher',
+      message: `Are you sure you want to delete "${dc.dcNumber}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+    if (!confirmed) return;
+
+    this.purchaseService.delete(dc.id).subscribe({
+      next: () => {
+        this.toast.success(`${dc.dcNumber} deleted successfully.`);
+        this.loadChallans();
+      },
+      error: err => {
+        const msg = err?.error?.message || 'Unable to delete purchase voucher.';
+        this.confirmModal.info({ title: 'Cannot Delete', message: msg });
+      }
+    });
   }
 }

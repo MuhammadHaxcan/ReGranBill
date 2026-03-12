@@ -7,5 +7,5 @@ public interface ICategoryService
     Task<List<CategoryDto>> GetAllAsync();
     Task<CategoryDto> CreateAsync(CreateCategoryRequest request);
     Task<CategoryDto?> UpdateAsync(int id, CreateCategoryRequest request);
-    Task<bool> DeleteAsync(int id);
+    Task<(bool Success, string? Error)> DeleteAsync(int id);
 }

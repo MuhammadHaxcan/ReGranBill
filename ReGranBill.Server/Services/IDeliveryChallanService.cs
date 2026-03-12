@@ -10,4 +10,5 @@ public interface IDeliveryChallanService
     Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId);
     Task<DeliveryChallanDto?> UpdateAsync(int id, CreateDcRequest request);
     Task<bool> UpdateRatesAsync(int id, UpdateDcRatesRequest request);
+    Task<(bool Success, string? Error)> SoftDeleteAsync(int id);
 }

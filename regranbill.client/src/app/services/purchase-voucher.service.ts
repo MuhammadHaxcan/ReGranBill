@@ -40,6 +40,10 @@ export class PurchaseVoucherService {
     return this.http.get(`${this.url}/${id}/pdf`, { responseType: 'blob' });
   }
 
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}`);
+  }
+
   openPdfInNewTab(id: number): void {
     window.open(`/print-pv/${id}`, '_blank');
   }

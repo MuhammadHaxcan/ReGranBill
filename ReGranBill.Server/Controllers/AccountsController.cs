@@ -72,7 +72,9 @@ public class AccountsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!await _accountService.DeleteAsync(id)) return NotFound();
+        var (success, error) = await _accountService.DeleteAsync(id);
+        if (error != null) return Conflict(new { message = error });
+        if (!success) return NotFound();
         return NoContent();
     }
 }

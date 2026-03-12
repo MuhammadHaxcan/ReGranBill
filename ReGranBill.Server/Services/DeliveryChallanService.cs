@@ -335,6 +335,35 @@ public class DeliveryChallanService : IDeliveryChallanService
         return true;
     }
 
+    public async Task<(bool Success, string? Error)> SoftDeleteAsync(int id)
+    {
+        var saleJv = await _db.JournalVouchers
+            .FirstOrDefaultAsync(j => j.Id == id && j.VoucherType == VoucherType.SaleVoucher);
+
+        if (saleJv == null) return (false, null);
+
+        if (saleJv.RatesAdded)
+            return (false, "Cannot delete a rated challan. Only pending challans can be deleted.");
+
+        saleJv.IsDeleted = true;
+        saleJv.UpdatedAt = DateTime.UtcNow;
+
+        // Also soft-delete any associated cartage voucher
+        var cartageRef = await _db.JournalVoucherReferences
+            .Where(r => r.MainVoucherId == saleJv.Id)
+            .Include(r => r.ReferenceVoucher)
+            .FirstOrDefaultAsync();
+
+        if (cartageRef?.ReferenceVoucher != null)
+        {
+            cartageRef.ReferenceVoucher.IsDeleted = true;
+            cartageRef.ReferenceVoucher.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
     private async Task RebuildCartageVoucherAsync(JournalVoucher saleJv, int customerId, CreateDcCartageRequest? cartageRequest)
     {
         var cartageRef = await _db.JournalVoucherReferences
@@ -420,7 +449,7 @@ public class DeliveryChallanService : IDeliveryChallanService
     private static DeliveryChallanDto MapToDto(JournalVoucher saleJv, JournalVoucher? cartageJv)
     {
         // Customer = DEBIT entry at SortOrder=0
-        var customerEntry = saleJv.Entries.FirstOrDefault(e => e.SortOrder == 0 && e.Debit > 0);
+        var customerEntry = saleJv.Entries.FirstOrDefault(e => e.SortOrder == 0);
         // Product lines = CREDIT entries at SortOrder > 0
         var productEntries = saleJv.Entries.Where(e => e.SortOrder > 0).OrderBy(e => e.SortOrder).ToList();
 

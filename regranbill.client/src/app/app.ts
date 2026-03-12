@@ -1,8 +1,9 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ChangeDetectorRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { Toast, ToastService } from './services/toast.service';
+import { ConfirmModal, ConfirmModalService } from './services/confirm-modal.service';
 
 @Component({
   selector: 'app-root',
@@ -17,20 +18,38 @@ export class App implements OnInit, OnDestroy {
   private toastSub!: Subscription;
   private toastTimer: any;
 
+  // Confirm modal
+  modalVisible = false;
+  modalData: ConfirmModal | null = null;
+  private modalSub!: Subscription;
+
   constructor(
     public authService: AuthService,
     private router: Router,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private confirmModalService: ConfirmModalService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.toastSub = this.toastService.toast$.subscribe((toast: Toast) => {
       this.showToast(toast);
     });
+    this.modalSub = this.confirmModalService.modal$.subscribe(modal => {
+      if (modal) {
+        this.modalData = modal;
+        this.modalVisible = true;
+      } else {
+        this.modalVisible = false;
+        this.modalData = null;
+      }
+      this.cdr.detectChanges();
+    });
   }
 
   ngOnDestroy(): void {
     this.toastSub?.unsubscribe();
+    this.modalSub?.unsubscribe();
     clearTimeout(this.toastTimer);
   }
 
@@ -47,6 +66,25 @@ export class App implements OnInit, OnDestroy {
   dismissToast(): void {
     clearTimeout(this.toastTimer);
     this.toastVisible = false;
+  }
+
+  // Modal methods
+  onModalConfirm(): void {
+    if (this.modalData?.onConfirm) {
+      this.modalData.onConfirm();
+    }
+    this.confirmModalService.close();
+  }
+
+  onModalClose(): void {
+    this.confirmModalService.close();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeModal(): void {
+    if (this.modalVisible) {
+      this.onModalClose();
+    }
   }
 
   get isLoginPage(): boolean {

@@ -145,3 +145,28 @@
     <button class="toast-close" (click)="dismissToast()">&times;</button>
   </div>
 </div>
+
+<!-- Global Confirm / Info Modal -->
+<div class="confirm-overlay" *ngIf="modalVisible" (click)="onModalClose()">
+  <div class="confirm-modal" (click)="$event.stopPropagation()">
+    <div class="confirm-icon-wrap" [class.confirm-icon-warn]="modalData?.type === 'confirm'" [class.confirm-icon-info]="modalData?.type === 'info'">
+      <ng-container *ngIf="modalData?.type === 'confirm'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </ng-container>
+      <ng-container *ngIf="modalData?.type === 'info'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </ng-container>
+    </div>
+    <h3 class="confirm-title">{{ modalData?.title }}</h3>
+    <p class="confirm-message">{{ modalData?.message }}</p>
+    <div class="confirm-actions">
+      <ng-container *ngIf="modalData?.type === 'confirm'">
+        <button class="confirm-btn confirm-btn-cancel" (click)="onModalClose()">{{ modalData?.cancelText }}</button>
+        <button class="confirm-btn confirm-btn-danger" (click)="onModalConfirm()">{{ modalData?.confirmText }}</button>
+      </ng-container>
+      <ng-container *ngIf="modalData?.type === 'info'">
+        <button class="confirm-btn confirm-btn-primary" (click)="onModalClose()">Close</button>
+      </ng-container>
+    </div>
+  </div>
+</div>

@@ -94,7 +94,9 @@ public class AppDbContext : DbContext
             e.Property(j => j.Description).HasMaxLength(500);
             e.Property(j => j.VoucherType).HasMaxLength(20)
                 .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
+            e.Property(j => j.IsDeleted).HasDefaultValue(false);
             e.HasOne(j => j.Creator).WithMany().HasForeignKey(j => j.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(j => !j.IsDeleted);
         });
 
         // JournalEntry

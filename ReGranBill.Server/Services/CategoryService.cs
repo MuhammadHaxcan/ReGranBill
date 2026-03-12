@@ -36,12 +36,17 @@ public class CategoryService : ICategoryService
         return new CategoryDto { Id = cat.Id, Name = cat.Name };
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<(bool Success, string? Error)> DeleteAsync(int id)
     {
         var cat = await _db.Categories.FindAsync(id);
-        if (cat == null) return false;
+        if (cat == null) return (false, null);
+
+        var hasAccounts = await _db.Accounts.AnyAsync(a => a.CategoryId == id);
+        if (hasAccounts)
+            return (false, $"Cannot delete \"{cat.Name}\" because it has accounts associated with it.");
+
         _db.Categories.Remove(cat);
         await _db.SaveChangesAsync();
-        return true;
+        return (true, null);
     }
 }

@@ -38,7 +38,9 @@ public class CategoriesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!await _categoryService.DeleteAsync(id)) return NotFound();
+        var (success, error) = await _categoryService.DeleteAsync(id);
+        if (error != null) return Conflict(new { message = error });
+        if (!success) return NotFound();
         return NoContent();
     }
 }

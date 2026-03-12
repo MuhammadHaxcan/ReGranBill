@@ -271,6 +271,19 @@
   white-space: nowrap;
 }
 
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  font-family: inherit;
+}
+
 .btn-edit {
   background: #fff;
   color: var(--text-primary);
@@ -305,6 +318,18 @@
   background: #047857;
   border-color: #047857;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+}
+
+.btn-delete {
+  background: #fff;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+}
+
+.btn-delete:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
 }
 
 /* Empty State */

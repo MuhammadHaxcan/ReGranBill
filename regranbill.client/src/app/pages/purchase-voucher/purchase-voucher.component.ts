@@ -5,6 +5,7 @@ import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -65,7 +66,8 @@ export class PurchaseVoucherComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   get isAdmin(): boolean {
@@ -328,10 +330,14 @@ export class PurchaseVoucherComponent implements OnInit {
     return true;
   }
 
-  discard(): void {
-    if (confirm('Are you sure you want to discard this purchase voucher?')) {
-      this.resetForm();
-    }
+  async discard(): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Discard Voucher',
+      message: 'Are you sure you want to discard this purchase voucher? All unsaved changes will be lost.',
+      confirmText: 'Discard',
+      cancelText: 'Cancel'
+    });
+    if (confirmed) this.resetForm();
   }
 
   save(): void {

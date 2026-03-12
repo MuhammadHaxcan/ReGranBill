@@ -2,6 +2,7 @@ import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/cor
 import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Category } from '../../models/category.model';
 import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -59,7 +60,8 @@ export class CategoriesAccountsComponent implements OnInit {
     private categoryService: CategoryService,
     private accountService: AccountService,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   ngOnInit(): void {
@@ -153,18 +155,25 @@ export class CategoriesAccountsComponent implements OnInit {
     }
   }
 
-  deleteCategory(cat: Category): void {
-    if (confirm(`Delete category "${cat.name}"?`)) {
-      this.categoryService.delete(cat.id).subscribe({
-        next: () => {
-          this.toast.success('Category deleted.');
-          this.loadCategories();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to delete category.');
-        }
-      });
-    }
+  async deleteCategory(cat: Category): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Delete Category',
+      message: `Are you sure you want to delete "${cat.name}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+    if (!confirmed) return;
+
+    this.categoryService.delete(cat.id).subscribe({
+      next: () => {
+        this.toast.success('Category deleted.');
+        this.loadCategories();
+      },
+      error: err => {
+        const msg = err?.error?.message || 'Unable to delete category.';
+        this.confirmModal.info({ title: 'Cannot Delete', message: msg });
+      }
+    });
   }
 
   getCategoryName(id: number): string {
@@ -319,18 +328,25 @@ export class CategoriesAccountsComponent implements OnInit {
     }
   }
 
-  deleteAccount(acct: Account): void {
-    if (confirm(`Delete account "${acct.name}"?`)) {
-      this.accountService.delete(acct.id).subscribe({
-        next: () => {
-          this.toast.success('Account deleted.');
-          this.loadAccounts();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to delete account.');
-        }
-      });
-    }
+  async deleteAccount(acct: Account): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Delete Account',
+      message: `Are you sure you want to delete "${acct.name}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+    if (!confirmed) return;
+
+    this.accountService.delete(acct.id).subscribe({
+      next: () => {
+        this.toast.success('Account deleted.');
+        this.loadAccounts();
+      },
+      error: err => {
+        const msg = err?.error?.message || 'Unable to delete account.';
+        this.confirmModal.info({ title: 'Cannot Delete', message: msg });
+      }
+    });
   }
 
   getAcctTypeBadgeClass(type: AccountType): string {

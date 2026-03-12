@@ -12,5 +12,5 @@ public interface IAccountService
     Task<List<AccountDto>> GetJournalAccountsAsync();
     Task<AccountDto> CreateAsync(CreateAccountRequest request);
     Task<AccountDto?> UpdateAsync(int id, CreateAccountRequest request);
-    Task<bool> DeleteAsync(int id);
+    Task<(bool Success, string? Error)> DeleteAsync(int id);
 }

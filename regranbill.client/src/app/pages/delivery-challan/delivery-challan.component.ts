@@ -5,6 +5,7 @@ import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -65,7 +66,8 @@ export class DeliveryChallanComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   get isAdmin(): boolean {
@@ -328,10 +330,14 @@ export class DeliveryChallanComponent implements OnInit {
     return true;
   }
 
-  discard(): void {
-    if (confirm('Are you sure you want to discard this delivery challan?')) {
-      this.resetForm();
-    }
+  async discard(): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Discard Challan',
+      message: 'Are you sure you want to discard this delivery challan? All unsaved changes will be lost.',
+      confirmText: 'Discard',
+      cancelText: 'Cancel'
+    });
+    if (confirmed) this.resetForm();
   }
 
   save(): void {

@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 
 @Component({
   selector: 'app-pending-challans',
@@ -17,7 +18,8 @@ export class PendingChallansComponent implements OnInit {
     private dcService: DeliveryChallanService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   ngOnInit(): void {
@@ -82,5 +84,26 @@ export class PendingChallansComponent implements OnInit {
 
   printChallan(dc: any): void {
     this.dcService.openPdfInNewTab(dc.id);
+  }
+
+  async deleteChallan(dc: any): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Delete Challan',
+      message: `Are you sure you want to delete "${dc.dcNumber}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+    if (!confirmed) return;
+
+    this.dcService.delete(dc.id).subscribe({
+      next: () => {
+        this.toast.success(`${dc.dcNumber} deleted successfully.`);
+        this.loadChallans();
+      },
+      error: err => {
+        const msg = err?.error?.message || 'Unable to delete challan.';
+        this.confirmModal.info({ title: 'Cannot Delete', message: msg });
+      }
+    });
   }
 }
