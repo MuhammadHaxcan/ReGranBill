@@ -15,8 +15,8 @@ public class MasterReportController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetReport(
-        [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
         [FromQuery] int? categoryId,
         [FromQuery] int? accountId)
     {

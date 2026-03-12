@@ -11,8 +11,11 @@ public class StatementService : IStatementService
 
     public StatementService(AppDbContext db) => _db = db;
 
-    public async Task<StatementOfAccountDto?> GetStatementAsync(int accountId, DateTime? from, DateTime? to)
+    public async Task<StatementOfAccountDto?> GetStatementAsync(int accountId, DateOnly? from, DateOnly? to)
     {
+        var fromDate = ToUtcStartOfDay(from);
+        var toExclusiveDate = ToUtcStartOfDay(to?.AddDays(1));
+
         var account = await _db.Accounts
             .Include(a => a.PartyDetail)
             .FirstOrDefaultAsync(a => a.Id == accountId);
@@ -30,11 +33,11 @@ public class StatementService : IStatementService
                         r.ReferenceVoucherId == e.VoucherId
                         && !r.MainVoucher.RatesAdded)));
 
-        if (from.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date >= from.Value.Date);
+        if (fromDate.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date >= fromDate.Value);
 
-        if (to.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date < to.Value.Date.AddDays(1));
+        if (toExclusiveDate.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date < toExclusiveDate.Value);
 
         var entries = await query
             .OrderBy(e => e.JournalVoucher.Date)
@@ -55,7 +58,7 @@ public class StatementService : IStatementService
                 Date = e.JournalVoucher.Date,
                 VoucherNumber = e.JournalVoucher.VoucherNumber,
                 VoucherType = e.JournalVoucher.VoucherType.ToString(),
-                Description = e.Description,
+                Description = e.JournalVoucher.Description,
                 Debit = e.Debit,
                 Credit = e.Credit,
                 RunningBalance = runningBalance
@@ -70,12 +73,21 @@ public class StatementService : IStatementService
             Phone = account.PartyDetail?.Phone,
             City = account.PartyDetail?.City,
             Address = account.PartyDetail?.Address,
-            FromDate = from,
-            ToDate = to,
+            FromDate = from.HasValue
+                ? DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
+                : null,
+            ToDate = to.HasValue
+                ? DateTime.SpecifyKind(to.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
+                : null,
             TotalDebit = entryDtos.Sum(e => e.Debit),
             TotalCredit = entryDtos.Sum(e => e.Credit),
             NetBalance = runningBalance,
             Entries = entryDtos
         };
     }
+
+    private static DateTime? ToUtcStartOfDay(DateOnly? value) =>
+        value.HasValue
+            ? DateTime.SpecifyKind(value.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
+            : null;
 }

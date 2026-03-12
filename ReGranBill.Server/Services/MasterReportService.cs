@@ -11,8 +11,11 @@ public class MasterReportService : IMasterReportService
 
     public MasterReportService(AppDbContext db) => _db = db;
 
-    public async Task<MasterReportDto> GetReportAsync(DateTime? from, DateTime? to, int? categoryId, int? accountId)
+    public async Task<MasterReportDto> GetReportAsync(DateOnly? from, DateOnly? to, int? categoryId, int? accountId)
     {
+        var fromDate = ToUtcStartOfDay(from);
+        var toExclusiveDate = ToUtcStartOfDay(to?.AddDays(1));
+
         var query = _db.JournalEntries
             .Include(e => e.JournalVoucher)
             .Include(e => e.Account)
@@ -24,11 +27,11 @@ public class MasterReportService : IMasterReportService
                         r.ReferenceVoucherId == e.VoucherId
                         && !r.MainVoucher.RatesAdded)));
 
-        if (from.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date >= from.Value.Date);
+        if (fromDate.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date >= fromDate.Value);
 
-        if (to.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date < to.Value.Date.AddDays(1));
+        if (toExclusiveDate.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date < toExclusiveDate.Value);
 
         if (categoryId.HasValue)
             query = query.Where(e => e.Account.CategoryId == categoryId.Value);
@@ -74,4 +77,9 @@ public class MasterReportService : IMasterReportService
             Entries = entryDtos
         };
     }
+
+    private static DateTime? ToUtcStartOfDay(DateOnly? value) =>
+        value.HasValue
+            ? DateTime.SpecifyKind(value.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
+            : null;
 }

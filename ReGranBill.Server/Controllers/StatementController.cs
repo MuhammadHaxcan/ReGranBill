@@ -14,7 +14,7 @@ public class StatementController : ControllerBase
     public StatementController(IStatementService statementService) => _statementService = statementService;
 
     [HttpGet("{accountId}")]
-    public async Task<IActionResult> GetStatement(int accountId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+    public async Task<IActionResult> GetStatement(int accountId, [FromQuery] DateOnly? fromDate, [FromQuery] DateOnly? toDate)
     {
         var result = await _statementService.GetStatementAsync(accountId, fromDate, toDate);
         if (result == null) return NotFound();

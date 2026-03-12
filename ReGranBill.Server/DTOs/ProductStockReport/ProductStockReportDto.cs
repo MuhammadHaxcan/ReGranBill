@@ -2,8 +2,8 @@ namespace ReGranBill.Server.DTOs.ProductStockReport;
 
 public class ProductStockReportQueryDto
 {
-    public DateTime? From { get; set; }
-    public DateTime? To { get; set; }
+    public DateOnly? From { get; set; }
+    public DateOnly? To { get; set; }
     public int? CategoryId { get; set; }
     public int? ProductId { get; set; }
     public bool IncludeDetails { get; set; } = false;
@@ -11,8 +11,8 @@ public class ProductStockReportQueryDto
 
 public class ProductStockReportDto
 {
-    public DateTime? From { get; set; }
-    public DateTime? To { get; set; }
+    public DateOnly? From { get; set; }
+    public DateOnly? To { get; set; }
     public int? CategoryId { get; set; }
     public int? ProductId { get; set; }
     public bool IncludeDetails { get; set; }

@@ -27,17 +27,18 @@ public class ProductStockReportService : IProductStockReportService
 
     public async Task<ProductStockReportDto> GetReportAsync(ProductStockReportQueryDto query)
     {
-        var normalizedFrom = query.From?.Date;
-        var normalizedTo = query.To?.Date;
-        var toExclusive = normalizedTo?.AddDays(1);
+        var normalizedFrom = query.From;
+        var normalizedTo = query.To;
+        var fromDate = ToUtcStartOfDay(normalizedFrom);
+        var toExclusiveDate = ToUtcStartOfDay(normalizedTo?.AddDays(1));
 
         var entryQuery = _db.JournalEntries
             .AsNoTracking()
             .Where(e => e.Account.AccountType == AccountType.Product)
             .Where(e => e.JournalVoucher.RatesAdded);
 
-        if (toExclusive.HasValue)
-            entryQuery = entryQuery.Where(e => e.JournalVoucher.Date < toExclusive.Value);
+        if (toExclusiveDate.HasValue)
+            entryQuery = entryQuery.Where(e => e.JournalVoucher.Date < toExclusiveDate.Value);
 
         if (query.CategoryId.HasValue)
             entryQuery = entryQuery.Where(e => e.Account.CategoryId == query.CategoryId.Value);
@@ -127,8 +128,8 @@ public class ProductStockReportService : IProductStockReportService
             weightKg = Round2(weightKg);
             movementValue = Round2(movementValue);
 
-            var isOpening = normalizedFrom.HasValue && entry.Date < normalizedFrom.Value;
-            var isPeriod = !normalizedFrom.HasValue || entry.Date >= normalizedFrom.Value;
+            var isOpening = fromDate.HasValue && entry.Date < fromDate.Value;
+            var isPeriod = !fromDate.HasValue || entry.Date >= fromDate.Value;
 
             if (hasValidDirection)
             {
@@ -209,6 +210,11 @@ public class ProductStockReportService : IProductStockReportService
             Anomalies = anomalies
         };
     }
+
+    private static DateTime? ToUtcStartOfDay(DateOnly? value) =>
+        value.HasValue
+            ? DateTime.SpecifyKind(value.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
+            : null;
 
     private static string ResolveDirection(ProductStockSeed entry, ISet<string> anomalyCodes)
     {

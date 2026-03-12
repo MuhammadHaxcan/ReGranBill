@@ -3,6 +3,8 @@ export type VoucherType =
   | 'PurchaseVoucher'
   | 'ProductionVoucher'
   | 'JournalVoucher'
+  | 'ReceiptVoucher'
+  | 'PaymentVoucher'
   | 'CartageVoucher';
 
 export interface VoucherEditorEntry {

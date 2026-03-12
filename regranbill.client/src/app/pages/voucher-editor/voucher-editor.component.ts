@@ -50,6 +50,8 @@ export class VoucherEditorComponent implements OnInit {
 
   voucherTypeOptions: SelectOption[] = [
     { value: 'JournalVoucher', label: 'Journal Voucher' },
+    { value: 'ReceiptVoucher', label: 'Receipt Voucher' },
+    { value: 'PaymentVoucher', label: 'Payment Voucher' },
     { value: 'SaleVoucher', label: 'Sale Voucher' },
     { value: 'CartageVoucher', label: 'Cartage Voucher' },
     { value: 'PurchaseVoucher', label: 'Purchase Voucher' },

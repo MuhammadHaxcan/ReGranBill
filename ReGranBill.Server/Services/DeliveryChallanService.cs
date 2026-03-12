@@ -112,6 +112,10 @@ public class DeliveryChallanService : IDeliveryChallanService
             .Include(a => a.ProductDetail)
             .Where(a => productIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id);
+        var customerName = await _db.Accounts
+            .Where(a => a.Id == request.CustomerId)
+            .Select(a => a.Name)
+            .FirstOrDefaultAsync();
 
         // Build Sale JV
         var saleJv = new JournalVoucher
@@ -120,7 +124,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             Date = NormalizeToUtc(request.Date),
             VoucherType = VoucherType.SaleVoucher,
             VehicleNumber = request.VehicleNumber,
-            Description = request.Description,
+            Description = ResolveDescription(request.Description, "Sale to", customerName, request.Lines, productAccounts),
             RatesAdded = false,
             CreatedBy = userId,
         };
@@ -243,10 +247,15 @@ public class DeliveryChallanService : IDeliveryChallanService
             .Include(a => a.ProductDetail)
             .Where(a => productIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id);
+        var customerName = await _db.Accounts
+            .Where(a => a.Id == request.CustomerId)
+            .Select(a => a.Name)
+            .FirstOrDefaultAsync();
 
         // Rebuild all entries
         _db.JournalEntries.RemoveRange(saleJv.Entries);
         saleJv.Entries.Clear();
+        saleJv.Description = ResolveDescription(request.Description, "Sale to", customerName, request.Lines, productAccounts);
 
         int sortOrder = 0;
         decimal totalProductAmount = 0;
@@ -528,4 +537,29 @@ public class DeliveryChallanService : IDeliveryChallanService
             SortOrder = e.SortOrder
         }).ToList()
     };
+
+    private static string? ResolveDescription(
+        string? requestedDescription,
+        string prefix,
+        string? partyName,
+        IEnumerable<CreateDcLineRequest> lines,
+        IReadOnlyDictionary<int, Account> productAccounts)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(requestedDescription) ? null : requestedDescription.Trim();
+        if (trimmed != null)
+            return trimmed;
+
+        var productSummary = string.Join(", ", lines
+            .OrderBy(line => line.SortOrder)
+            .Select(line =>
+            {
+                var productName = productAccounts.GetValueOrDefault(line.ProductId)?.Name ?? $"Product {line.ProductId}";
+                return $"{productName} ({line.Qty})";
+            }));
+
+        if (string.IsNullOrWhiteSpace(productSummary))
+            return partyName == null ? null : $"{prefix} {partyName}";
+
+        return $"{prefix} {partyName ?? "Unknown"} - {productSummary}";
+    }
 }

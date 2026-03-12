@@ -13,6 +13,7 @@ import { MasterReportComponent } from './pages/master-report/master-report.compo
 import { ProductStockReportComponent } from './pages/product-stock-report/product-stock-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
+import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.component';
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
 import { AuthGuard } from './guards/auth.guard';
@@ -26,6 +27,10 @@ const routes: Routes = [
   { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'journal-voucher', component: JournalVoucherComponent, canActivate: [AuthGuard] },
   { path: 'journal-voucher/:id', component: JournalVoucherComponent, canActivate: [AuthGuard] },
+  { path: 'receipt-voucher', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'receipt' } },
+  { path: 'receipt-voucher/:id', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'receipt' } },
+  { path: 'payment-voucher', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'payment' } },
+  { path: 'payment-voucher/:id', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'payment' } },
   { path: 'voucher-editor', component: VoucherEditorComponent, canActivate: [AuthGuard] },
   { path: 'purchase-voucher', component: PurchaseVoucherComponent, canActivate: [AuthGuard] },
   { path: 'purchase-voucher/:id', component: PurchaseVoucherComponent, canActivate: [AuthGuard] },

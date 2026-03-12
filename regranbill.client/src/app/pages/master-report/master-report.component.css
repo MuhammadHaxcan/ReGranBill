@@ -345,6 +345,14 @@
   background: var(--primary);
 }
 
+.vtype-receiptvoucher {
+  background: #0f766e;
+}
+
+.vtype-paymentvoucher {
+  background: #be123c;
+}
+
 .vtype-purchasevoucher {
   background: #7c3aed;
 }

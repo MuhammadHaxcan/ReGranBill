@@ -60,6 +60,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDeliveryChallanService, DeliveryChallanService>();
 builder.Services.AddScoped<IJournalVoucherService, JournalVoucherService>();
+builder.Services.AddScoped<ICashVoucherService, CashVoucherService>();
 builder.Services.AddScoped<IVoucherEditorService, VoucherEditorService>();
 builder.Services.AddScoped<IPurchaseVoucherService, PurchaseVoucherService>();
 builder.Services.AddScoped<IStatementService, StatementService>();

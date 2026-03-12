@@ -17,7 +17,7 @@ public class ProductStockReportController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetReport([FromQuery] ProductStockReportQueryDto query)
     {
-        if (query.From.HasValue && query.To.HasValue && query.From.Value.Date > query.To.Value.Date)
+        if (query.From.HasValue && query.To.HasValue && query.From.Value > query.To.Value)
             return BadRequest(new { message = "From date cannot be greater than To date." });
 
         var result = await _reportService.GetReportAsync(query);

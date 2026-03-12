@@ -4,5 +4,5 @@ namespace ReGranBill.Server.Services;
 
 public interface IMasterReportService
 {
-    Task<MasterReportDto> GetReportAsync(DateTime? from, DateTime? to, int? categoryId, int? accountId);
+    Task<MasterReportDto> GetReportAsync(DateOnly? from, DateOnly? to, int? categoryId, int? accountId);
 }

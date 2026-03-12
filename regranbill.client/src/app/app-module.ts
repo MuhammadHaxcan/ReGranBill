@@ -19,6 +19,7 @@ import { MasterReportComponent } from './pages/master-report/master-report.compo
 import { ProductStockReportComponent } from './pages/product-stock-report/product-stock-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
+import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.component';
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
@@ -37,6 +38,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     AddPurchaseRateComponent,
     PrintDcComponent,
     JournalVoucherComponent,
+    CashVoucherComponent,
     VoucherEditorComponent,
     PrintPvComponent,
     SearchableSelectComponent,

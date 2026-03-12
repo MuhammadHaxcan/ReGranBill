@@ -119,6 +119,12 @@ public class VoucherEditorService : IVoucherEditorService
             case VoucherType.JournalVoucher:
                 ValidateJournalVoucher(request.Entries, accountsById);
                 break;
+            case VoucherType.ReceiptVoucher:
+                ValidateReceiptVoucher(request.Entries, accountsById);
+                break;
+            case VoucherType.PaymentVoucher:
+                ValidatePaymentVoucher(request.Entries, accountsById);
+                break;
             case VoucherType.SaleVoucher:
                 ValidateSaleVoucher(request.Entries, accountsById);
                 break;
@@ -215,6 +221,62 @@ public class VoucherEditorService : IVoucherEditorService
             throw new InvalidOperationException("Cartage voucher requires customer debit and transporter credit lines.");
     }
 
+    private static void ValidateReceiptVoucher(
+        List<UpdateVoucherLedgerEntryRequest> entries,
+        IReadOnlyDictionary<int, Account> accountsById)
+    {
+        if (entries.Count(entry => entry.Credit > 0) != 1)
+            throw new InvalidOperationException("Receipt voucher allows only one credit line for the customer.");
+
+        var partyCredits = entries.Where(entry =>
+        {
+            if (entry.Credit <= 0) return false;
+            var account = accountsById[entry.AccountId];
+            return account.AccountType == AccountType.Party
+                && account.PartyDetail != null
+                && (account.PartyDetail.PartyRole == PartyRole.Customer
+                    || account.PartyDetail.PartyRole == PartyRole.Both);
+        }).ToList();
+
+        if (partyCredits.Count != 1)
+            throw new InvalidOperationException("Receipt voucher requires exactly one customer credit line.");
+
+        var debitLines = entries.Where(entry => entry.Debit > 0).ToList();
+        if (!debitLines.Any())
+            throw new InvalidOperationException("Receipt voucher requires cash or bank debit lines.");
+
+        if (debitLines.Any(entry => accountsById[entry.AccountId].AccountType != AccountType.Account))
+            throw new InvalidOperationException("Receipt voucher allows only cash and bank debit lines.");
+    }
+
+    private static void ValidatePaymentVoucher(
+        List<UpdateVoucherLedgerEntryRequest> entries,
+        IReadOnlyDictionary<int, Account> accountsById)
+    {
+        if (entries.Count(entry => entry.Debit > 0) != 1)
+            throw new InvalidOperationException("Payment voucher allows only one debit line for the vendor.");
+
+        var partyDebits = entries.Where(entry =>
+        {
+            if (entry.Debit <= 0) return false;
+            var account = accountsById[entry.AccountId];
+            return account.AccountType == AccountType.Party
+                && account.PartyDetail != null
+                && (account.PartyDetail.PartyRole == PartyRole.Vendor
+                    || account.PartyDetail.PartyRole == PartyRole.Both);
+        }).ToList();
+
+        if (partyDebits.Count != 1)
+            throw new InvalidOperationException("Payment voucher requires exactly one vendor debit line.");
+
+        var creditLines = entries.Where(entry => entry.Credit > 0).ToList();
+        if (!creditLines.Any())
+            throw new InvalidOperationException("Payment voucher requires cash or bank credit lines.");
+
+        if (creditLines.Any(entry => accountsById[entry.AccountId].AccountType != AccountType.Account))
+            throw new InvalidOperationException("Payment voucher allows only cash and bank credit lines.");
+    }
+
     private static bool ComputeRatesAdded(
         VoucherType voucherType,
         List<UpdateVoucherLedgerEntryRequest> entries,
@@ -224,6 +286,8 @@ public class VoucherEditorService : IVoucherEditorService
         return voucherType switch
         {
             VoucherType.JournalVoucher => true,
+            VoucherType.ReceiptVoucher => true,
+            VoucherType.PaymentVoucher => true,
             VoucherType.CartageVoucher => true,
             VoucherType.SaleVoucher => entries
                 .Where(e => accountsById[e.AccountId].AccountType == AccountType.Product)
@@ -249,7 +313,7 @@ public class VoucherEditorService : IVoucherEditorService
         VoucherNumber = voucher.VoucherNumber,
         VoucherType = voucher.VoucherType.ToString(),
         Date = voucher.Date,
-        Description = voucher.Description,
+        Description = ResolveDescription(voucher),
         VehicleNumber = voucher.VehicleNumber,
         RatesAdded = voucher.RatesAdded,
         TotalDebit = voucher.Entries.Sum(e => e.Debit),
@@ -272,4 +336,49 @@ public class VoucherEditorService : IVoucherEditorService
             })
             .ToList()
     };
+
+    private static string? ResolveDescription(JournalVoucher voucher)
+    {
+        var explicitDescription = ToNullIfWhiteSpace(voucher.Description);
+        if (explicitDescription != null)
+            return explicitDescription;
+
+        return voucher.VoucherType switch
+        {
+            VoucherType.SaleVoucher => BuildProductVoucherDescription(voucher, "Sale to"),
+            VoucherType.PurchaseVoucher => BuildProductVoucherDescription(voucher, "Purchase by"),
+            VoucherType.ReceiptVoucher => BuildPartyVoucherDescription(voucher, "Receipt from"),
+            VoucherType.PaymentVoucher => BuildPartyVoucherDescription(voucher, "Payment to"),
+            _ => null
+        };
+    }
+
+    private static string? BuildProductVoucherDescription(JournalVoucher voucher, string prefix)
+    {
+        var partyEntry = voucher.Entries.FirstOrDefault(entry => entry.SortOrder == 0);
+        var partyName = partyEntry?.Account?.Name;
+
+        var productSummary = string.Join(", ", voucher.Entries
+            .Where(entry => entry.SortOrder > 0)
+            .OrderBy(entry => entry.SortOrder)
+            .Select(entry => $"{entry.Account?.Name ?? $"Product {entry.AccountId}"} ({entry.Qty ?? 0})"));
+
+        if (string.IsNullOrWhiteSpace(partyName) && string.IsNullOrWhiteSpace(productSummary))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(productSummary))
+            return $"{prefix} {partyName}";
+
+        return $"{prefix} {partyName ?? "Unknown"} - {productSummary}";
+    }
+
+    private static string? BuildPartyVoucherDescription(JournalVoucher voucher, string prefix)
+    {
+        var partyEntry = voucher.VoucherType == VoucherType.ReceiptVoucher
+            ? voucher.Entries.FirstOrDefault(entry => entry.Credit > 0)
+            : voucher.Entries.FirstOrDefault(entry => entry.Debit > 0);
+
+        var partyName = partyEntry?.Account?.Name;
+        return string.IsNullOrWhiteSpace(partyName) ? null : $"{prefix} {partyName}";
+    }
 }

@@ -4,5 +4,5 @@ namespace ReGranBill.Server.Services;
 
 public interface IStatementService
 {
-    Task<StatementOfAccountDto?> GetStatementAsync(int accountId, DateTime? from, DateTime? to);
+    Task<StatementOfAccountDto?> GetStatementAsync(int accountId, DateOnly? from, DateOnly? to);
 }
