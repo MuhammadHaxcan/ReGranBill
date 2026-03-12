@@ -1,0 +1,198 @@
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Product Stock Report</h1>
+      <p class="invoice-subtitle">
+        Journal-entry based stock movement summary with opening, inward, outward and closing positions
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="card filter-card" *ngIf="filtersLoaded">
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>From</label>
+      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>Category</label>
+      <select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()" class="filter-input">
+        <option [ngValue]="null">All Categories</option>
+        <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Product</label>
+      <select [(ngModel)]="selectedProductId" class="filter-input">
+        <option [ngValue]="null">All Products</option>
+        <option *ngFor="let product of filteredProducts" [ngValue]="product.id">{{ product.name }}</option>
+      </select>
+    </div>
+    <div class="filter-field filter-search">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="searchText" class="filter-input" placeholder="Search products..." />
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadReport()">Apply</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+</section>
+
+<section class="card anomalies-card" *ngIf="report && !loading && report.anomalies.length > 0">
+  <div class="anomalies-header">
+    <h3>Anomaly Summary</h3>
+    <span>{{ report.anomalies.length }} issue type(s)</span>
+  </div>
+  <div class="anomaly-list">
+    <div class="anomaly-item" *ngFor="let anomaly of report.anomalies">
+      <span class="anomaly-count">{{ anomaly.count }}</span>
+      <div>
+        <strong>{{ anomaly.code }}</strong>
+        <p>{{ anomaly.message }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card grid-card" *ngIf="report && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Product Summary</span>
+      <span class="line-count">{{ filteredRows.length }} of {{ report.products.length }} products</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="filteredRows.length > 0">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Packing</th>
+          <th>Opening Bags</th>
+          <th>Opening Kg</th>
+          <th>Opening Value</th>
+          <th>Inward Bags</th>
+          <th>Inward Kg</th>
+          <th>Inward Value</th>
+          <th>Outward Bags</th>
+          <th>Outward Kg</th>
+          <th>Outward Value</th>
+          <th>Closing Bags</th>
+          <th>Closing Kg</th>
+          <th>Closing Value</th>
+          <th>Moves</th>
+          <th>Anomalies</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let row of filteredRows"
+          (click)="selectProductRow(row.productId)"
+          [class.row-selected]="isSelectedRow(row.productId)">
+          <td class="product-col">
+            <div class="product-name">{{ row.productName }}</div>
+            <div class="product-sub">ID: {{ row.productId }}</div>
+          </td>
+          <td>
+            <div>{{ row.packing || '-' }}</div>
+            <div class="product-sub" *ngIf="row.packingWeightKg !== null">{{ row.packingWeightKg | number:'1.2-2' }} kg/bag</div>
+          </td>
+          <td>{{ row.opening.bags | number:'1.2-2' }}</td>
+          <td>{{ row.opening.kg | number:'1.2-2' }}</td>
+          <td>{{ row.opening.value | pkCurrency }}</td>
+          <td>{{ row.inward.bags | number:'1.2-2' }}</td>
+          <td>{{ row.inward.kg | number:'1.2-2' }}</td>
+          <td>{{ row.inward.value | pkCurrency }}</td>
+          <td>{{ row.outward.bags | number:'1.2-2' }}</td>
+          <td>{{ row.outward.kg | number:'1.2-2' }}</td>
+          <td>{{ row.outward.value | pkCurrency }}</td>
+          <td>{{ row.closing.bags | number:'1.2-2' }}</td>
+          <td>{{ row.closing.kg | number:'1.2-2' }}</td>
+          <td>{{ row.closing.value | pkCurrency }}</td>
+          <td>{{ row.movementCount }}</td>
+          <td>
+            <span [class.anomaly-highlight]="row.anomalyCount > 0">{{ row.anomalyCount }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="filteredRows.length === 0">
+    <p>No products matched the selected filters.</p>
+  </div>
+</section>
+
+<section class="card grid-card" *ngIf="report && !loading && selectedProductRow">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Movement Drilldown</span>
+      <span class="line-count">{{ selectedMovements.length }} movement line(s)</span>
+    </div>
+  </div>
+  <div class="drilldown-heading">
+    <h3>{{ selectedProductRow.productName }}</h3>
+    <span>{{ selectedProductRow.packing || 'No packing' }}</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="selectedMovements.length > 0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Voucher</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Debit</th>
+          <th>Credit</th>
+          <th>Qty</th>
+          <th>RBP</th>
+          <th>Rate</th>
+          <th>Weight (Kg)</th>
+          <th>Value</th>
+          <th>Direction</th>
+          <th>Edited</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let movement of selectedMovements">
+          <td>{{ formatDate(movement.date) }}</td>
+          <td>{{ movement.voucherNumber }}</td>
+          <td>{{ movement.voucherType }}</td>
+          <td>
+            <div>{{ movement.description || '-' }}</div>
+            <div class="product-sub" *ngIf="movement.anomalyNote">{{ movement.anomalyNote }}</div>
+          </td>
+          <td>{{ movement.debit > 0 ? (movement.debit | pkCurrency) : '-' }}</td>
+          <td>{{ movement.credit > 0 ? (movement.credit | pkCurrency) : '-' }}</td>
+          <td>{{ movement.qty ?? '-' }}</td>
+          <td>{{ movement.rbp || '-' }}</td>
+          <td>{{ movement.rate !== null ? (movement.rate | number:'1.2-2') : '-' }}</td>
+          <td>{{ movement.weightKg | number:'1.2-2' }}</td>
+          <td>{{ movement.value | pkCurrency }}</td>
+          <td>
+            <span class="direction-badge"
+              [class.direction-inward]="movement.direction === 'Inward'"
+              [class.direction-outward]="movement.direction === 'Outward'"
+              [class.direction-invalid]="movement.direction === 'Invalid'">
+              {{ movement.direction }}
+            </span>
+          </td>
+          <td>{{ movement.isEdited ? 'Yes' : 'No' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty-state" *ngIf="selectedMovements.length === 0">
+    <p>No period movements available for the selected product.</p>
+  </div>
+</section>
+
+<div class="loading-state" *ngIf="loading">
+  <p>Loading product stock report...</p>
+</div>

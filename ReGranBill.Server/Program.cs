@@ -64,6 +64,7 @@ builder.Services.AddScoped<IVoucherEditorService, VoucherEditorService>();
 builder.Services.AddScoped<IPurchaseVoucherService, PurchaseVoucherService>();
 builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IMasterReportService, MasterReportService>();
+builder.Services.AddScoped<IProductStockReportService, ProductStockReportService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 
 builder.Services.AddControllers();

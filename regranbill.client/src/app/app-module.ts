@@ -16,6 +16,7 @@ import { AddPurchaseRateComponent } from './pages/add-purchase-rate/add-purchase
 import { SearchableSelectComponent } from './components/searchable-select/searchable-select.component';
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
+import { ProductStockReportComponent } from './pages/product-stock-report/product-stock-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
@@ -41,6 +42,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     SearchableSelectComponent,
     SoaComponent,
     MasterReportComponent,
+    ProductStockReportComponent,
     PkCurrencyPipe
   ],
   imports: [

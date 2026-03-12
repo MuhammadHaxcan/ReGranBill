@@ -43,18 +43,29 @@ export class PendingChallansComponent implements OnInit {
   }
 
   getTotalBags(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
+    return dc.lines.reduce((sum: number, line: any) => {
+      return sum + (this.isRbpYes(line.rbp) ? this.toNumber(line.qty) : 0);
+    }, 0);
   }
 
   getTotalWeight(dc: any): number {
     return dc.lines.reduce((sum: number, line: any) => {
-      return sum + (line.packingWeightKg * line.qty);
+      const qty = this.toNumber(line.qty);
+      if (this.isRbpYes(line.rbp)) {
+        return sum + (this.toNumber(line.packingWeightKg) * qty);
+      }
+      return sum + qty;
     }, 0);
   }
 
   getTotalAmount(dc: any): number {
     return dc.lines.reduce((sum: number, line: any) => {
-      return sum + (line.packingWeightKg * line.qty * line.rate);
+      const qty = this.toNumber(line.qty);
+      const rate = this.toNumber(line.rate);
+      if (this.isRbpYes(line.rbp)) {
+        return sum + (this.toNumber(line.packingWeightKg) * qty * rate);
+      }
+      return sum + (qty * rate);
     }, 0);
   }
 
@@ -105,5 +116,14 @@ export class PendingChallansComponent implements OnInit {
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });
+  }
+
+  private isRbpYes(rbp: string | undefined | null): boolean {
+    return String(rbp ?? 'Yes').trim().toLowerCase() === 'yes';
+  }
+
+  private toNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

@@ -10,6 +10,7 @@ import { AddRateComponent } from './pages/add-rate/add-rate.component';
 import { AddPurchaseRateComponent } from './pages/add-purchase-rate/add-purchase-rate.component';
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
+import { ProductStockReportComponent } from './pages/product-stock-report/product-stock-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
@@ -35,6 +36,7 @@ const routes: Routes = [
   { path: 'soa/:accountId', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'soa', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'master-report', component: MasterReportComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'product-stock-report', component: ProductStockReportComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'metadata', component: CategoriesAccountsComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: '', redirectTo: 'delivery-challan', pathMatch: 'full' },
   { path: '**', redirectTo: 'delivery-challan' }
