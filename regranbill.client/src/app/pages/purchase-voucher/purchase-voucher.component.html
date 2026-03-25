@@ -11,7 +11,7 @@
       <p class="invoice-subtitle">{{ isEditMode ? 'Edit purchase voucher details' : 'Create a new purchase voucher' }}</p>
     </div>
     <div class="invoice-meta">
-      <div class="invoice-number">{{ dcNumber }}</div>
+      <div class="invoice-number">{{ voucherNumber }}</div>
     </div>
   </div>
 
@@ -21,7 +21,7 @@
       <input
         type="date"
         class="form-control"
-        [(ngModel)]="dcDateIso"
+        [(ngModel)]="voucherDateIso"
       />
     </div>
     <div class="form-group">

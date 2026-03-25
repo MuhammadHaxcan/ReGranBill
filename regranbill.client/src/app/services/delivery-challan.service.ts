@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import {
+  DeliveryChallanUpsertRequest,
+  DeliveryChallanViewModel,
+  UpdateDeliveryRatesRequest
+} from '../models/delivery-challan.model';
 
 @Injectable({
   providedIn: 'root',
@@ -10,12 +15,12 @@ export class DeliveryChallanService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<any[]> {
-    return this.http.get<any[]>(this.url);
+  getAll(): Observable<DeliveryChallanViewModel[]> {
+    return this.http.get<DeliveryChallanViewModel[]>(this.url);
   }
 
-  getById(id: number): Observable<any> {
-    return this.http.get<any>(`${this.url}/${id}`);
+  getById(id: number): Observable<DeliveryChallanViewModel> {
+    return this.http.get<DeliveryChallanViewModel>(`${this.url}/${id}`);
   }
 
   getNextNumber(): Observable<string> {
@@ -24,16 +29,16 @@ export class DeliveryChallanService {
     );
   }
 
-  create(request: any): Observable<any> {
-    return this.http.post<any>(this.url, request);
+  create(request: DeliveryChallanUpsertRequest): Observable<DeliveryChallanViewModel> {
+    return this.http.post<DeliveryChallanViewModel>(this.url, request);
   }
 
-  update(id: number, request: any): Observable<any> {
-    return this.http.put<any>(`${this.url}/${id}`, request);
+  update(id: number, request: DeliveryChallanUpsertRequest): Observable<DeliveryChallanViewModel> {
+    return this.http.put<DeliveryChallanViewModel>(`${this.url}/${id}`, request);
   }
 
-  updateRates(id: number, request: { lines: { entryId: number; rate: number }[] }): Observable<any> {
-    return this.http.patch<any>(`${this.url}/${id}/rates`, request);
+  updateRates(id: number, request: UpdateDeliveryRatesRequest): Observable<DeliveryChallanViewModel> {
+    return this.http.patch<DeliveryChallanViewModel>(`${this.url}/${id}/rates`, request);
   }
 
   getPdf(id: number): Observable<Blob> {

@@ -68,6 +68,10 @@
     </button>
   </div>
 
+  <div class="validation-banner" *ngIf="validationMessage">
+    {{ validationMessage }}
+  </div>
+
   <div class="table-wrapper">
     <table class="lines-table">
       <thead>
@@ -80,12 +84,13 @@
           <th class="col-sale" *ngIf="isSaleVoucher">Qty</th>
           <th class="col-sale" *ngIf="isSaleVoucher">RBP</th>
           <th class="col-sale" *ngIf="isSaleVoucher">Rate</th>
+          <th class="col-sale col-expected" *ngIf="isSaleVoucher">Expected</th>
           <th class="col-edited">Edited</th>
           <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let line of lines; let i = index">
+        <tr *ngFor="let line of lines; let i = index" [class.row-mismatch]="isSaleLineAmountMismatch(line)">
           <td class="col-num">{{ i + 1 }}</td>
           <td class="col-account">
             <app-searchable-select
@@ -151,6 +156,18 @@
               step="0.01"
               [(ngModel)]="line.rate"
             />
+          </td>
+          <td class="col-sale col-expected" *ngIf="isSaleVoucher">
+            <div class="expected-amount" *ngIf="isSaleProductLine(line); else saleLinePlaceholder">
+              <span class="expected-value">{{ (getExpectedSaleLineAmount(line) ?? 0) | number:'1.2-2' }}</span>
+              <span class="expected-error" *ngIf="isSaleLineAmountMismatch(line)">Credit mismatch</span>
+            </div>
+            <ng-template #saleLinePlaceholder>
+              <span class="expected-placeholder" *ngIf="isSaleCustomerLine(line)">
+                Debit {{ getSaleCustomerExpectedDebit() | number:'1.2-2' }}
+              </span>
+              <span class="expected-placeholder" *ngIf="!isSaleCustomerLine(line)">-</span>
+            </ng-template>
           </td>
           <td class="col-edited">
             <span class="edited-tag" [class.edited-tag-on]="line.isEdited">

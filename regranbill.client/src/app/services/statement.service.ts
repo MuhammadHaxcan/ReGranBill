@@ -17,4 +17,11 @@ export class StatementService {
     if (toDate) params = params.set('toDate', toDate);
     return this.http.get<StatementOfAccount>(`${this.url}/${accountId}`, { params });
   }
+
+  getStatementPdf(accountId: number, fromDate?: string, toDate?: string): Observable<Blob> {
+    let params = new HttpParams();
+    if (fromDate) params = params.set('fromDate', fromDate);
+    if (toDate) params = params.set('toDate', toDate);
+    return this.http.get(`${this.url}/${accountId}/pdf`, { params, responseType: 'blob' });
+  }
 }

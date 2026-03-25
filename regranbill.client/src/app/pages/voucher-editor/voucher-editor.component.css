@@ -237,6 +237,17 @@
   overflow-x: auto;
 }
 
+.validation-banner {
+  margin: 16px 24px 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--danger-border);
+  background: #fef2f2;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .lines-table {
   width: 100%;
   border-collapse: collapse;
@@ -271,6 +282,10 @@
   background: var(--slate-50);
 }
 
+.lines-table tbody tr.row-mismatch {
+  background: #fff7ed;
+}
+
 .col-num {
   width: 40px;
   text-align: center;
@@ -284,6 +299,10 @@
 
 .col-sale {
   min-width: 90px;
+}
+
+.col-expected {
+  min-width: 116px;
 }
 
 .col-edited {
@@ -406,6 +425,31 @@
   border-color: var(--primary);
   background: var(--primary-light);
   color: var(--primary);
+}
+
+.expected-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.expected-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.expected-error {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.expected-placeholder {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* Bottom Actions */

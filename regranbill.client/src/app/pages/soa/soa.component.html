@@ -51,6 +51,9 @@
         {{ statement.netBalance | pkCurrency }}
       </div>
       <div class="total-label">Net Balance</div>
+      <button *ngIf="canPrintStatement" class="btn btn-primary btn-print-statement" (click)="printStatement()">
+        Print Statement
+      </button>
     </div>
   </div>
 </section>
@@ -83,7 +86,16 @@
           <td class="col-num">{{ i + 1 }}</td>
           <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
           <td class="col-voucher">
-            <span class="invoice-number-badge">{{ entry.voucherNumber }}</span>
+            <button
+              *ngIf="isPrintableVoucher(entry); else plainVoucherNumber"
+              type="button"
+              class="voucher-link-button"
+              (click)="openVoucherPrint(entry)">
+              <span class="invoice-number-badge invoice-number-badge-link">{{ entry.voucherNumber }}</span>
+            </button>
+            <ng-template #plainVoucherNumber>
+              <span class="invoice-number-badge">{{ entry.voucherNumber }}</span>
+            </ng-template>
           </td>
           <td class="col-type">
             <span class="type-badge" [ngClass]="'type-' + entry.voucherType.toLowerCase()">{{ entry.voucherType }}</span>

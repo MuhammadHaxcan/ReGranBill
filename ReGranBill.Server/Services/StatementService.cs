@@ -55,6 +55,7 @@ public class StatementService : IStatementService
             entryDtos.Add(new StatementEntryDto
             {
                 EntryId = e.Id,
+                VoucherId = e.VoucherId,
                 Date = e.JournalVoucher.Date,
                 VoucherNumber = e.JournalVoucher.VoucherNumber,
                 VoucherType = e.JournalVoucher.VoucherType.ToString(),
@@ -69,6 +70,7 @@ public class StatementService : IStatementService
         {
             AccountId = account.Id,
             AccountName = account.Name,
+            PartyRole = account.PartyDetail?.PartyRole.ToString(),
             ContactPerson = account.PartyDetail?.ContactPerson,
             Phone = account.PartyDetail?.Phone,
             City = account.PartyDetail?.City,

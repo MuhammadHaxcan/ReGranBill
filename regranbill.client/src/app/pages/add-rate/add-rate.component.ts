@@ -2,6 +2,20 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
 import { ToastService } from '../../services/toast.service';
+import {
+  DeliveryCartageViewModel,
+  DeliveryChallanLineViewModel,
+  DeliveryChallanViewModel,
+  JournalVoucherSummary
+} from '../../models/delivery-challan.model';
+import {
+  getDeliveryLineAmount,
+  getDeliveryLineWeight,
+  getDeliveryTotalAmount,
+  getDeliveryTotalBags,
+  getDeliveryTotalWeight
+} from '../../utils/delivery-calculations';
+import { parseLocalDate } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-add-rate',
@@ -18,9 +32,9 @@ export class AddRateComponent implements OnInit {
   ratesAdded = false;
   loading = true;
 
-  lines: any[] = [];
-  cartage: any = null;
-  journalVouchers: any[] = [];
+  lines: DeliveryChallanLineViewModel[] = [];
+  cartage: DeliveryCartageViewModel | null = null;
+  journalVouchers: JournalVoucherSummary[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -40,10 +54,10 @@ export class AddRateComponent implements OnInit {
 
   loadData(): void {
     this.dcService.getById(this.challanId!).subscribe({
-      next: dc => {
+      next: (dc: DeliveryChallanViewModel) => {
         if (dc) {
           this.dcNumber = dc.dcNumber;
-          this.dcDate = new Date(dc.date);
+          this.dcDate = parseLocalDate(dc.date);
           this.customerName = dc.customerName || '\u2014';
           this.description = dc.description || '';
           this.ratesAdded = dc.ratesAdded;
@@ -63,41 +77,36 @@ export class AddRateComponent implements OnInit {
   }
 
   get formattedDate(): string {
-    return this.dcDate.toLocaleDateString('en-GB', {
+    return new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
-      month: 'short',
+      month: '2-digit',
       year: 'numeric'
-    });
+    }).format(this.dcDate);
   }
 
-  getLineTotalWeight(line: any): number {
-    return (line.packingWeightKg || 0) * (line.qty || 0);
+  getLineTotalWeight(line: DeliveryChallanLineViewModel): number {
+    return getDeliveryLineWeight(line);
   }
 
-  getLineAmount(line: any): number {
-    if (line.rbp === 'Yes') {
-      return this.getLineTotalWeight(line) * (line.rate || 0);
-    }
-    return (line.qty || 0) * (line.rate || 0);
+  getLineAmount(line: DeliveryChallanLineViewModel): number {
+    return getDeliveryLineAmount(line);
   }
 
   get totalBags(): number {
-    return this.lines
-      .filter((line: any) => line.rbp === 'Yes')
-      .reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
+    return getDeliveryTotalBags(this.lines);
   }
 
   get totalWeight(): number {
-    return this.lines.reduce((sum: number, line: any) => sum + this.getLineTotalWeight(line), 0);
+    return getDeliveryTotalWeight(this.lines);
   }
 
   get totalAmount(): number {
-    return this.lines.reduce((sum: number, line: any) => sum + this.getLineAmount(line), 0);
+    return getDeliveryTotalAmount(this.lines);
   }
 
   saveRates(): void {
     if (this.challanId) {
-      const rateUpdates = this.lines.map((l: any) => ({ entryId: l.id, rate: l.rate }));
+      const rateUpdates = this.lines.map(line => ({ entryId: line.id, rate: line.rate }));
       this.dcService.updateRates(this.challanId, { lines: rateUpdates }).subscribe({
         next: updatedDc => {
           this.journalVouchers = updatedDc.journalVouchers || [];

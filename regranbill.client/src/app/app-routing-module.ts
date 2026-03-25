@@ -16,6 +16,7 @@ import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher
 import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.component';
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
+import { PrintSoaComponent } from './pages/print-soa/print-soa.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
@@ -23,6 +24,7 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'print-dc/:id', component: PrintDcComponent, canActivate: [AuthGuard] },
   { path: 'print-pv/:id', component: PrintPvComponent, canActivate: [AuthGuard] },
+  { path: 'print-soa/:accountId', component: PrintSoaComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'journal-voucher', component: JournalVoucherComponent, canActivate: [AuthGuard] },

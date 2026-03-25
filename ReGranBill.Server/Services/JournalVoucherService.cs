@@ -3,14 +3,20 @@ using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.JournalVouchers;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Exceptions;
 
 namespace ReGranBill.Server.Services;
 
 public class JournalVoucherService : IJournalVoucherService
 {
     private readonly AppDbContext _db;
+    private readonly IVoucherNumberService _voucherNumberService;
 
-    public JournalVoucherService(AppDbContext db) => _db = db;
+    public JournalVoucherService(AppDbContext db, IVoucherNumberService voucherNumberService)
+    {
+        _db = db;
+        _voucherNumberService = voucherNumberService;
+    }
 
     public async Task<List<JournalVoucherDto>> GetAllAsync()
     {
@@ -34,21 +40,20 @@ public class JournalVoucherService : IJournalVoucherService
         return voucher == null ? null : MapToDto(voucher);
     }
 
-    public async Task<string> GetNextNumberAsync()
-    {
-        var lastNumber = await GetLastJvNumberAsync();
-        return $"JV-{lastNumber + 1:D4}";
-    }
+    public Task<string> GetNextNumberAsync() =>
+        _voucherNumberService.GetNextNumberPreviewAsync(VoucherSequenceKeys.JournalVoucher, "JV-");
 
     public async Task<JournalVoucherDto> CreateAsync(CreateJournalVoucherRequest request, int userId)
     {
         await ValidateRequestAsync(request);
 
-        var nextNumber = await GetLastJvNumberAsync() + 1;
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var nextNumber = await _voucherNumberService.ReserveNextNumberAsync(VoucherSequenceKeys.JournalVoucher, "JV-");
         var voucher = new JournalVoucher
         {
-            VoucherNumber = $"JV-{nextNumber:D4}",
-            Date = request.Date,
+            VoucherNumber = nextNumber,
+            Date = NormalizeToUtc(request.Date),
             VoucherType = VoucherType.JournalVoucher,
             Description = request.Description?.Trim(),
             RatesAdded = true,
@@ -70,6 +75,7 @@ public class JournalVoucherService : IJournalVoucherService
 
         _db.JournalVouchers.Add(voucher);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         return (await GetByIdAsync(voucher.Id))!;
     }
@@ -85,7 +91,7 @@ public class JournalVoucherService : IJournalVoucherService
 
         await ValidateRequestAsync(request);
 
-        voucher.Date = request.Date;
+        voucher.Date = NormalizeToUtc(request.Date);
         voucher.Description = request.Description?.Trim();
         voucher.RatesAdded = true;
         voucher.UpdatedAt = DateTime.UtcNow;
@@ -110,57 +116,49 @@ public class JournalVoucherService : IJournalVoucherService
         return (await GetByIdAsync(voucher.Id))!;
     }
 
-    private async Task<int> GetLastJvNumberAsync()
-    {
-        var lastVoucher = await _db.JournalVouchers
-            .Where(v => v.VoucherType == VoucherType.JournalVoucher)
-            .OrderByDescending(v => v.Id)
-            .Select(v => v.VoucherNumber)
-            .FirstOrDefaultAsync();
-
-        if (lastVoucher != null && lastVoucher.StartsWith("JV-")
-            && int.TryParse(lastVoucher.AsSpan(3), out var num))
-        {
-            return num;
-        }
-
-        return 0;
-    }
-
     private async Task ValidateRequestAsync(CreateJournalVoucherRequest request)
     {
         if (request.Entries.Count < 2)
-            throw new InvalidOperationException("At least 2 journal lines are required.");
+            throw new RequestValidationException("At least 2 journal lines are required.");
 
         var accountIds = request.Entries.Select(e => e.AccountId).Distinct().ToList();
         var accounts = await _db.Accounts
+            .Include(a => a.PartyDetail)
             .Where(a => accountIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id);
 
         if (accounts.Count != accountIds.Count)
-            throw new InvalidOperationException("One or more selected accounts are invalid.");
+            throw new RequestValidationException("One or more selected accounts are invalid.");
 
         foreach (var entry in request.Entries)
         {
             if (entry.Debit < 0 || entry.Credit < 0)
-                throw new InvalidOperationException("Debit and credit cannot be negative.");
+                throw new RequestValidationException("Debit and credit cannot be negative.");
 
             var hasDebit = entry.Debit > 0;
             var hasCredit = entry.Credit > 0;
             if (hasDebit == hasCredit)
-                throw new InvalidOperationException("Each line must have either debit or credit.");
+                throw new RequestValidationException("Each line must have either debit or credit.");
 
             var account = accounts[entry.AccountId];
             var isAllowed = account.AccountType is AccountType.Expense or AccountType.Party or AccountType.Account;
             if (!isAllowed)
-                throw new InvalidOperationException("Only expense, party, and account types are allowed in journal vouchers.");
+                throw new RequestValidationException("Only expense, party, and account types are allowed in journal vouchers.");
         }
 
         var totalDebit = RoundTo2(request.Entries.Sum(e => e.Debit));
         var totalCredit = RoundTo2(request.Entries.Sum(e => e.Credit));
         if (totalDebit != totalCredit)
-            throw new InvalidOperationException("Total debit and total credit must be equal.");
+            throw new RequestValidationException("Total debit and total credit must be equal.");
     }
+
+    private static DateTime NormalizeToUtc(DateTime date) =>
+        date.Kind switch
+        {
+            DateTimeKind.Utc => date,
+            DateTimeKind.Local => date.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
+        };
 
     private static decimal RoundTo2(decimal value) =>
         decimal.Round(value, 2, MidpointRounding.AwayFromZero);

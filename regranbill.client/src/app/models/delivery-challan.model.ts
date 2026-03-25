@@ -1,7 +1,6 @@
 export enum VoucherType {
   SaleVoucher = 'SaleVoucher',
   PurchaseVoucher = 'PurchaseVoucher',
-  ProductionVoucher = 'ProductionVoucher',
   JournalVoucher = 'JournalVoucher',
   CartageVoucher = 'CartageVoucher',
 }
@@ -62,7 +61,7 @@ export interface JournalVoucherSummary {
 export interface DeliveryChallan {
   id?: number;
   dcNumber: string;
-  date: Date;
+  date: Date | string;
   customerId: number | null;
   customerName?: string;
   vehicleNumber?: string;
@@ -72,4 +71,62 @@ export interface DeliveryChallan {
   cartage: Cartage | null;
   ratesAdded: boolean;
   journalVouchers: JournalVoucherSummary[];
+}
+
+export interface DeliveryChallanLineViewModel {
+  id: number;
+  productId: number;
+  productName: string;
+  packing: string;
+  packingWeightKg: number;
+  rbp: 'Yes' | 'No';
+  qty: number;
+  rate: number;
+  sortOrder: number;
+}
+
+export interface DeliveryCartageViewModel {
+  transporterId: number;
+  transporterName: string;
+  city: string;
+  amount: number;
+}
+
+export interface DeliveryChallanViewModel {
+  id: number;
+  dcNumber: string;
+  date: string;
+  customerId: number;
+  customerName: string;
+  vehicleNumber?: string | null;
+  description: string;
+  lines: DeliveryChallanLineViewModel[];
+  cartage: DeliveryCartageViewModel | null;
+  ratesAdded: boolean;
+  journalVouchers: JournalVoucherSummary[];
+}
+
+export interface DeliveryChallanUpsertRequest {
+  date: Date;
+  customerId: number;
+  vehicleNumber?: string | null;
+  description: string;
+  lines: {
+    productId: number;
+    rbp: 'Yes' | 'No';
+    qty: number;
+    rate: number;
+    sortOrder: number;
+  }[];
+  cartage: {
+    transporterId: number;
+    amount: number;
+  } | null;
+}
+
+export interface UpdateDeliveryRatesRequest {
+  lines: {
+    entryId: number;
+    rate: number;
+  }[];
 }

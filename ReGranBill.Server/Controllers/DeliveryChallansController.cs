@@ -62,15 +62,9 @@ public class DeliveryChallansController : ControllerBase
     {
         var dc = await _dcService.GetByIdAsync(id);
         if (dc == null) return NotFound();
-        try
-        {
-            var pdfBytes = _pdfService.GenerateDeliveryChallanPdf(dc);
-            return File(pdfBytes, "application/pdf", $"GatePass-{dc.DcNumber}.pdf");
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = ex.Message, stack = ex.StackTrace });
-        }
+
+        var pdfBytes = _pdfService.GenerateDeliveryChallanPdf(dc);
+        return File(pdfBytes, "application/pdf", $"GatePass-{dc.DcNumber}.pdf");
     }
 
     [HttpPatch("{id}/rates")]

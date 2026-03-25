@@ -22,30 +22,16 @@ public class VoucherEditorController : ControllerBase
         [FromQuery] string voucherType,
         [FromQuery] string voucherNumber)
     {
-        try
-        {
-            var voucher = await _voucherEditorService.FindByTypeAndNumberAsync(voucherType, voucherNumber);
-            if (voucher == null) return NotFound();
-            return Ok(voucher);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var voucher = await _voucherEditorService.FindByTypeAndNumberAsync(voucherType, voucherNumber);
+        if (voucher == null) return NotFound();
+        return Ok(voucher);
     }
 
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateVoucherLedgerRequest request)
     {
-        try
-        {
-            var voucher = await _voucherEditorService.UpdateAsync(request);
-            if (voucher == null) return NotFound();
-            return Ok(voucher);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var voucher = await _voucherEditorService.UpdateAsync(request);
+        if (voucher == null) return NotFound();
+        return Ok(voucher);
     }
 }

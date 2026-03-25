@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { PurchaseVoucherViewModel } from '../../models/purchase-voucher.model';
+import { formatDateDdMmYyyy } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-pending-purchases',
@@ -11,7 +13,7 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
   standalone: false
 })
 export class PendingPurchasesComponent implements OnInit {
-  challans: any[] = [];
+  vouchers: PurchaseVoucherViewModel[] = [];
   loading = true;
 
   constructor(
@@ -30,7 +32,7 @@ export class PendingPurchasesComponent implements OnInit {
     this.loading = true;
     this.purchaseService.getAll().subscribe({
       next: data => {
-        this.challans = data;
+        this.vouchers = data;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -42,62 +44,67 @@ export class PendingPurchasesComponent implements OnInit {
     });
   }
 
-  getTotalBags(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
+  getTotalBags(voucher: PurchaseVoucherViewModel): number {
+    return voucher.lines.reduce((sum: number, line) => sum + (this.isPackedLine(line.rbp) ? this.toNumber(line.qty) : 0), 0);
   }
 
-  getTotalWeight(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => {
-      return sum + (line.packingWeightKg * line.qty);
+  getTotalWeight(voucher: PurchaseVoucherViewModel): number {
+    return voucher.lines.reduce((sum: number, line) => {
+      const qty = this.toNumber(line.qty);
+      if (this.isPackedLine(line.rbp)) {
+        return sum + (this.toNumber(line.packingWeightKg) * qty);
+      }
+      return sum + qty;
     }, 0);
   }
 
-  getTotalAmount(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => {
-      return sum + (line.packingWeightKg * line.qty * line.rate);
+  getTotalAmount(voucher: PurchaseVoucherViewModel): number {
+    return voucher.lines.reduce((sum: number, line) => {
+      const qty = this.toNumber(line.qty);
+      const rate = this.toNumber(line.rate);
+      if (this.isPackedLine(line.rbp)) {
+        return sum + (this.toNumber(line.packingWeightKg) * qty * rate);
+      }
+      return sum + (qty * rate);
     }, 0);
   }
 
-  hasRates(dc: any): boolean {
-    return dc.ratesAdded || dc.lines.some((line: any) => line.rate > 0);
+  hasRates(voucher: PurchaseVoucherViewModel): boolean {
+    return voucher.ratesAdded || voucher.lines.some(line => this.toNumber(line.rate) > 0);
   }
 
   getFormattedDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatDateDdMmYyyy(date);
   }
 
-  getProductCount(dc: any): number {
-    return dc.lines.length;
+  getProductCount(voucher: PurchaseVoucherViewModel): number {
+    return voucher.lines.length;
   }
 
-  editChallan(dc: any): void {
-    this.router.navigate(['/purchase-voucher', dc.id]);
+  editChallan(voucher: PurchaseVoucherViewModel): void {
+    this.router.navigate(['/purchase-voucher', voucher.id]);
   }
 
-  addRate(dc: any): void {
-    this.router.navigate(['/add-purchase-rate', dc.id]);
+  addRate(voucher: PurchaseVoucherViewModel): void {
+    this.router.navigate(['/add-purchase-rate', voucher.id]);
   }
 
-  printChallan(dc: any): void {
-    this.purchaseService.openPdfInNewTab(dc.id);
+  printChallan(voucher: PurchaseVoucherViewModel): void {
+    this.purchaseService.openPdfInNewTab(voucher.id);
   }
 
-  async deleteVoucher(dc: any): Promise<void> {
+  async deleteVoucher(voucher: PurchaseVoucherViewModel): Promise<void> {
     const confirmed = await this.confirmModal.confirm({
       title: 'Delete Purchase Voucher',
-      message: `Are you sure you want to delete "${dc.dcNumber}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${voucher.voucherNumber}"? This action cannot be undone.`,
       confirmText: 'Delete',
       cancelText: 'Cancel'
     });
     if (!confirmed) return;
 
-    this.purchaseService.delete(dc.id).subscribe({
+    this.purchaseService.delete(voucher.id).subscribe({
       next: () => {
-        this.toast.success(`${dc.dcNumber} deleted successfully.`);
+        this.toast.success(`${voucher.voucherNumber} deleted successfully.`);
         this.loadChallans();
       },
       error: err => {
@@ -105,5 +112,14 @@ export class PendingPurchasesComponent implements OnInit {
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });
+  }
+
+  private isPackedLine(rbp: string | undefined | null): boolean {
+    return String(rbp ?? 'Yes').trim().toLowerCase() === 'yes';
+  }
+
+  private toNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

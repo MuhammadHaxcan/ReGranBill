@@ -1,0 +1,5 @@
+<div class="print-soa-container" *ngIf="!loading && !error && pdfUrl">
+  <iframe [src]="pdfUrl" class="pdf-viewer"></iframe>
+</div>
+<div class="print-soa-loading" *ngIf="loading && !error">Loading PDF...</div>
+<div class="print-soa-error" *ngIf="error">{{ error }}</div>

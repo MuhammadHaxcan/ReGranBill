@@ -1,8 +1,10 @@
-This file explains how Visual Studio created the project.
+## Notes
 
-The following steps were used to generate this project:
-- Create new ASP\.NET Core Web API project.
-- Update project file to add a reference to the frontend project and set SPA properties.
-- Update `launchSettings.json` to register the SPA proxy as a startup assembly.
-- Add project to the startup projects list.
-- Write this file.
+This repository started from the Visual Studio ASP.NET Core + Angular template and has been customized for ReGranBill.
+
+Key repository-specific changes:
+- JWT authentication and role-based authorization
+- PostgreSQL with EF Core migrations
+- transactional voucher numbering with dedicated counters
+- delivery, purchase, journal, receipt, payment, and cartage voucher flows
+- Angular frontend served alongside the ASP.NET Core backend

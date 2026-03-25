@@ -1,5 +1,6 @@
 export interface StatementEntry {
   entryId: number;
+  voucherId: number;
   date: string;
   voucherNumber: string;
   voucherType: string;
@@ -12,6 +13,7 @@ export interface StatementEntry {
 export interface StatementOfAccount {
   accountId: number;
   accountName: string;
+  partyRole?: string | null;
   contactPerson: string;
   phone: string;
   city: string;

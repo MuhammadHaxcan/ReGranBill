@@ -1,6 +1,14 @@
 @ReGranBill.Server_HostAddress = http://localhost:5298
+@token = replace-with-jwt
 
-GET {{ReGranBill.Server_HostAddress}}/weatherforecast/
+GET {{ReGranBill.Server_HostAddress}}/api/categories
 Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+GET {{ReGranBill.Server_HostAddress}}/api/delivery-challans/next-number
+Accept: application/json
+Authorization: Bearer {{token}}
 
 ###

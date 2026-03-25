@@ -42,30 +42,16 @@ public class JournalVouchersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateJournalVoucherRequest request)
     {
-        try
-        {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _journalVoucherService.CreateAsync(request, userId);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await _journalVoucherService.CreateAsync(request, userId);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateJournalVoucherRequest request)
     {
-        try
-        {
-            var result = await _journalVoucherService.UpdateAsync(id, request);
-            if (result == null) return NotFound();
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _journalVoucherService.UpdateAsync(id, request);
+        if (result == null) return NotFound();
+        return Ok(result);
     }
 }

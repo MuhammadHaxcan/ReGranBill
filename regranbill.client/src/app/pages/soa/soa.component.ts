@@ -4,8 +4,8 @@ import { forkJoin } from 'rxjs';
 import { StatementService } from '../../services/statement.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
-import { StatementOfAccount } from '../../models/statement.model';
-import { Account } from '../../models/account.model';
+import { StatementEntry, StatementOfAccount } from '../../models/statement.model';
+import { Account, PartyRole } from '../../models/account.model';
 
 @Component({
   selector: 'app-soa',
@@ -82,11 +82,45 @@ export class SoaComponent implements OnInit {
     }
   }
 
+  get canPrintStatement(): boolean {
+    const role = this.statement?.partyRole;
+    return !!this.statement && (role === PartyRole.Customer || role === PartyRole.Both);
+  }
+
   getFormattedDate(date: string): string {
     return new Date(date).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
+  }
+
+  isPrintableVoucher(entry: StatementEntry): boolean {
+    return (entry.voucherType === 'SaleVoucher' || entry.voucherType === 'PurchaseVoucher') && entry.voucherId > 0;
+  }
+
+  openVoucherPrint(entry: StatementEntry): void {
+    if (!this.isPrintableVoucher(entry)) return;
+
+    const targetPath = entry.voucherType === 'SaleVoucher'
+      ? `/print-dc/${entry.voucherId}`
+      : `/print-pv/${entry.voucherId}`;
+
+    window.open(targetPath, '_blank');
+  }
+
+  printStatement(): void {
+    if (!this.selectedAccountId || !this.canPrintStatement) return;
+
+    const params = new URLSearchParams();
+    if (this.fromDate) params.set('fromDate', this.fromDate);
+    if (this.toDate) params.set('toDate', this.toDate);
+
+    const query = params.toString();
+    const target = query
+      ? `/print-soa/${this.selectedAccountId}?${query}`
+      : `/print-soa/${this.selectedAccountId}`;
+
+    window.open(target, '_blank');
   }
 }

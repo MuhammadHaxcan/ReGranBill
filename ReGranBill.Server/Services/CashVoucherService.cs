@@ -3,20 +3,26 @@ using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.CashVouchers;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Exceptions;
 
 namespace ReGranBill.Server.Services;
 
 public class CashVoucherService : ICashVoucherService
 {
     private readonly AppDbContext _db;
+    private readonly IVoucherNumberService _voucherNumberService;
 
-    public CashVoucherService(AppDbContext db) => _db = db;
+    public CashVoucherService(AppDbContext db, IVoucherNumberService voucherNumberService)
+    {
+        _db = db;
+        _voucherNumberService = voucherNumberService;
+    }
 
     public Task<string> GetNextReceiptNumberAsync() =>
-        GetNextNumberAsync(VoucherType.ReceiptVoucher, "RV-");
+        _voucherNumberService.GetNextNumberPreviewAsync(VoucherSequenceKeys.ReceiptVoucher, "RV-");
 
     public Task<string> GetNextPaymentNumberAsync() =>
-        GetNextNumberAsync(VoucherType.PaymentVoucher, "PMV-");
+        _voucherNumberService.GetNextNumberPreviewAsync(VoucherSequenceKeys.PaymentVoucher, "PMV-");
 
     public Task<CashVoucherDto?> GetReceiptByIdAsync(int id) =>
         GetByIdAsync(id, VoucherType.ReceiptVoucher);
@@ -25,42 +31,16 @@ public class CashVoucherService : ICashVoucherService
         GetByIdAsync(id, VoucherType.PaymentVoucher);
 
     public Task<CashVoucherDto> CreateReceiptAsync(CreateCashVoucherRequest request, int userId) =>
-        CreateAsync(VoucherType.ReceiptVoucher, "RV-", request, userId);
+        CreateAsync(VoucherType.ReceiptVoucher, VoucherSequenceKeys.ReceiptVoucher, "RV-", request, userId);
 
     public Task<CashVoucherDto> CreatePaymentAsync(CreateCashVoucherRequest request, int userId) =>
-        CreateAsync(VoucherType.PaymentVoucher, "PMV-", request, userId);
+        CreateAsync(VoucherType.PaymentVoucher, VoucherSequenceKeys.PaymentVoucher, "PMV-", request, userId);
 
     public Task<CashVoucherDto?> UpdateReceiptAsync(int id, CreateCashVoucherRequest request) =>
         UpdateAsync(id, VoucherType.ReceiptVoucher, request);
 
     public Task<CashVoucherDto?> UpdatePaymentAsync(int id, CreateCashVoucherRequest request) =>
         UpdateAsync(id, VoucherType.PaymentVoucher, request);
-
-    private async Task<string> GetNextNumberAsync(VoucherType voucherType, string prefix)
-    {
-        var lastNumber = await GetLastNumberAsync(voucherType, prefix);
-        return $"{prefix}{lastNumber + 1:D4}";
-    }
-
-    private async Task<int> GetLastNumberAsync(VoucherType voucherType, string prefix)
-    {
-        var voucherNumbers = await _db.JournalVouchers
-            .Where(v => v.VoucherType == voucherType && v.VoucherNumber.StartsWith(prefix))
-            .Select(v => v.VoucherNumber)
-            .ToListAsync();
-
-        var max = 0;
-        foreach (var number in voucherNumbers)
-        {
-            if (number.Length > prefix.Length
-                && int.TryParse(number.AsSpan(prefix.Length), out var parsed))
-            {
-                max = Math.Max(max, parsed);
-            }
-        }
-
-        return max;
-    }
 
     private async Task<CashVoucherDto?> GetByIdAsync(int id, VoucherType voucherType)
     {
@@ -75,36 +55,21 @@ public class CashVoucherService : ICashVoucherService
 
     private async Task<CashVoucherDto> CreateAsync(
         VoucherType voucherType,
+        string sequenceKey,
         string prefix,
         CreateCashVoucherRequest request,
         int userId)
     {
         await ValidateRequestAsync(voucherType, request);
 
-        var voucherNumber = await GetNextNumberAsync(voucherType, prefix);
-        var totalAmount = Round2(request.Lines.Sum(line => line.Amount));
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var voucher = new JournalVoucher
-        {
-            VoucherNumber = voucherNumber,
-            Date = NormalizeToUtc(request.Date),
-            VoucherType = voucherType,
-            Description = ToNullIfWhiteSpace(request.Description),
-            RatesAdded = true,
-            CreatedBy = userId
-        };
-
-        voucher.Entries.Add(BuildPartyEntry(voucherType, request.PartyAccountId, voucherNumber, totalAmount));
-
-        foreach (var (line, index) in request.Lines
-                     .OrderBy(line => line.SortOrder)
-                     .Select((line, index) => (line, index)))
-        {
-            voucher.Entries.Add(BuildAccountEntry(voucherType, line, index + 1));
-        }
+        var voucherNumber = await _voucherNumberService.ReserveNextNumberAsync(sequenceKey, prefix);
+        var voucher = BuildVoucher(voucherType, voucherNumber, request, userId, isEdited: false);
 
         _db.JournalVouchers.Add(voucher);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         return (await GetByIdAsync(voucher.Id, voucherType))!;
     }
@@ -142,17 +107,16 @@ public class CashVoucherService : ICashVoucherService
         }
 
         await _db.SaveChangesAsync();
-
         return await GetByIdAsync(voucher.Id, voucherType);
     }
 
     private async Task ValidateRequestAsync(VoucherType voucherType, CreateCashVoucherRequest request)
     {
         if (request.PartyAccountId <= 0)
-            throw new InvalidOperationException("Select a valid party account.");
+            throw new RequestValidationException("Select a valid party account.");
 
         if (request.Lines.Count == 0)
-            throw new InvalidOperationException("Add at least one cash or bank line.");
+            throw new RequestValidationException("Add at least one cash or bank line.");
 
         var accountIds = request.Lines
             .Select(line => line.AccountId)
@@ -167,7 +131,7 @@ public class CashVoucherService : ICashVoucherService
             .ToDictionaryAsync(a => a.Id);
 
         if (accountsById.Count != accountIds.Count)
-            throw new InvalidOperationException("One or more selected accounts are invalid.");
+            throw new RequestValidationException("One or more selected accounts are invalid.");
 
         var partyAccount = accountsById[request.PartyAccountId];
         ValidatePartyAccount(voucherType, partyAccount);
@@ -175,25 +139,25 @@ public class CashVoucherService : ICashVoucherService
         foreach (var line in request.Lines)
         {
             if (line.Amount <= 0)
-                throw new InvalidOperationException("Each line amount must be greater than zero.");
+                throw new RequestValidationException("Each line amount must be greater than zero.");
 
             if (line.AccountId == request.PartyAccountId)
-                throw new InvalidOperationException("Cash or bank account cannot be the same as the selected party.");
+                throw new RequestValidationException("Cash or bank account cannot be the same as the selected party.");
 
             var account = accountsById[line.AccountId];
             if (account.AccountType != AccountType.Account)
-                throw new InvalidOperationException("Only cash and bank accounts are allowed in receipt and payment vouchers.");
+                throw new RequestValidationException("Only cash and bank accounts are allowed in receipt and payment vouchers.");
         }
 
         var totalAmount = Round2(request.Lines.Sum(line => line.Amount));
         if (totalAmount <= 0)
-            throw new InvalidOperationException("Voucher total must be greater than zero.");
+            throw new RequestValidationException("Voucher total must be greater than zero.");
     }
 
     private static void ValidatePartyAccount(VoucherType voucherType, Account account)
     {
         if (account.AccountType != AccountType.Party || account.PartyDetail == null)
-            throw new InvalidOperationException("Selected party account is invalid.");
+            throw new RequestValidationException("Selected party account is invalid.");
 
         var isValid = voucherType switch
         {
@@ -204,10 +168,40 @@ public class CashVoucherService : ICashVoucherService
 
         if (!isValid)
         {
-            throw new InvalidOperationException(voucherType == VoucherType.ReceiptVoucher
+            throw new RequestValidationException(voucherType == VoucherType.ReceiptVoucher
                 ? "Receipt voucher requires a customer account."
                 : "Payment voucher requires a vendor account.");
         }
+    }
+
+    private static JournalVoucher BuildVoucher(
+        VoucherType voucherType,
+        string voucherNumber,
+        CreateCashVoucherRequest request,
+        int userId,
+        bool isEdited)
+    {
+        var totalAmount = Round2(request.Lines.Sum(line => line.Amount));
+        var voucher = new JournalVoucher
+        {
+            VoucherNumber = voucherNumber,
+            Date = NormalizeToUtc(request.Date),
+            VoucherType = voucherType,
+            Description = ToNullIfWhiteSpace(request.Description),
+            RatesAdded = true,
+            CreatedBy = userId
+        };
+
+        voucher.Entries.Add(BuildPartyEntry(voucherType, request.PartyAccountId, voucherNumber, totalAmount, isEdited));
+
+        foreach (var (line, index) in request.Lines
+                     .OrderBy(line => line.SortOrder)
+                     .Select((line, index) => (line, index)))
+        {
+            voucher.Entries.Add(BuildAccountEntry(voucherType, line, index + 1, isEdited));
+        }
+
+        return voucher;
     }
 
     private static JournalEntry BuildPartyEntry(

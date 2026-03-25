@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<JournalVoucher> JournalVouchers => Set<JournalVoucher>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalVoucherReference> JournalVoucherReferences => Set<JournalVoucherReference>();
+    public DbSet<VoucherCounter> VoucherCounters => Set<VoucherCounter>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -111,6 +112,7 @@ public class AppDbContext : DbContext
             e.Property(je => je.IsEdited).HasDefaultValue(false);
             e.HasOne(je => je.JournalVoucher).WithMany(j => j.Entries).HasForeignKey(je => je.VoucherId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(je => je.Account).WithMany().HasForeignKey(je => je.AccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(je => !je.JournalVoucher.IsDeleted);
         });
 
         // JournalVoucherReference
@@ -120,6 +122,17 @@ public class AppDbContext : DbContext
             e.HasOne(r => r.MainVoucher).WithMany().HasForeignKey(r => r.MainVoucherId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.ReferenceVoucher).WithMany().HasForeignKey(r => r.ReferenceVoucherId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => new { r.MainVoucherId, r.ReferenceVoucherId }).IsUnique();
+            e.HasIndex(r => r.MainVoucherId).IsUnique();
+            e.HasIndex(r => r.ReferenceVoucherId).IsUnique();
+            e.HasQueryFilter(r => !r.MainVoucher.IsDeleted && !r.ReferenceVoucher.IsDeleted);
+        });
+
+        modelBuilder.Entity<VoucherCounter>(e =>
+        {
+            e.ToTable("voucher_counters");
+            e.HasKey(vc => vc.SequenceKey);
+            e.Property(vc => vc.SequenceKey).HasColumnName("sequence_key").HasMaxLength(10);
+            e.Property(vc => vc.LastNumber).HasColumnName("last_number");
         });
     }
 }

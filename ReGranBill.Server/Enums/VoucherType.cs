@@ -4,7 +4,6 @@ public enum VoucherType
 {
     SaleVoucher,
     PurchaseVoucher,
-    ProductionVoucher,
     JournalVoucher,
     ReceiptVoucher,
     PaymentVoucher,

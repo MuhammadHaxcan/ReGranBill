@@ -4,6 +4,7 @@ public class StatementOfAccountDto
 {
     public int AccountId { get; set; }
     public string AccountName { get; set; } = string.Empty;
+    public string? PartyRole { get; set; }
     public string? ContactPerson { get; set; }
     public string? Phone { get; set; }
     public string? City { get; set; }
@@ -19,6 +20,7 @@ public class StatementOfAccountDto
 public class StatementEntryDto
 {
     public int EntryId { get; set; }
+    public int VoucherId { get; set; }
     public DateTime Date { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;

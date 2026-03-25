@@ -3,6 +3,13 @@ import { Router } from '@angular/router';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { DeliveryChallanViewModel } from '../../models/delivery-challan.model';
+import {
+  getDeliveryTotalAmount,
+  getDeliveryTotalBags,
+  getDeliveryTotalWeight
+} from '../../utils/delivery-calculations';
+import { parseLocalDate } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-pending-challans',
@@ -11,7 +18,7 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
   standalone: false
 })
 export class PendingChallansComponent implements OnInit {
-  challans: any[] = [];
+  challans: DeliveryChallanViewModel[] = [];
   loading = true;
 
   constructor(
@@ -42,62 +49,47 @@ export class PendingChallansComponent implements OnInit {
     });
   }
 
-  getTotalBags(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => {
-      return sum + (this.isRbpYes(line.rbp) ? this.toNumber(line.qty) : 0);
-    }, 0);
+  getTotalBags(dc: DeliveryChallanViewModel): number {
+    return getDeliveryTotalBags(dc.lines);
   }
 
-  getTotalWeight(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => {
-      const qty = this.toNumber(line.qty);
-      if (this.isRbpYes(line.rbp)) {
-        return sum + (this.toNumber(line.packingWeightKg) * qty);
-      }
-      return sum + qty;
-    }, 0);
+  getTotalWeight(dc: DeliveryChallanViewModel): number {
+    return getDeliveryTotalWeight(dc.lines);
   }
 
-  getTotalAmount(dc: any): number {
-    return dc.lines.reduce((sum: number, line: any) => {
-      const qty = this.toNumber(line.qty);
-      const rate = this.toNumber(line.rate);
-      if (this.isRbpYes(line.rbp)) {
-        return sum + (this.toNumber(line.packingWeightKg) * qty * rate);
-      }
-      return sum + (qty * rate);
-    }, 0);
+  getTotalAmount(dc: DeliveryChallanViewModel): number {
+    return getDeliveryTotalAmount(dc.lines);
   }
 
-  hasRates(dc: any): boolean {
-    return dc.ratesAdded || dc.lines.some((line: any) => line.rate > 0);
+  hasRates(dc: DeliveryChallanViewModel): boolean {
+    return dc.ratesAdded || dc.lines.some(line => line.rate > 0);
   }
 
   getFormattedDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-GB', {
+    return new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
-      month: 'short',
+      month: '2-digit',
       year: 'numeric'
-    });
+    }).format(parseLocalDate(date));
   }
 
-  getProductCount(dc: any): number {
+  getProductCount(dc: DeliveryChallanViewModel): number {
     return dc.lines.length;
   }
 
-  editChallan(dc: any): void {
+  editChallan(dc: DeliveryChallanViewModel): void {
     this.router.navigate(['/delivery-challan', dc.id]);
   }
 
-  addRate(dc: any): void {
+  addRate(dc: DeliveryChallanViewModel): void {
     this.router.navigate(['/add-rate', dc.id]);
   }
 
-  printChallan(dc: any): void {
+  printChallan(dc: DeliveryChallanViewModel): void {
     this.dcService.openPdfInNewTab(dc.id);
   }
 
-  async deleteChallan(dc: any): Promise<void> {
+  async deleteChallan(dc: DeliveryChallanViewModel): Promise<void> {
     const confirmed = await this.confirmModal.confirm({
       title: 'Delete Challan',
       message: `Are you sure you want to delete "${dc.dcNumber}"? This action cannot be undone.`,
@@ -118,12 +110,4 @@ export class PendingChallansComponent implements OnInit {
     });
   }
 
-  private isRbpYes(rbp: string | undefined | null): boolean {
-    return String(rbp ?? 'Yes').trim().toLowerCase() === 'yes';
-  }
-
-  private toNumber(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
 }

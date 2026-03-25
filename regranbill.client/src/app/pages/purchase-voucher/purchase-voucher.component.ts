@@ -9,6 +9,11 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
+import {
+  PurchaseVoucherUpsertRequest,
+  PurchaseVoucherViewModel
+} from '../../models/purchase-voucher.model';
+import { parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-purchase-voucher',
@@ -19,22 +24,18 @@ import { SelectOption } from '../../components/searchable-select/searchable-sele
 export class PurchaseVoucherComponent implements OnInit {
   challanId: number | null = null;
   isEditMode = false;
-  dcNumber = '';
-  dcDate = new Date();
+  voucherNumber = '';
+  voucherDate = new Date();
   selectedVendorId: number | null = null;
   vehicleNumber = '';
 
-  get dcDateIso(): string {
-    const y = this.dcDate.getFullYear();
-    const m = String(this.dcDate.getMonth() + 1).padStart(2, '0');
-    const d = String(this.dcDate.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  get voucherDateIso(): string {
+    return toDateInputValue(this.voucherDate);
   }
 
-  set dcDateIso(val: string) {
+  set voucherDateIso(val: string) {
     if (!val) return;
-    const [y, m, d] = val.split('-').map(Number);
-    this.dcDate = new Date(y, m - 1, d);
+    this.voucherDate = parseLocalDate(val);
   }
   description = '';
 
@@ -122,34 +123,32 @@ export class PurchaseVoucherComponent implements OnInit {
     if (idParam) {
       this.challanId = +idParam;
       this.isEditMode = true;
-      this.purchaseService.getById(this.challanId).subscribe({
-        next: dc => {
-          if (dc) {
-            this.dcNumber = dc.dcNumber;
-            this.dcDate = new Date(dc.date);
-            this.selectedVendorId = dc.customerId;
-            this.vehicleNumber = dc.vehicleNumber || '';
-            this.description = dc.description || '';
-            this.lines = dc.lines.map((l: any) => ({
-              id: l.id,
-              product: l.productId ? {
-                id: l.productId,
-                name: l.productName || '',
-                packing: l.packing || '',
-                packingWeightKg: l.packingWeightKg
-              } : null,
-              rbp: l.rbp as 'Yes' | 'No',
-              qty: l.qty,
-              rate: l.rate,
-              sortOrder: l.sortOrder
-            }));
-            this.cartage = dc.cartage ? {
-              transporterId: dc.cartage.transporterId,
-              transporterName: dc.cartage.transporterName || '',
-              city: dc.cartage.city || '',
-              amount: dc.cartage.amount
-            } : null;
-          }
+        this.purchaseService.getById(this.challanId).subscribe({
+        next: (voucher: PurchaseVoucherViewModel) => {
+          this.voucherNumber = voucher.voucherNumber;
+          this.voucherDate = parseLocalDate(voucher.date);
+          this.selectedVendorId = voucher.vendorId;
+          this.vehicleNumber = voucher.vehicleNumber || '';
+          this.description = voucher.description || '';
+          this.lines = voucher.lines.map(l => ({
+            id: l.id,
+            product: l.productId ? {
+              id: l.productId,
+              name: l.productName || '',
+              packing: l.packing || '',
+              packingWeightKg: l.packingWeightKg
+            } : null,
+            rbp: l.rbp,
+            qty: l.qty,
+            rate: l.rate,
+            sortOrder: l.sortOrder
+          }));
+          this.cartage = voucher.cartage ? {
+            transporterId: voucher.cartage.transporterId,
+            transporterName: voucher.cartage.transporterName || '',
+            city: voucher.cartage.city || '',
+            amount: voucher.cartage.amount
+          } : null;
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -162,7 +161,7 @@ export class PurchaseVoucherComponent implements OnInit {
     } else {
       this.purchaseService.getNextNumber().subscribe({
         next: num => {
-          this.dcNumber = num;
+          this.voucherNumber = num;
           this.addLine();
           this.loading = false;
           this.cdr.detectChanges();
@@ -245,9 +244,11 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   get formattedDate(): string {
-    return this.dcDate.toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(this.voucherDate);
   }
 
   // Cartage
@@ -283,10 +284,10 @@ export class PurchaseVoucherComponent implements OnInit {
     this.cartage = null;
   }
 
-  private buildRequest() {
-    return {
-      date: this.dcDate,
-      customerId: this.selectedVendorId!,
+  private buildRequest(): PurchaseVoucherUpsertRequest {
+      return {
+      date: this.voucherDate,
+      vendorId: this.selectedVendorId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,
       lines: this.lines
@@ -294,18 +295,18 @@ export class PurchaseVoucherComponent implements OnInit {
         .map((l, i) => ({
           productId: l.product!.id,
           rbp: l.rbp,
-          qty: l.qty,
-          rate: l.rate,
+          qty: this.toNumber(l.qty),
+          rate: this.toNumber(l.rate),
           sortOrder: i
         })),
       cartage: this.cartage ? {
         transporterId: this.cartage.transporterId,
-        amount: this.cartage.amount
+        amount: this.toNumber(this.cartage.amount)
       } : null
     };
   }
 
-  get validLines(): any[] {
+  get validLines(): ProductLine[] {
     return this.lines.filter(l => l.product && l.qty > 0);
   }
 
@@ -357,7 +358,7 @@ export class PurchaseVoucherComponent implements OnInit {
     } else {
       this.purchaseService.create(req).subscribe({
         next: dc => {
-          this.toast.success(`${dc.dcNumber} created successfully.`);
+          this.toast.success(`${dc.voucherNumber} created successfully.`);
           this.resetForm();
         },
         error: err => {
@@ -385,7 +386,7 @@ export class PurchaseVoucherComponent implements OnInit {
     } else {
       this.purchaseService.create(req).subscribe({
         next: dc => {
-          this.toast.success(`${dc.dcNumber} created successfully.`);
+          this.toast.success(`${dc.voucherNumber} created successfully.`);
           this.purchaseService.openPdfInNewTab(dc.id);
           this.resetForm();
         },
@@ -400,19 +401,24 @@ export class PurchaseVoucherComponent implements OnInit {
     this.selectedVendorId = null;
     this.vehicleNumber = '';
     this.description = '';
-    this.dcDate = new Date();
+    this.voucherDate = new Date();
     this.cartage = null;
     this.showCartageForm = false;
     this.lines = [];
     this.addLine();
     this.purchaseService.getNextNumber().subscribe({
       next: num => {
-        this.dcNumber = num;
+        this.voucherNumber = num;
         this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to get next voucher number.');
       }
     });
+  }
+
+  private toNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

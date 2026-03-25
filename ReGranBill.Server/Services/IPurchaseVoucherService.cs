@@ -1,14 +1,14 @@
-using ReGranBill.Server.DTOs.DeliveryChallans;
+using ReGranBill.Server.DTOs.PurchaseVouchers;
 
 namespace ReGranBill.Server.Services;
 
 public interface IPurchaseVoucherService
 {
-    Task<List<DeliveryChallanDto>> GetAllAsync();
-    Task<DeliveryChallanDto?> GetByIdAsync(int id);
+    Task<List<PurchaseVoucherDto>> GetAllAsync();
+    Task<PurchaseVoucherDto?> GetByIdAsync(int id);
     Task<string> GetNextNumberAsync();
-    Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId);
-    Task<DeliveryChallanDto?> UpdateAsync(int id, CreateDcRequest request);
-    Task<bool> UpdateRatesAsync(int id, UpdateDcRatesRequest request);
+    Task<PurchaseVoucherDto> CreateAsync(CreatePurchaseVoucherRequest request, int userId);
+    Task<PurchaseVoucherDto?> UpdateAsync(int id, CreatePurchaseVoucherRequest request);
+    Task<bool> UpdateRatesAsync(int id, UpdatePurchaseVoucherRatesRequest request);
     Task<(bool Success, string? Error)> SoftDeleteAsync(int id);
 }

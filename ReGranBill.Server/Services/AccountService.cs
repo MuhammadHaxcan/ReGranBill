@@ -3,6 +3,7 @@ using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.Accounts;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Exceptions;
 
 namespace ReGranBill.Server.Services;
 
@@ -81,17 +82,22 @@ public class AccountService : IAccountService
 
     public async Task<AccountDto> CreateAsync(CreateAccountRequest request)
     {
-        var accountType = Enum.Parse<AccountType>(request.AccountType);
+        var accountName = ValidateName(request.Name);
+        await ValidateCategoryAsync(request.CategoryId);
+        await EnsureUniqueNameAsync(accountName);
+
+        var accountType = ParseAccountType(request.AccountType);
+        var partyRole = ParsePartyRole(accountType, request.PartyRole);
         var account = new Account
         {
-            Name = request.Name.Trim(),
+            Name = accountName,
             CategoryId = request.CategoryId,
             AccountType = accountType
         };
         _db.Accounts.Add(account);
         await _db.SaveChangesAsync();
 
-        await CreateDetailRow(account.Id, request, accountType);
+        await CreateDetailRow(account.Id, request, accountType, partyRole);
         return await GetByIdAsync(account.Id);
     }
 
@@ -110,13 +116,18 @@ public class AccountService : IAccountService
         if (account.BankDetail != null) _db.BankDetails.Remove(account.BankDetail);
         if (account.PartyDetail != null) _db.PartyDetails.Remove(account.PartyDetail);
 
-        var accountType = Enum.Parse<AccountType>(request.AccountType);
-        account.Name = request.Name.Trim();
+        var accountName = ValidateName(request.Name);
+        await ValidateCategoryAsync(request.CategoryId);
+        await EnsureUniqueNameAsync(accountName, id);
+
+        var accountType = ParseAccountType(request.AccountType);
+        var partyRole = ParsePartyRole(accountType, request.PartyRole);
+        account.Name = accountName;
         account.CategoryId = request.CategoryId;
         account.AccountType = accountType;
         await _db.SaveChangesAsync();
 
-        await CreateDetailRow(account.Id, request, accountType);
+        await CreateDetailRow(account.Id, request, accountType, partyRole);
         return await GetByIdAsync(account.Id);
     }
 
@@ -139,7 +150,7 @@ public class AccountService : IAccountService
         return (true, null);
     }
 
-    private async Task CreateDetailRow(int accountId, CreateAccountRequest request, AccountType accountType)
+    private async Task CreateDetailRow(int accountId, CreateAccountRequest request, AccountType accountType, PartyRole? partyRole)
     {
         switch (accountType)
         {
@@ -164,7 +175,7 @@ public class AccountService : IAccountService
                 _db.PartyDetails.Add(new PartyDetail
                 {
                     AccountId = accountId,
-                    PartyRole = Enum.Parse<PartyRole>(request.PartyRole ?? "Customer"),
+                    PartyRole = partyRole ?? PartyRole.Customer,
                     ContactPerson = request.ContactPerson,
                     Phone = request.Phone,
                     City = request.City,
@@ -202,4 +213,59 @@ public class AccountService : IAccountService
         City = a.PartyDetail != null ? a.PartyDetail.City : null,
         Address = a.PartyDetail != null ? a.PartyDetail.Address : null
     };
+
+    private static string ValidateName(string? name)
+    {
+        var trimmed = name?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            throw new RequestValidationException("Account name is required.");
+        }
+
+        return trimmed;
+    }
+
+    private async Task ValidateCategoryAsync(int categoryId)
+    {
+        if (categoryId <= 0 || !await _db.Categories.AnyAsync(c => c.Id == categoryId))
+        {
+            throw new RequestValidationException("Select a valid category.");
+        }
+    }
+
+    private async Task EnsureUniqueNameAsync(string name, int? existingId = null)
+    {
+        var duplicateExists = await _db.Accounts.AnyAsync(a =>
+            a.Name == name && (!existingId.HasValue || a.Id != existingId.Value));
+
+        if (duplicateExists)
+        {
+            throw new ConflictException($"An account named \"{name}\" already exists.");
+        }
+    }
+
+    private static AccountType ParseAccountType(string? accountType)
+    {
+        if (!Enum.TryParse(accountType, true, out AccountType parsed))
+        {
+            throw new RequestValidationException("Select a valid account type.");
+        }
+
+        return parsed;
+    }
+
+    private static PartyRole? ParsePartyRole(AccountType accountType, string? partyRole)
+    {
+        if (accountType != AccountType.Party)
+        {
+            return null;
+        }
+
+        if (!Enum.TryParse(partyRole, true, out PartyRole parsed))
+        {
+            throw new RequestValidationException("Select a valid party role.");
+        }
+
+        return parsed;
+    }
 }

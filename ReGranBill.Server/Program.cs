@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ReGranBill.Server.Data;
+using ReGranBill.Server.Middleware;
 using ReGranBill.Server.Services;
 
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -67,6 +68,7 @@ builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IMasterReportService, MasterReportService>();
 builder.Services.AddScoped<IProductStockReportService, ProductStockReportService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<IVoucherNumberService, VoucherNumberService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -91,6 +93,10 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+var webRootPath = app.Environment.WebRootPath;
+var hasWebRoot = !string.IsNullOrWhiteSpace(webRootPath) && Directory.Exists(webRootPath);
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Seed database
 using (var scope = app.Services.CreateScope())
@@ -108,11 +114,25 @@ if (app.Environment.IsDevelopment())
     app.UseCors("DevCors");
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+if (!app.Environment.IsDevelopment() && hasWebRoot)
+{
+    app.UseDefaultFiles();
+    app.MapStaticAssets();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapFallbackToFile("/index.html");
+
+if (!app.Environment.IsDevelopment() && hasWebRoot)
+{
+    app.MapFallbackToFile("/index.html");
+}
 
 app.Run();
 

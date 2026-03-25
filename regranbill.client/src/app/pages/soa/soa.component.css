@@ -170,6 +170,10 @@
   text-align: right;
 }
 
+.btn-print-statement {
+  margin-top: 12px;
+}
+
 .net-balance {
   font-family: var(--font-display), serif;
   font-size: 28px;
@@ -294,6 +298,24 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
+}
+
+.voucher-link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.invoice-number-badge-link {
+  border: 1px solid var(--primary);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.voucher-link-button:hover .invoice-number-badge-link {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.18);
 }
 
 .col-type {

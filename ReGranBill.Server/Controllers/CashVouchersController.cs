@@ -49,60 +49,32 @@ public class CashVouchersController : ControllerBase
     [HttpPost("receipt")]
     public async Task<IActionResult> CreateReceipt([FromBody] CreateCashVoucherRequest request)
     {
-        try
-        {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _cashVoucherService.CreateReceiptAsync(request, userId);
-            return CreatedAtAction(nameof(GetReceiptById), new { id = result.Id }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await _cashVoucherService.CreateReceiptAsync(request, userId);
+        return CreatedAtAction(nameof(GetReceiptById), new { id = result.Id }, result);
     }
 
     [HttpPost("payment")]
     public async Task<IActionResult> CreatePayment([FromBody] CreateCashVoucherRequest request)
     {
-        try
-        {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _cashVoucherService.CreatePaymentAsync(request, userId);
-            return CreatedAtAction(nameof(GetPaymentById), new { id = result.Id }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await _cashVoucherService.CreatePaymentAsync(request, userId);
+        return CreatedAtAction(nameof(GetPaymentById), new { id = result.Id }, result);
     }
 
     [HttpPut("receipt/{id}")]
     public async Task<IActionResult> UpdateReceipt(int id, [FromBody] CreateCashVoucherRequest request)
     {
-        try
-        {
-            var result = await _cashVoucherService.UpdateReceiptAsync(id, request);
-            if (result == null) return NotFound();
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _cashVoucherService.UpdateReceiptAsync(id, request);
+        if (result == null) return NotFound();
+        return Ok(result);
     }
 
     [HttpPut("payment/{id}")]
     public async Task<IActionResult> UpdatePayment(int id, [FromBody] CreateCashVoucherRequest request)
     {
-        try
-        {
-            var result = await _cashVoucherService.UpdatePaymentAsync(id, request);
-            if (result == null) return NotFound();
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _cashVoucherService.UpdatePaymentAsync(id, request);
+        if (result == null) return NotFound();
+        return Ok(result);
     }
 }

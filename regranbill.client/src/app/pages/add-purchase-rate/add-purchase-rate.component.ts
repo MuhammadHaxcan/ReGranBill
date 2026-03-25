@@ -1,8 +1,15 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import {
+  PurchaseVoucherCartage,
+  PurchaseVoucherJournalSummary,
+  PurchaseVoucherProductLine,
+  PurchaseVoucherViewModel,
+  PurchaseVoucherRateUpdateRequest
+} from '../../models/purchase-voucher.model';
+import { formatDateDdMmYyyy, parseLocalDate } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-add-purchase-rate',
@@ -12,16 +19,16 @@ import { ToastService } from '../../services/toast.service';
 })
 export class AddPurchaseRateComponent implements OnInit {
   challanId: number | null = null;
-  dcNumber = '';
-  dcDate = new Date();
+  voucherNumber = '';
+  voucherDate = new Date();
   vendorName = '';
   description = '';
   ratesAdded = false;
   loading = true;
 
-  lines: any[] = [];
-  cartage: any = null;
-  journalVouchers: any[] = [];
+  lines: PurchaseVoucherProductLine[] = [];
+  cartage: PurchaseVoucherCartage | null = null;
+  journalVouchers: PurchaseVoucherJournalSummary[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -41,16 +48,16 @@ export class AddPurchaseRateComponent implements OnInit {
 
   loadData(): void {
     this.purchaseService.getById(this.challanId!).subscribe({
-      next: dc => {
-        if (dc) {
-          this.dcNumber = dc.dcNumber;
-          this.dcDate = new Date(dc.date);
-          this.vendorName = dc.customerName || '-';
-          this.description = dc.description || '';
-          this.ratesAdded = dc.ratesAdded;
-          this.lines = dc.lines;
-          this.cartage = dc.cartage;
-          this.journalVouchers = dc.journalVouchers || [];
+      next: (voucher: PurchaseVoucherViewModel) => {
+        if (voucher) {
+          this.voucherNumber = voucher.voucherNumber;
+          this.voucherDate = parseLocalDate(voucher.date);
+          this.vendorName = voucher.vendorName || '-';
+          this.description = voucher.description || '';
+          this.ratesAdded = voucher.ratesAdded;
+          this.lines = voucher.lines;
+          this.cartage = voucher.cartage;
+          this.journalVouchers = voucher.journalVouchers || [];
         }
         this.loading = false;
         this.cdr.detectChanges();
@@ -64,46 +71,51 @@ export class AddPurchaseRateComponent implements OnInit {
   }
 
   get formattedDate(): string {
-    return this.dcDate.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatDateDdMmYyyy(this.voucherDate);
   }
 
-  getLineTotalWeight(line: any): number {
-    return (line.packingWeightKg || 0) * (line.qty || 0);
-  }
-
-  getLineAmount(line: any): number {
-    if (line.rbp === 'Yes') {
-      return this.getLineTotalWeight(line) * (line.rate || 0);
+  getLineTotalWeight(line: PurchaseVoucherProductLine): number {
+    const qty = this.toNumber(line.qty);
+    if (this.isPackedLine(line.rbp)) {
+      return this.toNumber(line.packingWeightKg) * qty;
     }
-    return (line.qty || 0) * (line.rate || 0);
+    return qty;
+  }
+
+  getLineAmount(line: PurchaseVoucherProductLine): number {
+    const qty = this.toNumber(line.qty);
+    const rate = this.toNumber(line.rate);
+    if (this.isPackedLine(line.rbp)) {
+      return this.getLineTotalWeight(line) * rate;
+    }
+    return qty * rate;
   }
 
   get totalBags(): number {
     return this.lines
-      .filter((line: any) => line.rbp === 'Yes')
-      .reduce((sum: number, line: any) => sum + (line.qty || 0), 0);
+      .filter(line => this.isPackedLine(line.rbp))
+      .reduce((sum: number, line) => sum + this.toNumber(line.qty), 0);
   }
 
   get totalWeight(): number {
-    return this.lines.reduce((sum: number, line: any) => sum + this.getLineTotalWeight(line), 0);
+    return this.lines.reduce((sum: number, line) => sum + this.getLineTotalWeight(line), 0);
   }
 
   get totalAmount(): number {
-    return this.lines.reduce((sum: number, line: any) => sum + this.getLineAmount(line), 0);
+    return this.lines.reduce((sum: number, line) => sum + this.getLineAmount(line), 0);
   }
 
   saveRates(): void {
     if (this.challanId) {
-      const rateUpdates = this.lines.map((l: any) => ({ entryId: l.id, rate: l.rate }));
-      this.purchaseService.updateRates(this.challanId, { lines: rateUpdates }).subscribe({
+      const rateUpdates: PurchaseVoucherRateUpdateRequest = {
+        lines: this.lines.map(line => ({ entryId: line.id, rate: this.toNumber(line.rate) }))
+      };
+
+      this.purchaseService.updateRates(this.challanId, rateUpdates).subscribe({
         next: updatedDc => {
           this.journalVouchers = updatedDc.journalVouchers || [];
           this.ratesAdded = updatedDc.ratesAdded;
-          this.toast.success(`${this.dcNumber} rates saved successfully.`);
+          this.toast.success(`${this.voucherNumber} rates saved successfully.`);
           this.router.navigate(['/pending-purchases']);
         },
         error: err => {
@@ -115,5 +127,14 @@ export class AddPurchaseRateComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/pending-purchases']);
+  }
+
+  private isPackedLine(rbp: string | undefined | null): boolean {
+    return String(rbp ?? 'Yes').trim().toLowerCase() === 'yes';
+  }
+
+  private toNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

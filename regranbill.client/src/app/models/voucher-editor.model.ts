@@ -1,7 +1,6 @@
 export type VoucherType =
   | 'SaleVoucher'
   | 'PurchaseVoucher'
-  | 'ProductionVoucher'
   | 'JournalVoucher'
   | 'ReceiptVoucher'
   | 'PaymentVoucher'
