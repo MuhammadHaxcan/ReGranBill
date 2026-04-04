@@ -53,7 +53,7 @@ export class CategoriesAccountsComponent implements OnInit {
   acctAddress = '';
 
   categoryOptions: SelectOption[] = [];
-  accountTypes: AccountType[] = [AccountType.Product, AccountType.Expense, AccountType.Account, AccountType.Party];
+  accountTypes: AccountType[] = [AccountType.Product, AccountType.RawMaterial, AccountType.Expense, AccountType.Account, AccountType.Party];
   partyRoles: PartyRole[] = [PartyRole.Customer, PartyRole.Vendor, PartyRole.Transporter, PartyRole.Both];
 
   constructor(
@@ -286,7 +286,7 @@ export class CategoriesAccountsComponent implements OnInit {
       accountType: this.acctType,
     };
 
-    if (this.acctType === 'Product') {
+    if (this.acctType === 'Product' || this.acctType === 'RawMaterial') {
       data.packing = this.acctPacking;
       data.packingWeightKg = this.acctPackingWeight ?? 0;
       data.unit = this.acctUnit;
@@ -352,6 +352,7 @@ export class CategoriesAccountsComponent implements OnInit {
   getAcctTypeBadgeClass(type: AccountType): string {
     switch (type) {
       case AccountType.Product: return 'badge-product';
+      case AccountType.RawMaterial: return 'badge-raw-material';
       case AccountType.Expense: return 'badge-expense';
       case AccountType.Account: return 'badge-account';
       case AccountType.Party: return 'badge-party';

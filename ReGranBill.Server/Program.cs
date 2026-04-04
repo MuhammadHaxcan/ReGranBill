@@ -66,9 +66,13 @@ builder.Services.AddScoped<IVoucherEditorService, VoucherEditorService>();
 builder.Services.AddScoped<IPurchaseVoucherService, PurchaseVoucherService>();
 builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IMasterReportService, MasterReportService>();
+builder.Services.AddScoped<IAccountClosingReportService, AccountClosingReportService>();
+builder.Services.AddScoped<ICompanySettingsService, CompanySettingsService>();
+builder.Services.AddScoped<ISalePurchaseReportService, SalePurchaseReportService>();
 builder.Services.AddScoped<IProductStockReportService, ProductStockReportService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IVoucherNumberService, VoucherNumberService>();
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -104,9 +108,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await SeedData.InitializeAsync(db);
 }
-
-app.UseDefaultFiles();
-app.MapStaticAssets();
 
 if (app.Environment.IsDevelopment())
 {

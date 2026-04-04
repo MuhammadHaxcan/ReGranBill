@@ -1,0 +1,225 @@
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { AuthService } from '../../services/auth.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { ToastService } from '../../services/toast.service';
+import { UserManagementService } from '../../services/user-management.service';
+import { UserRole } from '../../models/auth.model';
+import { ManagedUser } from '../../models/user-management.model';
+import { formatDateDisplay } from '../../utils/date-utils';
+
+@Component({
+  selector: 'app-user-management',
+  templateUrl: './user-management.component.html',
+  styleUrl: './user-management.component.css',
+  standalone: false
+})
+export class UserManagementComponent implements OnInit {
+  users: ManagedUser[] = [];
+  searchText = '';
+  loading = false;
+  showModal = false;
+  editingUserId: number | null = null;
+  formError = '';
+
+  username = '';
+  fullName = '';
+  password = '';
+  role: UserRole = UserRole.Operator;
+  isActive = true;
+
+  readonly roles = [UserRole.Admin, UserRole.Operator];
+
+  constructor(
+    private userManagementService: UserManagementService,
+    private authService: AuthService,
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.loadUsers();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.showModal) {
+      this.closeModal();
+    }
+  }
+
+  get filteredUsers(): ManagedUser[] {
+    if (!this.searchText.trim()) return this.users;
+    const term = this.searchText.trim().toLowerCase();
+    return this.users.filter(user =>
+      user.username.toLowerCase().includes(term) ||
+      user.fullName.toLowerCase().includes(term) ||
+      user.role.toLowerCase().includes(term)
+    );
+  }
+
+  loadUsers(): void {
+    this.loading = true;
+    this.userManagementService.getAll().subscribe({
+      next: users => {
+        this.users = users;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.toast.error('Unable to load users.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  openAddModal(): void {
+    this.editingUserId = null;
+    this.resetForm();
+    this.showModal = true;
+  }
+
+  openEditModal(user: ManagedUser): void {
+    this.editingUserId = user.id;
+    this.username = user.username;
+    this.fullName = user.fullName;
+    this.password = '';
+    this.role = user.role;
+    this.isActive = user.isActive;
+    this.formError = '';
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.resetForm();
+  }
+
+  resetForm(): void {
+    this.username = '';
+    this.fullName = '';
+    this.password = '';
+    this.role = UserRole.Operator;
+    this.isActive = true;
+    this.formError = '';
+  }
+
+  saveUser(): void {
+    const username = this.username.trim();
+    const fullName = this.fullName.trim();
+
+    if (!username) {
+      this.formError = 'Username is required.';
+      return;
+    }
+
+    if (!fullName) {
+      this.formError = 'Full name is required.';
+      return;
+    }
+
+    if (this.editingUserId === null && !this.password.trim()) {
+      this.formError = 'Password is required.';
+      return;
+    }
+
+    if (this.password.trim() && this.password.trim().length < 6) {
+      this.formError = 'Password must be at least 6 characters.';
+      return;
+    }
+
+    this.formError = '';
+
+    if (this.editingUserId === null) {
+      this.userManagementService.create({
+        username,
+        fullName,
+        password: this.password.trim(),
+        role: this.role
+      }).subscribe({
+        next: () => {
+          this.toast.success('User created.');
+          this.closeModal();
+          this.loadUsers();
+        },
+        error: err => {
+          this.formError = err?.error?.message || 'Unable to create user.';
+          this.cdr.detectChanges();
+        }
+      });
+
+      return;
+    }
+
+    const currentUsername = this.users.find(user => user.id === this.editingUserId)?.username;
+
+    this.userManagementService.update(this.editingUserId, {
+      username,
+      fullName,
+      password: this.password.trim() || undefined,
+      role: this.role,
+      isActive: this.isActive
+    }).subscribe({
+      next: () => {
+        if (currentUsername && currentUsername === this.authService.currentUser?.username) {
+          this.authService.syncCurrentUser({
+            username,
+            fullName,
+            role: this.role
+          });
+        }
+
+        this.toast.success('User updated.');
+        this.closeModal();
+        this.loadUsers();
+      },
+      error: err => {
+        this.formError = err?.error?.message || 'Unable to update user.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async toggleStatus(user: ManagedUser): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: user.isActive ? 'Deactivate User' : 'Activate User',
+      message: `Are you sure you want to ${user.isActive ? 'deactivate' : 'activate'} "${user.fullName}"?`,
+      confirmText: user.isActive ? 'Deactivate' : 'Activate',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    this.userManagementService.update(user.id, {
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role,
+      isActive: !user.isActive
+    }).subscribe({
+      next: updated => {
+        if (updated.username === this.authService.currentUser?.username) {
+          this.authService.syncCurrentUser({
+            username: updated.username,
+            fullName: updated.fullName,
+            role: updated.role
+          });
+        }
+
+        this.toast.success(`User ${updated.isActive ? 'activated' : 'deactivated'}.`);
+        this.loadUsers();
+      },
+      error: err => {
+        this.toast.error(err?.error?.message || 'Unable to update user status.');
+      }
+    });
+  }
+
+  formatDate(value: string): string {
+    return new Date(value).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+}

@@ -92,7 +92,12 @@ export class App implements OnInit, OnDestroy {
   }
 
   get isPrintPage(): boolean {
-    return this.router.url.startsWith('/print-dc') || this.router.url.startsWith('/print-pv');
+    return this.router.url.startsWith('/print-dc') ||
+      this.router.url.startsWith('/print-pv') ||
+      this.router.url.startsWith('/print-soa') ||
+      this.router.url.startsWith('/print-master-report') ||
+      this.router.url.startsWith('/print-account-closing-report') ||
+      this.router.url.startsWith('/print-product-stock-report');
   }
 
   get isAdmin(): boolean {

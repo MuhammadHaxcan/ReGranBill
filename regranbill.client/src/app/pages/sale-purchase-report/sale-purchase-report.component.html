@@ -1,0 +1,111 @@
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Sale Purchase Register</h1>
+      <p class="invoice-subtitle">Compact movement register for rated sales and purchases</p>
+    </div>
+  </div>
+</section>
+
+<section class="card filter-card" *ngIf="filtersLoaded">
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>Since</label>
+      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>Type</label>
+      <select [(ngModel)]="selectedType" class="filter-input">
+        <option value="All">All</option>
+        <option value="Sale">Sale</option>
+        <option value="Purchase">Purchase</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Product</label>
+      <select [(ngModel)]="selectedProductId" class="filter-input">
+        <option [ngValue]="null">All Products</option>
+        <option *ngFor="let product of products" [ngValue]="product.id">{{ product.name }}</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadReport()">Apply</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+</section>
+
+<section class="card grid-card" *ngIf="report && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Sale Purchase Register</span>
+      <span class="line-count">{{ filteredRows.length }} of {{ report.totalRows }} rows</span>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Filter voucher, product, from, or to..."
+      [(ngModel)]="searchText"
+    />
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="filteredRows.length > 0">
+      <thead>
+        <tr>
+          <th class="col-voucher">Voucher</th>
+          <th class="col-date">Date</th>
+          <th class="col-type">Type</th>
+          <th class="col-quantity">Quantity</th>
+          <th class="col-product">Product</th>
+          <th class="col-party">From</th>
+          <th class="col-party">To</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let row of filteredRows; let i = index">
+          <tr class="group-header-row" *ngIf="isGroupStart(filteredRows, i)">
+            <td colspan="7" class="group-header-cell">
+              <div class="group-header-content">
+                <span class="group-header-title">{{ row.groupLabel }}</span>
+                <span class="group-header-count">{{ getGroupRowCount(row.groupLabel) }} rows</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-voucher">
+              <a *ngIf="isPrintableVoucher(row)" [routerLink]="getVoucherLink(row)" target="_blank" class="voucher-link">
+                <span class="voucher-badge" [ngClass]="'vtype-' + row.voucherType.toLowerCase()">{{ row.voucherNumber }}</span>
+              </a>
+              <span *ngIf="!isPrintableVoucher(row)" class="voucher-badge" [ngClass]="'vtype-' + row.voucherType.toLowerCase()">{{ row.voucherNumber }}</span>
+            </td>
+            <td class="col-date">{{ getFormattedDate(row.date) }}</td>
+            <td class="col-type">
+              <span class="type-badge" [ngClass]="getTypeClass(row)">{{ getTypeLabel(row) }}</span>
+            </td>
+            <td class="col-quantity">{{ row.displayQuantity }}</td>
+            <td class="col-product">{{ row.productName }}</td>
+            <td class="col-party">{{ row.fromName }}</td>
+            <td class="col-party">{{ row.toName }}</td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="filteredRows.length === 0">
+    <p class="empty-text">No register rows found</p>
+    <p class="empty-subtext">Try adjusting your filters or search text</p>
+  </div>
+</section>
+
+<div class="loading-state" *ngIf="loading">
+  <p>Loading sale purchase register...</p>
+</div>

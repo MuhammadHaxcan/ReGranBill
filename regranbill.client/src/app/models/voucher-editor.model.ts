@@ -14,6 +14,7 @@ export interface VoucherEditorEntry {
   debit: number;
   credit: number;
   qty?: number | null;
+  totalWeightKg?: number | null;
   rbp?: string | null;
   rate?: number | null;
   isEdited: boolean;
@@ -48,6 +49,7 @@ export interface UpdateVoucherEditorEntryRequest {
   debit: number;
   credit: number;
   qty?: number | null;
+  totalWeightKg?: number | null;
   rbp?: string | null;
   rate?: number | null;
   sortOrder: number;

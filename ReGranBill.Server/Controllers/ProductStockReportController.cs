@@ -11,8 +11,13 @@ namespace ReGranBill.Server.Controllers;
 public class ProductStockReportController : ControllerBase
 {
     private readonly IProductStockReportService _reportService;
+    private readonly IPdfService _pdfService;
 
-    public ProductStockReportController(IProductStockReportService reportService) => _reportService = reportService;
+    public ProductStockReportController(IProductStockReportService reportService, IPdfService pdfService)
+    {
+        _reportService = reportService;
+        _pdfService = pdfService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetReport([FromQuery] ProductStockReportQueryDto query)
@@ -22,5 +27,16 @@ public class ProductStockReportController : ControllerBase
 
         var result = await _reportService.GetReportAsync(query);
         return Ok(result);
+    }
+
+    [HttpGet("pdf")]
+    public async Task<IActionResult> GetReportPdf([FromQuery] ProductStockReportQueryDto query, [FromQuery] int? selectedMovementProductId)
+    {
+        if (query.From.HasValue && query.To.HasValue && query.From.Value > query.To.Value)
+            return BadRequest(new { message = "From date cannot be greater than To date." });
+
+        var result = await _reportService.GetReportAsync(query);
+        var pdfBytes = _pdfService.GenerateProductStockReportPdf(result, selectedMovementProductId);
+        return File(pdfBytes, "application/pdf", "ProductStockReport.pdf");
     }
 }

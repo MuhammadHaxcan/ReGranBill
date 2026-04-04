@@ -4,6 +4,7 @@ using ReGranBill.Server.DTOs.DeliveryChallans;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
 using ReGranBill.Server.Exceptions;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
 
@@ -63,7 +64,7 @@ public class DeliveryChallanService : IDeliveryChallanService
     public async Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId)
     {
         var validation = await ValidateRequestAsync(request, PartyRole.Customer, "customer");
-        var dcDate = NormalizeToUtc(request.Date);
+        var dcDate = VoucherHelpers.NormalizeToUtc(request.Date);
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -78,7 +79,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             Date = dcDate,
             VoucherType = VoucherType.SaleVoucher,
             VehicleNumber = request.VehicleNumber,
-            Description = ResolveDescription(request.Description, "Sale to", validation.PartyAccount.Name, request.Lines, validation.ProductAccounts),
+            Description = VoucherHelpers.ResolveDescription(request.Description, "Sale to", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts),
             RatesAdded = request.Lines.All(l => l.Rate > 0),
             CreatedBy = userId,
         };
@@ -89,7 +90,7 @@ public class DeliveryChallanService : IDeliveryChallanService
         foreach (var line in request.Lines.OrderBy(l => l.SortOrder))
         {
             var product = validation.ProductAccounts[line.ProductId];
-            var lineAmount = CalculateLineAmount(product, line);
+            var lineAmount = VoucherHelpers.CalculateLineAmount(product.ProductDetail?.PackingWeightKg ?? 0, line.Rbp, line.Qty, line.Rate);
             totalProductAmount += lineAmount;
 
             saleJv.Entries.Add(new JournalEntry
@@ -99,7 +100,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Debit = 0,
                 Credit = lineAmount,
                 Qty = line.Qty,
-                Rbp = NormalizeRbp(line.Rbp),
+                Rbp = VoucherHelpers.NormalizeRbp(line.Rbp),
                 Rate = line.Rate > 0 ? line.Rate : null,
                 IsEdited = false,
                 SortOrder = ++sortOrder
@@ -120,7 +121,7 @@ public class DeliveryChallanService : IDeliveryChallanService
 
         if (validation.TransporterAccount != null && request.Cartage != null && cartageNumber != null)
         {
-            var cartageJv = BuildCartageVoucher(
+            var cartageJv = VoucherHelpers.BuildCartageVoucher(
                 cartageNumber,
                 dcDate,
                 dcNumber,
@@ -157,9 +158,9 @@ public class DeliveryChallanService : IDeliveryChallanService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        saleJv.Date = NormalizeToUtc(request.Date);
+        saleJv.Date = VoucherHelpers.NormalizeToUtc(request.Date);
         saleJv.VehicleNumber = request.VehicleNumber;
-        saleJv.Description = ResolveDescription(request.Description, "Sale to", validation.PartyAccount.Name, request.Lines, validation.ProductAccounts);
+        saleJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Sale to", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         saleJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
         saleJv.UpdatedAt = DateTime.UtcNow;
 
@@ -172,7 +173,7 @@ public class DeliveryChallanService : IDeliveryChallanService
         foreach (var line in request.Lines.OrderBy(l => l.SortOrder))
         {
             var product = validation.ProductAccounts[line.ProductId];
-            var lineAmount = CalculateLineAmount(product, line);
+            var lineAmount = VoucherHelpers.CalculateLineAmount(product.ProductDetail?.PackingWeightKg ?? 0, line.Rbp, line.Qty, line.Rate);
             totalProductAmount += lineAmount;
 
             saleJv.Entries.Add(new JournalEntry
@@ -182,7 +183,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 Debit = 0,
                 Credit = lineAmount,
                 Qty = line.Qty,
-                Rbp = NormalizeRbp(line.Rbp),
+                Rbp = VoucherHelpers.NormalizeRbp(line.Rbp),
                 Rate = line.Rate > 0 ? line.Rate : null,
                 IsEdited = true,
                 SortOrder = ++sortOrder
@@ -225,9 +226,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 entry.IsEdited = true;
 
                 var weight = entry.Account?.ProductDetail?.PackingWeightKg ?? 0;
-                entry.Credit = string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase)
-                    ? weight * (entry.Qty ?? 0) * update.Rate
-                    : (entry.Qty ?? 0) * update.Rate;
+                entry.Credit = VoucherHelpers.CalculateLineAmount(weight, entry.Rbp, entry.Qty ?? 0, update.Rate);
             }
         }
 
@@ -292,7 +291,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             if (cartageJv == null)
             {
                 var cartageNumber = await _voucherNumberService.ReserveNextNumberAsync(VoucherSequenceKeys.CartageVoucher, "CV-");
-                cartageJv = BuildCartageVoucher(
+                cartageJv = VoucherHelpers.BuildCartageVoucher(
                     cartageNumber,
                     saleJv.Date,
                     saleJv.VoucherNumber,
@@ -378,7 +377,7 @@ public class DeliveryChallanService : IDeliveryChallanService
                 throw new RequestValidationException("Rates cannot be negative.");
             }
 
-            if (!IsValidRbp(line.Rbp))
+            if (!VoucherHelpers.IsValidRbp(line.Rbp))
             {
                 throw new RequestValidationException("RBP must be either Yes or No.");
             }
@@ -421,10 +420,10 @@ public class DeliveryChallanService : IDeliveryChallanService
         foreach (var productId in request.Lines.Select(line => line.ProductId).Distinct())
         {
             if (!accountsById.TryGetValue(productId, out var productAccount)
-                || productAccount.AccountType != AccountType.Product
+                || !IsInventoryAccount(productAccount)
                 || productAccount.ProductDetail == null)
             {
-                throw new RequestValidationException("One or more selected products are invalid.");
+                throw new RequestValidationException("One or more selected inventory items are invalid.");
             }
 
             productAccounts[productId] = productAccount;
@@ -465,73 +464,8 @@ public class DeliveryChallanService : IDeliveryChallanService
         }
     }
 
-    private static bool IsValidRbp(string? rbp) =>
-        string.Equals(rbp, "Yes", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(rbp, "No", StringComparison.OrdinalIgnoreCase);
-
-    private static string NormalizeRbp(string? rbp) =>
-        string.Equals(rbp, "No", StringComparison.OrdinalIgnoreCase) ? "No" : "Yes";
-
-    private static decimal CalculateLineAmount(Account productAccount, CreateDcLineRequest line)
-    {
-        var weight = productAccount.ProductDetail?.PackingWeightKg ?? 0;
-        return NormalizeRbp(line.Rbp) == "Yes"
-            ? weight * line.Qty * line.Rate
-            : line.Qty * line.Rate;
-    }
-
-    private static JournalVoucher BuildCartageVoucher(
-        string voucherNumber,
-        DateTime date,
-        string relatedVoucherNumber,
-        int userId,
-        int customerId,
-        int transporterId,
-        decimal amount,
-        bool isEdited)
-    {
-        var cartageJv = new JournalVoucher
-        {
-            VoucherNumber = voucherNumber,
-            Date = date,
-            VoucherType = VoucherType.CartageVoucher,
-            Description = $"Cartage entries for {relatedVoucherNumber}",
-            RatesAdded = true,
-            CreatedBy = userId,
-        };
-
-        cartageJv.Entries.Add(new JournalEntry
-        {
-            AccountId = customerId,
-            Description = $"Cartage charge - {relatedVoucherNumber}",
-            Debit = amount,
-            Credit = 0,
-            IsEdited = isEdited,
-            SortOrder = 0
-        });
-
-        cartageJv.Entries.Add(new JournalEntry
-        {
-            AccountId = transporterId,
-            Description = $"Cartage for {relatedVoucherNumber}",
-            Debit = 0,
-            Credit = amount,
-            IsEdited = isEdited,
-            SortOrder = 1
-        });
-
-        return cartageJv;
-    }
-
-    private static DateTime NormalizeToUtc(DateTime date)
-    {
-        return date.Kind switch
-        {
-            DateTimeKind.Utc => date,
-            DateTimeKind.Local => date.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
-        };
-    }
+    private static bool IsInventoryAccount(Account account) =>
+        VoucherHelpers.IsInventoryAccount(account);
 
     private static DeliveryChallanDto MapToDto(JournalVoucher saleJv, JournalVoucher? cartageJv)
     {
@@ -610,31 +544,6 @@ public class DeliveryChallanService : IDeliveryChallanService
             SortOrder = e.SortOrder
         }).ToList()
     };
-
-    private static string? ResolveDescription(
-        string? requestedDescription,
-        string prefix,
-        string? partyName,
-        IEnumerable<CreateDcLineRequest> lines,
-        IReadOnlyDictionary<int, Account> productAccounts)
-    {
-        var trimmed = string.IsNullOrWhiteSpace(requestedDescription) ? null : requestedDescription.Trim();
-        if (trimmed != null)
-            return trimmed;
-
-        var productSummary = string.Join(", ", lines
-            .OrderBy(line => line.SortOrder)
-            .Select(line =>
-            {
-                var productName = productAccounts.GetValueOrDefault(line.ProductId)?.Name ?? $"Product {line.ProductId}";
-                return $"{productName} ({line.Qty})";
-            }));
-
-        if (string.IsNullOrWhiteSpace(productSummary))
-            return partyName == null ? null : $"{prefix} {partyName}";
-
-        return $"{prefix} {partyName ?? "Unknown"} - {productSummary}";
-    }
 
     private sealed record ValidatedVoucherRequest(
         IReadOnlyDictionary<int, Account> ProductAccounts,

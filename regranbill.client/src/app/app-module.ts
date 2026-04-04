@@ -23,6 +23,13 @@ import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.componen
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
 import { PrintSoaComponent } from './pages/print-soa/print-soa.component';
+import { UserManagementComponent } from './pages/user-management/user-management.component';
+import { AccountClosingReportComponent } from './pages/account-closing-report/account-closing-report.component';
+import { SalePurchaseReportComponent } from './pages/sale-purchase-report/sale-purchase-report.component';
+import { CompanySettingsComponent } from './pages/company-settings/company-settings.component';
+import { PrintMasterReportComponent } from './pages/print-master-report/print-master-report.component';
+import { PrintAccountClosingReportComponent } from './pages/print-account-closing-report/print-account-closing-report.component';
+import { PrintProductStockReportComponent } from './pages/print-product-stock-report/print-product-stock-report.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 
@@ -43,6 +50,13 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     VoucherEditorComponent,
     PrintPvComponent,
     PrintSoaComponent,
+    PrintMasterReportComponent,
+    PrintAccountClosingReportComponent,
+    PrintProductStockReportComponent,
+    UserManagementComponent,
+    AccountClosingReportComponent,
+    SalePurchaseReportComponent,
+    CompanySettingsComponent,
     SearchableSelectComponent,
     SoaComponent,
     MasterReportComponent,

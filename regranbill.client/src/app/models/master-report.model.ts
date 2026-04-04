@@ -4,7 +4,7 @@ export interface MasterReportEntry {
   voucherNumber: string;
   voucherType: string;
   date: string;
-  description: string;
+  description?: string | null;
   accountName: string;
   quantity: number | null;
   rate: number | null;
@@ -14,6 +14,10 @@ export interface MasterReportEntry {
 }
 
 export interface MasterReport {
+  fromDate?: string | null;
+  toDate?: string | null;
+  categoryName?: string | null;
+  accountName?: string | null;
   totalEntries: number;
   totalDebit: number;
   totalCredit: number;

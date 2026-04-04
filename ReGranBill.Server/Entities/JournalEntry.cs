@@ -9,6 +9,7 @@ public class JournalEntry
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
     public int? Qty { get; set; }
+    public decimal? ActualWeightKg { get; set; }
     public string? Rbp { get; set; }
     public decimal? Rate { get; set; }
     public bool IsEdited { get; set; } = false;

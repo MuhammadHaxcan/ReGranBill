@@ -1,0 +1,64 @@
+@import '../master-report/master-report.component.css';
+
+.summary-table tbody tr {
+  cursor: pointer;
+}
+
+.summary-table tbody tr.row-selected {
+  background: var(--primary-light);
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.history-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--slate-50);
+}
+
+.history-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.history-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.history-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.history-metrics span {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .history-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-metrics {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,47 @@
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Company Settings</h1>
+      <p class="invoice-subtitle">Save company name, address, and logo in the backend</p>
+    </div>
+  </div>
+</section>
+
+<section class="card settings-card" *ngIf="!loading">
+  <div class="settings-grid">
+    <div class="settings-form">
+      <div class="form-field">
+        <label>Company Name</label>
+        <input type="text" [(ngModel)]="companyName" class="form-input" />
+      </div>
+
+      <div class="form-field">
+        <label>Address</label>
+        <textarea [(ngModel)]="address" rows="4" class="form-input form-textarea"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label>Company Logo</label>
+        <input type="file" accept="image/*" (change)="onLogoSelected($event)" class="form-input form-file" />
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving">Save Settings</button>
+      </div>
+    </div>
+
+    <div class="logo-panel">
+      <div class="logo-panel-title">Logo Preview</div>
+      <div class="logo-preview" *ngIf="previewUrl; else noLogo">
+        <img [src]="previewUrl" alt="Company logo preview" />
+      </div>
+      <ng-template #noLogo>
+        <div class="logo-placeholder">No logo uploaded</div>
+      </ng-template>
+    </div>
+  </div>
+</section>
+
+<div class="loading-state" *ngIf="loading">
+  <p>Loading company settings...</p>
+</div>

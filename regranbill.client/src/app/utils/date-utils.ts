@@ -31,6 +31,19 @@ export function formatDateDdMmYyyy(value: string | Date | null | undefined): str
   }).format(date);
 }
 
+export function formatDateDisplay(value: string | Date | null | undefined): string {
+  const date = parseLocalDate(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
+}
+
 export function toDateInputValue(value: string | Date | null | undefined): string {
   const date = parseLocalDate(value);
   if (Number.isNaN(date.getTime())) {

@@ -1,5 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { formatDateDisplay } from '../../utils/date-utils';
 import { Account } from '../../models/account.model';
 import { Category } from '../../models/category.model';
 import {
@@ -33,6 +35,7 @@ export class ProductStockReportComponent implements OnInit {
   filtersLoaded = false;
 
   constructor(
+    private router: Router,
     private accountService: AccountService,
     private categoryService: CategoryService,
     private reportService: ProductStockReportService,
@@ -133,6 +136,27 @@ export class ProductStockReportComponent implements OnInit {
 
   isSelectedRow(productId: number): boolean {
     return this.selectedRowProductId === productId;
+  }
+
+  getStockHealthClass(row: ProductStockRow): string {
+    if (row.closing.kg <= 0) return 'health-empty';
+    return 'health-ok';
+  }
+
+  closeDrilldown(): void {
+    this.selectedRowProductId = null;
+  }
+
+  openPrint(): void {
+    const queryParams: Record<string, string> = {};
+    if (this.fromDate) queryParams['from'] = this.fromDate;
+    if (this.toDate) queryParams['to'] = this.toDate;
+    if (this.selectedCategoryId !== null) queryParams['categoryId'] = this.selectedCategoryId.toString();
+    if (this.selectedProductId !== null) queryParams['productId'] = this.selectedProductId.toString();
+    if (this.selectedRowProductId !== null) queryParams['selectedMovementProductId'] = this.selectedRowProductId.toString();
+
+    const url = this.router.serializeUrl(this.router.createUrlTree(['/print-product-stock-report'], { queryParams }));
+    window.open(url, '_blank');
   }
 
   formatDate(value: string): string {

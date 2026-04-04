@@ -5,6 +5,7 @@ import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { PurchaseVoucherViewModel } from '../../models/purchase-voucher.model';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
+import { getPurchaseTotalAmount, getPurchaseTotalBags, getPurchaseTotalWeight, toNumber } from '../../utils/delivery-calculations';
 
 @Component({
   selector: 'app-pending-purchases',
@@ -45,32 +46,19 @@ export class PendingPurchasesComponent implements OnInit {
   }
 
   getTotalBags(voucher: PurchaseVoucherViewModel): number {
-    return voucher.lines.reduce((sum: number, line) => sum + (this.isPackedLine(line.rbp) ? this.toNumber(line.qty) : 0), 0);
+    return getPurchaseTotalBags(voucher.lines);
   }
 
   getTotalWeight(voucher: PurchaseVoucherViewModel): number {
-    return voucher.lines.reduce((sum: number, line) => {
-      const qty = this.toNumber(line.qty);
-      if (this.isPackedLine(line.rbp)) {
-        return sum + (this.toNumber(line.packingWeightKg) * qty);
-      }
-      return sum + qty;
-    }, 0);
+    return getPurchaseTotalWeight(voucher.lines);
   }
 
   getTotalAmount(voucher: PurchaseVoucherViewModel): number {
-    return voucher.lines.reduce((sum: number, line) => {
-      const qty = this.toNumber(line.qty);
-      const rate = this.toNumber(line.rate);
-      if (this.isPackedLine(line.rbp)) {
-        return sum + (this.toNumber(line.packingWeightKg) * qty * rate);
-      }
-      return sum + (qty * rate);
-    }, 0);
+    return getPurchaseTotalAmount(voucher.lines);
   }
 
   hasRates(voucher: PurchaseVoucherViewModel): boolean {
-    return voucher.ratesAdded || voucher.lines.some(line => this.toNumber(line.rate) > 0);
+    return voucher.ratesAdded || voucher.lines.some(line => toNumber(line.rate) > 0);
   }
 
   getFormattedDate(date: string): string {
@@ -114,12 +102,4 @@ export class PendingPurchasesComponent implements OnInit {
     });
   }
 
-  private isPackedLine(rbp: string | undefined | null): boolean {
-    return String(rbp ?? 'Yes').trim().toLowerCase() === 'yes';
-  }
-
-  private toNumber(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
 }

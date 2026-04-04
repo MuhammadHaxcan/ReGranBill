@@ -2,6 +2,10 @@ namespace ReGranBill.Server.DTOs.MasterReport;
 
 public class MasterReportDto
 {
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
+    public string? CategoryName { get; set; }
+    public string? AccountName { get; set; }
     public int TotalEntries { get; set; }
     public decimal TotalDebit { get; set; }
     public decimal TotalCredit { get; set; }

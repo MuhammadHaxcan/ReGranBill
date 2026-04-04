@@ -4,7 +4,7 @@ export interface StatementEntry {
   date: string;
   voucherNumber: string;
   voucherType: string;
-  description: string;
+  description?: string | null;
   debit: number;
   credit: number;
   runningBalance: number;
@@ -14,10 +14,10 @@ export interface StatementOfAccount {
   accountId: number;
   accountName: string;
   partyRole?: string | null;
-  contactPerson: string;
-  phone: string;
-  city: string;
-  address: string;
+  contactPerson?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  address?: string | null;
   fromDate: string | null;
   toDate: string | null;
   totalDebit: number;

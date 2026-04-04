@@ -1,0 +1,92 @@
+@import '../master-report/master-report.component.css';
+
+.col-voucher {
+  width: 150px;
+  min-width: 150px;
+}
+
+.col-type {
+  width: 110px;
+  min-width: 110px;
+}
+
+.col-quantity {
+  min-width: 160px;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.col-product {
+  min-width: 180px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.col-party {
+  min-width: 160px;
+  color: var(--text-secondary);
+}
+
+.voucher-badge {
+  min-width: 92px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.type-sale {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.type-purchase {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #d8b4fe;
+}
+
+.group-header-row td {
+  border-bottom: none;
+  padding: 0;
+}
+
+.group-header-cell {
+  background: transparent;
+}
+
+.group-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+}
+
+.group-header-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.group-header-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}

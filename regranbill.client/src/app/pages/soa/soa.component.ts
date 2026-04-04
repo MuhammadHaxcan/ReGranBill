@@ -6,6 +6,7 @@ import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
 import { StatementEntry, StatementOfAccount } from '../../models/statement.model';
 import { Account, PartyRole } from '../../models/account.model';
+import { formatDateDisplay } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-soa',
@@ -88,11 +89,7 @@ export class SoaComponent implements OnInit {
   }
 
   getFormattedDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatDateDisplay(date);
   }
 
   isPrintableVoucher(entry: StatementEntry): boolean {

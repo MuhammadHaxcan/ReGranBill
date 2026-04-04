@@ -8,6 +8,7 @@ import { CashVoucher, CashVoucherMode, CreateCashVoucherRequest } from '../../mo
 import { AccountService } from '../../services/account.service';
 import { CashVoucherService } from '../../services/cash-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import { round2 } from '../../utils/delivery-calculations';
 
 interface EditableCashVoucherLine {
   id?: number;
@@ -92,7 +93,7 @@ export class CashVoucherComponent implements OnInit {
   }
 
   get totalAmount(): number {
-    return this.round2(this.lines.reduce((sum, line) => sum + (line.amount || 0), 0));
+    return round2(this.lines.reduce((sum, line) => sum + (line.amount || 0), 0));
   }
 
   get canSave(): boolean {
@@ -318,7 +319,7 @@ export class CashVoucherComponent implements OnInit {
       lines: this.lines.map((line, index) => ({
         accountId: line.accountId!,
         description: line.description.trim() || null,
-        amount: this.round2(line.amount || 0),
+        amount: round2(line.amount || 0),
         sortOrder: index
       }))
     };
@@ -335,12 +336,10 @@ export class CashVoucherComponent implements OnInit {
 
   private sanitizeAmount(value: number): number {
     if (!Number.isFinite(value) || value < 0) return 0;
-    return this.round2(value);
+    return round2(value);
   }
 
-  private round2(value: number): number {
-    return Number((value || 0).toFixed(2));
-  }
+
 
   private newLine(): EditableCashVoucherLine {
     return {

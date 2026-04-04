@@ -61,7 +61,7 @@ public class AccountService : IAccountService
     {
         var accounts = await _db.Accounts
             .Include(a => a.ProductDetail)
-            .Where(a => a.AccountType == AccountType.Product)
+            .Where(a => a.AccountType == AccountType.Product || a.AccountType == AccountType.RawMaterial)
             .OrderBy(a => a.Name)
             .ToListAsync();
         return accounts.Select(MapToDto).ToList();
@@ -155,6 +155,7 @@ public class AccountService : IAccountService
         switch (accountType)
         {
             case AccountType.Product:
+            case AccountType.RawMaterial:
                 _db.ProductDetails.Add(new ProductDetail
                 {
                     AccountId = accountId,
@@ -202,16 +203,16 @@ public class AccountService : IAccountService
         Name = a.Name,
         CategoryId = a.CategoryId,
         AccountType = a.AccountType.ToString(),
-        Packing = a.ProductDetail != null ? a.ProductDetail.Packing : null,
-        PackingWeightKg = a.ProductDetail != null ? a.ProductDetail.PackingWeightKg : null,
-        Unit = a.ProductDetail != null ? a.ProductDetail.Unit : null,
-        AccountNumber = a.BankDetail != null ? a.BankDetail.AccountNumber : null,
-        BankName = a.BankDetail != null ? a.BankDetail.BankName : null,
-        PartyRole = a.PartyDetail != null ? a.PartyDetail.PartyRole.ToString() : null,
-        ContactPerson = a.PartyDetail != null ? a.PartyDetail.ContactPerson : null,
-        Phone = a.PartyDetail != null ? a.PartyDetail.Phone : null,
-        City = a.PartyDetail != null ? a.PartyDetail.City : null,
-        Address = a.PartyDetail != null ? a.PartyDetail.Address : null
+        Packing = a.ProductDetail?.Packing,
+        PackingWeightKg = a.ProductDetail?.PackingWeightKg,
+        Unit = a.ProductDetail?.Unit,
+        AccountNumber = a.BankDetail?.AccountNumber,
+        BankName = a.BankDetail?.BankName,
+        PartyRole = a.PartyDetail?.PartyRole.ToString(),
+        ContactPerson = a.PartyDetail?.ContactPerson,
+        Phone = a.PartyDetail?.Phone,
+        City = a.PartyDetail?.City,
+        Address = a.PartyDetail?.Address
     };
 
     private static string ValidateName(string? name)

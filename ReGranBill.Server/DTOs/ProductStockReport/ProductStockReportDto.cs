@@ -25,7 +25,6 @@ public class ProductStockReportDto
 public class ProductStockTotalsDto
 {
     public int ProductCount { get; set; }
-    public int MovementCount { get; set; }
     public int AnomalyCount { get; set; }
     public ProductStockMetricDto Opening { get; set; } = new();
     public ProductStockMetricDto Inward { get; set; } = new();
@@ -39,7 +38,6 @@ public class ProductStockRowDto
     public string ProductName { get; set; } = string.Empty;
     public string? Packing { get; set; }
     public decimal? PackingWeightKg { get; set; }
-    public int MovementCount { get; set; }
     public int AnomalyCount { get; set; }
     public ProductStockMetricDto Opening { get; set; } = new();
     public ProductStockMetricDto Inward { get; set; } = new();

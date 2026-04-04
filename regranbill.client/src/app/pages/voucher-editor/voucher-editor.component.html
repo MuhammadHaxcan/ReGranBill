@@ -40,7 +40,7 @@
     <span class="voucher-number-badge">{{ voucher?.voucherNumber }}</span>
   </div>
 
-  <div class="form-row" [class.form-row-3]="isSaleVoucher">
+  <div class="form-row" [class.form-row-3]="supportsVehicleNumber">
     <div class="form-group">
       <label class="form-label">Date</label>
       <input type="date" class="form-control" [(ngModel)]="voucherDateIso" />
@@ -49,7 +49,7 @@
       <label class="form-label">Description</label>
       <input type="text" class="form-control" [(ngModel)]="description" placeholder="Voucher description..." />
     </div>
-    <div class="form-group" *ngIf="isSaleVoucher">
+    <div class="form-group" *ngIf="supportsVehicleNumber">
       <label class="form-label">Vehicle Number</label>
       <input type="text" class="form-control vehicle-input" [(ngModel)]="vehicleNumber" placeholder="e.g. ABC-1234" />
     </div>
@@ -82,15 +82,21 @@
           <th class="col-amount">Debit</th>
           <th class="col-amount">Credit</th>
           <th class="col-sale" *ngIf="isSaleVoucher">Qty</th>
+          <th class="col-sale" *ngIf="isPurchaseVoucher">Bags</th>
           <th class="col-sale" *ngIf="isSaleVoucher">RBP</th>
-          <th class="col-sale" *ngIf="isSaleVoucher">Rate</th>
-          <th class="col-sale col-expected" *ngIf="isSaleVoucher">Expected</th>
+          <th class="col-sale" *ngIf="isPurchaseVoucher">Total Kg</th>
+          <th class="col-sale" *ngIf="isSaleVoucher || isPurchaseVoucher">Rate</th>
+          <th class="col-sale col-expected" *ngIf="isPurchaseVoucher">Avg Kg/Bag</th>
+          <th class="col-sale col-expected" *ngIf="isSaleVoucher || isPurchaseVoucher">Expected</th>
           <th class="col-edited">Edited</th>
           <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let line of lines; let i = index" [class.row-mismatch]="isSaleLineAmountMismatch(line)">
+        <tr
+          *ngFor="let line of lines; let i = index"
+          [class.row-mismatch]="(isSaleVoucher && isSaleLineAmountMismatch(line)) || (isPurchaseVoucher && isPurchaseLineAmountMismatch(line))"
+        >
           <td class="col-num">{{ i + 1 }}</td>
           <td class="col-account">
             <app-searchable-select
@@ -140,6 +146,15 @@
               [(ngModel)]="line.qty"
             />
           </td>
+          <td class="col-sale" *ngIf="isPurchaseVoucher">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="1"
+              [(ngModel)]="line.qty"
+            />
+          </td>
           <td class="col-sale" *ngIf="isSaleVoucher">
             <app-searchable-select
               [options]="rbpOptions"
@@ -148,7 +163,16 @@
               (ngModelChange)="onRbpChange(line, $event)"
             ></app-searchable-select>
           </td>
-          <td class="col-sale" *ngIf="isSaleVoucher">
+          <td class="col-sale" *ngIf="isPurchaseVoucher">
+            <input
+              type="number"
+              class="form-control form-control-sm text-right"
+              min="0"
+              step="0.01"
+              [(ngModel)]="line.totalWeightKg"
+            />
+          </td>
+          <td class="col-sale" *ngIf="isSaleVoucher || isPurchaseVoucher">
             <input
               type="number"
               class="form-control form-control-sm text-right"
@@ -157,16 +181,31 @@
               [(ngModel)]="line.rate"
             />
           </td>
-          <td class="col-sale col-expected" *ngIf="isSaleVoucher">
-            <div class="expected-amount" *ngIf="isSaleProductLine(line); else saleLinePlaceholder">
+          <td class="col-sale col-expected" *ngIf="isPurchaseVoucher">
+            <span class="expected-value" *ngIf="isPurchaseProductLine(line)">
+              {{ (getPurchaseLineAverageWeight(line) ?? 0) | number:'1.2-2' }}
+            </span>
+            <span class="expected-placeholder" *ngIf="!isPurchaseProductLine(line)">-</span>
+          </td>
+          <td class="col-sale col-expected" *ngIf="isSaleVoucher || isPurchaseVoucher">
+            <div class="expected-amount" *ngIf="isSaleVoucher && isSaleProductLine(line); else purchaseExpectedTemplate">
               <span class="expected-value">{{ (getExpectedSaleLineAmount(line) ?? 0) | number:'1.2-2' }}</span>
               <span class="expected-error" *ngIf="isSaleLineAmountMismatch(line)">Credit mismatch</span>
             </div>
+            <ng-template #purchaseExpectedTemplate>
+              <div class="expected-amount" *ngIf="isPurchaseVoucher && isPurchaseProductLine(line); else saleLinePlaceholder">
+                <span class="expected-value">{{ (getExpectedPurchaseLineAmount(line) ?? 0) | number:'1.2-2' }}</span>
+                <span class="expected-error" *ngIf="isPurchaseLineAmountMismatch(line)">Debit mismatch</span>
+              </div>
+            </ng-template>
             <ng-template #saleLinePlaceholder>
               <span class="expected-placeholder" *ngIf="isSaleCustomerLine(line)">
                 Debit {{ getSaleCustomerExpectedDebit() | number:'1.2-2' }}
               </span>
-              <span class="expected-placeholder" *ngIf="!isSaleCustomerLine(line)">-</span>
+              <span class="expected-placeholder" *ngIf="isPurchaseVendorLine(line)">
+                Credit {{ getPurchaseVendorExpectedCredit() | number:'1.2-2' }}
+              </span>
+              <span class="expected-placeholder" *ngIf="!isSaleCustomerLine(line) && !isPurchaseVendorLine(line)">-</span>
             </ng-template>
           </td>
           <td class="col-edited">

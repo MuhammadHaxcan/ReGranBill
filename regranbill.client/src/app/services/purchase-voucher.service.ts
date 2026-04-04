@@ -5,8 +5,7 @@ import {
   PurchaseVoucherApiDto,
   PurchaseVoucherRateUpdateRequest,
   PurchaseVoucherUpsertRequest,
-  PurchaseVoucherViewModel,
-  PurchaseVoucherRbp
+  PurchaseVoucherViewModel
 } from '../models/purchase-voucher.model';
 
 @Injectable({
@@ -69,10 +68,7 @@ export class PurchaseVoucherService {
     return {
       ...voucher,
       vendorName: voucher.vendorName || '',
-      lines: voucher.lines.map(line => ({
-        ...line,
-        rbp: this.normalizeRbp(line.rbp)
-      })),
+      lines: voucher.lines,
       cartage: voucher.cartage
         ? {
             ...voucher.cartage,
@@ -87,9 +83,5 @@ export class PurchaseVoucherService {
         }))
       }))
     };
-  }
-
-  private normalizeRbp(value: string | null | undefined): PurchaseVoucherRbp {
-    return value && value.trim().toLowerCase() === 'no' ? 'No' : 'Yes';
   }
 }

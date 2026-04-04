@@ -50,9 +50,9 @@
           <th class="col-num">#</th>
           <th class="col-product">Product</th>
           <th class="col-packing">Packing</th>
-          <th class="col-rbp">RBP</th>
-          <th class="col-qty">Qty</th>
-          <th class="col-weight">Total Weight</th>
+          <th class="col-qty">Bags</th>
+          <th class="col-weight">Total Kg</th>
+          <th class="col-avg">Avg Kg/Bag</th>
           <th class="col-rate">Rate</th>
           <th class="col-amount">Amount</th>
         </tr>
@@ -66,16 +66,14 @@
           <td class="col-packing">
             <span class="packing-label">{{ line.packing || '-' }}</span>
           </td>
-          <td class="col-rbp">
-            <span class="rbp-badge" [class.rbp-yes]="line.rbp === 'Yes'" [class.rbp-no]="line.rbp === 'No'">
-              {{ line.rbp }}
-            </span>
-          </td>
           <td class="col-qty text-center">
             <strong>{{ line.qty }}</strong>
           </td>
           <td class="col-weight">
             <strong>{{ getLineTotalWeight(line) }}</strong> <span class="unit">kg</span>
+          </td>
+          <td class="col-avg">
+            <strong>{{ getLineAverageWeight(line) }}</strong> <span class="unit">kg</span>
           </td>
           <td class="col-rate">
             <input
@@ -103,6 +101,10 @@
     <div class="summary-item">
       <span class="summary-label">Weight</span>
       <span class="summary-value">{{ totalWeight }} <span class="unit">kg</span></span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Avg Kg/Bag</span>
+      <span class="summary-value">{{ avgWeightPerBag }} <span class="unit">kg</span></span>
     </div>
     <div class="summary-item summary-total">
       <span class="summary-label">Amount</span>

@@ -10,6 +10,16 @@ import {
   PurchaseVoucherRateUpdateRequest
 } from '../../models/purchase-voucher.model';
 import { formatDateDdMmYyyy, parseLocalDate } from '../../utils/date-utils';
+import {
+  getPurchaseAverageWeightPerBag,
+  getPurchaseLineAmount,
+  getPurchaseLineAverageWeight,
+  getPurchaseLineWeight,
+  getPurchaseTotalAmount,
+  getPurchaseTotalBags,
+  getPurchaseTotalWeight,
+  toNumber
+} from '../../utils/delivery-calculations';
 
 @Component({
   selector: 'app-add-purchase-rate',
@@ -75,40 +85,37 @@ export class AddPurchaseRateComponent implements OnInit {
   }
 
   getLineTotalWeight(line: PurchaseVoucherProductLine): number {
-    const qty = this.toNumber(line.qty);
-    if (this.isPackedLine(line.rbp)) {
-      return this.toNumber(line.packingWeightKg) * qty;
-    }
-    return qty;
+    return getPurchaseLineWeight(line);
+  }
+
+  getLineAverageWeight(line: PurchaseVoucherProductLine): number {
+    return getPurchaseLineAverageWeight(line);
   }
 
   getLineAmount(line: PurchaseVoucherProductLine): number {
-    const qty = this.toNumber(line.qty);
-    const rate = this.toNumber(line.rate);
-    if (this.isPackedLine(line.rbp)) {
-      return this.getLineTotalWeight(line) * rate;
-    }
-    return qty * rate;
+    return getPurchaseLineAmount(line);
   }
 
   get totalBags(): number {
-    return this.lines
-      .filter(line => this.isPackedLine(line.rbp))
-      .reduce((sum: number, line) => sum + this.toNumber(line.qty), 0);
+    return getPurchaseTotalBags(this.lines);
   }
 
   get totalWeight(): number {
-    return this.lines.reduce((sum: number, line) => sum + this.getLineTotalWeight(line), 0);
+    return getPurchaseTotalWeight(this.lines);
+  }
+
+  get avgWeightPerBag(): number {
+    return getPurchaseAverageWeightPerBag(this.lines);
   }
 
   get totalAmount(): number {
-    return this.lines.reduce((sum: number, line) => sum + this.getLineAmount(line), 0);
+    return getPurchaseTotalAmount(this.lines);
   }
 
   saveRates(): void {
     if (this.challanId) {
       const rateUpdates: PurchaseVoucherRateUpdateRequest = {
-        lines: this.lines.map(line => ({ entryId: line.id, rate: this.toNumber(line.rate) }))
+        lines: this.lines.map(line => ({ entryId: line.id, rate: toNumber(line.rate) }))
       };
 
       this.purchaseService.updateRates(this.challanId, rateUpdates).subscribe({
@@ -129,12 +136,4 @@ export class AddPurchaseRateComponent implements OnInit {
     this.router.navigate(['/pending-purchases']);
   }
 
-  private isPackedLine(rbp: string | undefined | null): boolean {
-    return String(rbp ?? 'Yes').trim().toLowerCase() === 'yes';
-  }
-
-  private toNumber(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
 }

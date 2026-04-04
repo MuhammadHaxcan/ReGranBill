@@ -23,8 +23,9 @@ public class PurchaseVoucherLineDto
     public string? ProductName { get; set; }
     public string? Packing { get; set; }
     public decimal PackingWeightKg { get; set; }
-    public string Rbp { get; set; } = "Yes";
     public int Qty { get; set; }
+    public decimal TotalWeightKg { get; set; }
+    public decimal AvgWeightPerBagKg { get; set; }
     public decimal Rate { get; set; }
     public int SortOrder { get; set; }
 }

@@ -14,7 +14,6 @@ export interface ProductStockMetric {
 
 export interface ProductStockTotals {
   productCount: number;
-  movementCount: number;
   anomalyCount: number;
   opening: ProductStockMetric;
   inward: ProductStockMetric;
@@ -27,7 +26,6 @@ export interface ProductStockRow {
   productName: string;
   packing: string | null;
   packingWeightKg: number | null;
-  movementCount: number;
   anomalyCount: number;
   opening: ProductStockMetric;
   inward: ProductStockMetric;

@@ -1,13 +1,12 @@
-export type PurchaseVoucherRbp = 'Yes' | 'No';
-
 export interface PurchaseVoucherProductLine {
   id: number;
   productId: number;
   productName?: string | null;
   packing?: string | null;
   packingWeightKg: number;
-  rbp: PurchaseVoucherRbp;
   qty: number;
+  totalWeightKg: number;
+  avgWeightPerBagKg: number;
   rate: number;
   sortOrder: number;
 }
@@ -75,8 +74,8 @@ export interface PurchaseVoucherViewModel {
 
 export interface PurchaseVoucherLineRequest {
   productId: number;
-  rbp: PurchaseVoucherRbp;
   qty: number;
+  totalWeightKg: number;
   rate: number;
   sortOrder: number;
 }

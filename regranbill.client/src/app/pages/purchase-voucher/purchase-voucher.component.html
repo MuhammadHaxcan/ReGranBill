@@ -73,9 +73,9 @@
           <th class="col-num">#</th>
           <th class="col-product">Product</th>
           <th class="col-packing">Packing</th>
-          <th class="col-rbp">RBP</th>
-          <th class="col-qty">Qty</th>
-          <th class="col-weight">Total Weight</th>
+          <th class="col-qty">Bags</th>
+          <th class="col-weight">Total Kg</th>
+          <th class="col-avg">Avg Kg/Bag</th>
           <th class="col-rate" *ngIf="isAdmin">Rate</th>
           <th class="col-amount" *ngIf="isAdmin">Amount</th>
           <th class="col-actions"></th>
@@ -96,14 +96,6 @@
           <td class="col-packing">
             <span class="packing-label">{{ line.product?.packing || '-' }}</span>
           </td>
-          <td class="col-rbp">
-            <app-searchable-select
-              [options]="rbpOptions"
-              [compact]="true"
-              [ngModel]="line.rbp"
-              (ngModelChange)="onRbpChange(line, $event)"
-            ></app-searchable-select>
-          </td>
           <td class="col-qty">
             <input
               type="number"
@@ -113,8 +105,16 @@
             />
           </td>
           <td class="col-weight">
-            <span *ngIf="isLoose(line)" class="loose-label">Loose</span>
-            <strong>{{ getLineTotalWeight(line) }}</strong> <span class="unit">kg</span>
+            <input
+              type="number"
+              class="form-control form-control-sm text-center"
+              [(ngModel)]="line.totalWeightKg"
+              min="0"
+              step="0.01"
+            />
+          </td>
+          <td class="col-avg">
+            <strong>{{ getLineAverageWeight(line) }}</strong> <span class="unit">kg</span>
           </td>
           <td class="col-rate" *ngIf="isAdmin">
             <input
@@ -151,6 +151,10 @@
     <div class="summary-item">
       <span class="summary-label">Weight</span>
       <span class="summary-value">{{ totalWeight }} <span class="unit">kg</span></span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Avg Kg/Bag</span>
+      <span class="summary-value">{{ avgWeightPerBag }} <span class="unit">kg</span></span>
     </div>
     <div class="summary-item summary-total" *ngIf="isAdmin">
       <span class="summary-label">Amount</span>

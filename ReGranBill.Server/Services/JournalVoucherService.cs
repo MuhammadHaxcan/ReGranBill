@@ -4,6 +4,7 @@ using ReGranBill.Server.DTOs.JournalVouchers;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
 using ReGranBill.Server.Exceptions;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
 
@@ -53,7 +54,7 @@ public class JournalVoucherService : IJournalVoucherService
         var voucher = new JournalVoucher
         {
             VoucherNumber = nextNumber,
-            Date = NormalizeToUtc(request.Date),
+            Date = VoucherHelpers.NormalizeToUtc(request.Date),
             VoucherType = VoucherType.JournalVoucher,
             Description = request.Description?.Trim(),
             RatesAdded = true,
@@ -91,7 +92,7 @@ public class JournalVoucherService : IJournalVoucherService
 
         await ValidateRequestAsync(request);
 
-        voucher.Date = NormalizeToUtc(request.Date);
+        voucher.Date = VoucherHelpers.NormalizeToUtc(request.Date);
         voucher.Description = request.Description?.Trim();
         voucher.RatesAdded = true;
         voucher.UpdatedAt = DateTime.UtcNow;
@@ -146,22 +147,11 @@ public class JournalVoucherService : IJournalVoucherService
                 throw new RequestValidationException("Only expense, party, and account types are allowed in journal vouchers.");
         }
 
-        var totalDebit = RoundTo2(request.Entries.Sum(e => e.Debit));
-        var totalCredit = RoundTo2(request.Entries.Sum(e => e.Credit));
+        var totalDebit = VoucherHelpers.Round2(request.Entries.Sum(e => e.Debit));
+        var totalCredit = VoucherHelpers.Round2(request.Entries.Sum(e => e.Credit));
         if (totalDebit != totalCredit)
             throw new RequestValidationException("Total debit and total credit must be equal.");
     }
-
-    private static DateTime NormalizeToUtc(DateTime date) =>
-        date.Kind switch
-        {
-            DateTimeKind.Utc => date,
-            DateTimeKind.Local => date.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
-        };
-
-    private static decimal RoundTo2(decimal value) =>
-        decimal.Round(value, 2, MidpointRounding.AwayFromZero);
 
     private static JournalVoucherDto MapToDto(JournalVoucher voucher) => new()
     {

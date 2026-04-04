@@ -1,5 +1,6 @@
 export enum AccountType {
   Product = 'Product',
+  RawMaterial = 'RawMaterial',
   Expense = 'Expense',
   Account = 'Account',
   Party = 'Party',

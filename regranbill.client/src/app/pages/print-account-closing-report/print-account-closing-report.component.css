@@ -1,0 +1,26 @@
+.print-report-container {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #fff;
+}
+
+.pdf-viewer {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.print-report-loading,
+.print-report-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.print-report-error {
+  color: #c00;
+}

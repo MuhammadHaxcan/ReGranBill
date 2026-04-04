@@ -17,6 +17,7 @@ export interface ProductLine {
   product: Product | null;
   rbp: 'Yes' | 'No';
   qty: number;
+  totalWeightKg?: number;
   rate: number;
   sortOrder?: number;
 }
@@ -37,8 +38,8 @@ export interface Customer {
 export interface JournalEntry {
   id: number;
   accountId: number;
-  accountName: string;
-  description: string;
+  accountName?: string | null;
+  description?: string | null;
   debit: number;
   credit: number;
   qty?: number;
@@ -76,8 +77,8 @@ export interface DeliveryChallan {
 export interface DeliveryChallanLineViewModel {
   id: number;
   productId: number;
-  productName: string;
-  packing: string;
+  productName?: string | null;
+  packing?: string | null;
   packingWeightKg: number;
   rbp: 'Yes' | 'No';
   qty: number;
@@ -87,8 +88,8 @@ export interface DeliveryChallanLineViewModel {
 
 export interface DeliveryCartageViewModel {
   transporterId: number;
-  transporterName: string;
-  city: string;
+  transporterName?: string | null;
+  city?: string | null;
   amount: number;
 }
 
@@ -97,9 +98,9 @@ export interface DeliveryChallanViewModel {
   dcNumber: string;
   date: string;
   customerId: number;
-  customerName: string;
+  customerName?: string | null;
   vehicleNumber?: string | null;
-  description: string;
+  description?: string | null;
   lines: DeliveryChallanLineViewModel[];
   cartage: DeliveryCartageViewModel | null;
   ratesAdded: boolean;

@@ -1,0 +1,187 @@
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Account Closing Report</h1>
+      <p class="invoice-subtitle">Daily closing view for cash and bank accounts with drilldown history</p>
+    </div>
+  </div>
+</section>
+
+<section class="card filter-card" *ngIf="filtersLoaded">
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>Since</label>
+      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>Account</label>
+      <select [(ngModel)]="selectedFilterAccountId" class="filter-input">
+        <option [ngValue]="null">All Accounts</option>
+        <option *ngFor="let account of accounts" [ngValue]="account.id">{{ account.name }}</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadReport()">Apply</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+      <button class="btn btn-secondary" (click)="openPrint()">Print</button>
+    </div>
+  </div>
+</section>
+
+<section class="card grid-card" *ngIf="report && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Account Closing Summary</span>
+      <span class="line-count">{{ filteredSummaryRows.length }} of {{ report.totalAccounts }} accounts</span>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Filter accounts..."
+      [(ngModel)]="searchText"
+    />
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-item">
+      <span class="summary-label">Opening</span>
+      <span class="summary-value">{{ report.totalOpeningBalance | pkCurrency }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Debit</span>
+      <span class="summary-value">{{ report.totalDebit | pkCurrency }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Credit</span>
+      <span class="summary-value">{{ report.totalCredit | pkCurrency }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Closing</span>
+      <span class="summary-value" [class.balance-positive]="report.totalClosingBalance >= 0" [class.balance-negative]="report.totalClosingBalance < 0">
+        {{ report.totalClosingBalance | pkCurrency }}
+      </span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table summary-table" *ngIf="filteredSummaryRows.length > 0">
+      <thead>
+        <tr>
+          <th class="col-account">Account</th>
+          <th class="col-debit">Opening</th>
+          <th class="col-debit">Debit</th>
+          <th class="col-credit">Credit</th>
+          <th class="col-balance">Closing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let row of filteredSummaryRows"
+          (click)="selectAccount(row)"
+          [class.row-selected]="isSelectedRow(row.accountId)">
+          <td class="col-account">{{ row.accountName }}</td>
+          <td class="col-debit">{{ row.openingBalance | pkCurrency }}</td>
+          <td class="col-debit">{{ row.periodDebit | pkCurrency }}</td>
+          <td class="col-credit">{{ row.periodCredit | pkCurrency }}</td>
+          <td class="col-balance" [class.balance-positive]="row.closingBalance >= 0" [class.balance-negative]="row.closingBalance < 0">
+            {{ row.closingBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="filteredSummaryRows.length === 0">
+    <p class="empty-text">No account-closing rows found</p>
+    <p class="empty-subtext">Try adjusting your filters or search text</p>
+  </div>
+</section>
+
+<section class="card grid-card" *ngIf="report && !loading && selectedSummaryRow">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Account History</span>
+      <span class="line-count">{{ historyRows.length }} entries</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" (click)="closeHistory()">Close</button>
+  </div>
+
+  <div class="history-banner">
+    <div>
+      <div class="history-title">{{ selectedSummaryRow.accountName }}</div>
+      <div class="history-subtitle">Filtered ledger history for the selected closing account</div>
+    </div>
+    <div class="history-metrics">
+      <span>Opening {{ selectedSummaryRow.openingBalance | pkCurrency }}</span>
+      <span>Closing {{ selectedSummaryRow.closingBalance | pkCurrency }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="historyRows.length > 0">
+      <thead>
+        <tr>
+          <th class="col-id">Id</th>
+          <th class="col-date">Entry Date</th>
+          <th class="col-description">Description</th>
+          <th class="col-qty">Quantity</th>
+          <th class="col-rate">Rate</th>
+          <th class="col-debit">Debit</th>
+          <th class="col-credit">Credit</th>
+          <th class="col-balance">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of historyRows">
+          <td class="col-id">
+            <a *ngIf="entry.voucherType === 'SaleVoucher'" [routerLink]="['/print-dc', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <a *ngIf="entry.voucherType === 'PurchaseVoucher'" [routerLink]="['/print-pv', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            <div class="entry-id">Entry: {{ entry.entryId }}</div>
+          </td>
+          <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
+          <td class="col-description">{{ entry.description || '-' }}</td>
+          <td class="col-qty">
+            <span *ngIf="entry.quantity">{{ entry.quantity }}</span>
+            <span *ngIf="!entry.quantity" class="zero-amount">-</span>
+          </td>
+          <td class="col-rate">
+            <span *ngIf="entry.rate">{{ entry.rate | number:'1.2-2' }}</span>
+            <span *ngIf="!entry.rate" class="zero-amount">-</span>
+          </td>
+          <td class="col-debit">
+            <span *ngIf="entry.debit > 0">{{ entry.debit | pkCurrency }}</span>
+            <span *ngIf="entry.debit === 0" class="zero-amount">-</span>
+          </td>
+          <td class="col-credit">
+            <span *ngIf="entry.credit > 0">{{ entry.credit | pkCurrency }}</span>
+            <span *ngIf="entry.credit === 0" class="zero-amount">-</span>
+          </td>
+          <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
+            {{ entry.runningBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="historyRows.length === 0">
+    <p class="empty-text">No history found for this account</p>
+    <p class="empty-subtext">Try widening the date range</p>
+  </div>
+</section>
+
+<div class="loading-state" *ngIf="loading">
+  <p>Loading account closing report...</p>
+</div>

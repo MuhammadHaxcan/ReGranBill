@@ -1,0 +1,5 @@
+<div class="print-report-container" *ngIf="!loading && !error && pdfUrl">
+  <iframe [src]="pdfUrl" class="pdf-viewer"></iframe>
+</div>
+<div class="print-report-loading" *ngIf="loading && !error">Loading PDF...</div>
+<div class="print-report-error" *ngIf="error">{{ error }}</div>

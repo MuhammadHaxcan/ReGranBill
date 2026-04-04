@@ -17,6 +17,13 @@ import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.componen
 import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.component';
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
 import { PrintSoaComponent } from './pages/print-soa/print-soa.component';
+import { UserManagementComponent } from './pages/user-management/user-management.component';
+import { AccountClosingReportComponent } from './pages/account-closing-report/account-closing-report.component';
+import { SalePurchaseReportComponent } from './pages/sale-purchase-report/sale-purchase-report.component';
+import { CompanySettingsComponent } from './pages/company-settings/company-settings.component';
+import { PrintMasterReportComponent } from './pages/print-master-report/print-master-report.component';
+import { PrintAccountClosingReportComponent } from './pages/print-account-closing-report/print-account-closing-report.component';
+import { PrintProductStockReportComponent } from './pages/print-product-stock-report/print-product-stock-report.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
@@ -25,6 +32,9 @@ const routes: Routes = [
   { path: 'print-dc/:id', component: PrintDcComponent, canActivate: [AuthGuard] },
   { path: 'print-pv/:id', component: PrintPvComponent, canActivate: [AuthGuard] },
   { path: 'print-soa/:accountId', component: PrintSoaComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'print-master-report', component: PrintMasterReportComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'print-account-closing-report', component: PrintAccountClosingReportComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'print-product-stock-report', component: PrintProductStockReportComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'journal-voucher', component: JournalVoucherComponent, canActivate: [AuthGuard] },
@@ -43,8 +53,12 @@ const routes: Routes = [
   { path: 'soa/:accountId', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'soa', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'master-report', component: MasterReportComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'account-closing-report', component: AccountClosingReportComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'sale-purchase-report', component: SalePurchaseReportComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'product-stock-report', component: ProductStockReportComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'metadata', component: CategoriesAccountsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'company-settings', component: CompanySettingsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'users', component: UserManagementComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: '', redirectTo: 'delivery-challan', pathMatch: 'full' },
   { path: '**', redirectTo: 'delivery-challan' }
 ];

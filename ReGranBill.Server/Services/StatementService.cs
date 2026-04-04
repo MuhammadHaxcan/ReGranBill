@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.SOA;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
 
@@ -13,8 +14,8 @@ public class StatementService : IStatementService
 
     public async Task<StatementOfAccountDto?> GetStatementAsync(int accountId, DateOnly? from, DateOnly? to)
     {
-        var fromDate = ToUtcStartOfDay(from);
-        var toExclusiveDate = ToUtcStartOfDay(to?.AddDays(1));
+        var fromDate = VoucherHelpers.ToUtcStartOfDay(from);
+        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(to?.AddDays(1));
 
         var account = await _db.Accounts
             .Include(a => a.PartyDetail)
@@ -75,12 +76,8 @@ public class StatementService : IStatementService
             Phone = account.PartyDetail?.Phone,
             City = account.PartyDetail?.City,
             Address = account.PartyDetail?.Address,
-            FromDate = from.HasValue
-                ? DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
-                : null,
-            ToDate = to.HasValue
-                ? DateTime.SpecifyKind(to.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
-                : null,
+            FromDate = VoucherHelpers.ToUtcStartOfDay(from),
+            ToDate = VoucherHelpers.ToUtcStartOfDay(to),
             TotalDebit = entryDtos.Sum(e => e.Debit),
             TotalCredit = entryDtos.Sum(e => e.Credit),
             NetBalance = runningBalance,
@@ -88,8 +85,4 @@ public class StatementService : IStatementService
         };
     }
 
-    private static DateTime? ToUtcStartOfDay(DateOnly? value) =>
-        value.HasValue
-            ? DateTime.SpecifyKind(value.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
-            : null;
 }

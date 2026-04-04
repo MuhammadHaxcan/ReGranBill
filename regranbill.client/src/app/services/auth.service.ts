@@ -44,6 +44,19 @@ export class AuthService {
     return this.currentUser?.role === UserRole.Admin;
   }
 
+  syncCurrentUser(update: Partial<Pick<AppUser, 'username' | 'fullName' | 'role'>>): void {
+    const currentUser = this.currentUser;
+    if (!currentUser) return;
+
+    const nextUser: AppUser = {
+      ...currentUser,
+      ...update
+    };
+
+    localStorage.setItem('currentUser', JSON.stringify(nextUser));
+    this.currentUserSubject.next(nextUser);
+  }
+
   private loadUser(): AppUser | null {
     const stored = localStorage.getItem('currentUser');
     if (!stored) return null;

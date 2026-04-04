@@ -286,11 +286,13 @@
 }
 
 .col-voucher {
-  width: 120px;
+  width: 150px;
+  min-width: 150px;
 }
 
 .invoice-number-badge {
   display: inline-block;
+  min-width: 92px;
   padding: 4px 12px;
   background: var(--primary-light);
   color: var(--text-primary);
@@ -298,6 +300,8 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .voucher-link-button {

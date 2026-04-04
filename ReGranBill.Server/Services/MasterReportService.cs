@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.MasterReport;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
 
@@ -13,8 +14,14 @@ public class MasterReportService : IMasterReportService
 
     public async Task<MasterReportDto> GetReportAsync(DateOnly? from, DateOnly? to, int? categoryId, int? accountId)
     {
-        var fromDate = ToUtcStartOfDay(from);
-        var toExclusiveDate = ToUtcStartOfDay(to?.AddDays(1));
+        var fromDate = VoucherHelpers.ToUtcStartOfDay(from);
+        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(to?.AddDays(1));
+        var categoryName = categoryId.HasValue
+            ? await _db.Categories.Where(c => c.Id == categoryId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+            : null;
+        var accountName = accountId.HasValue
+            ? await _db.Accounts.Where(a => a.Id == accountId.Value).Select(a => a.Name).FirstOrDefaultAsync()
+            : null;
 
         var query = _db.JournalEntries
             .Include(e => e.JournalVoucher)
@@ -70,6 +77,10 @@ public class MasterReportService : IMasterReportService
 
         return new MasterReportDto
         {
+            FromDate = fromDate,
+            ToDate = VoucherHelpers.ToUtcStartOfDay(to),
+            CategoryName = categoryName,
+            AccountName = accountName,
             TotalEntries = entryDtos.Count,
             TotalDebit = entryDtos.Sum(e => e.Debit),
             TotalCredit = entryDtos.Sum(e => e.Credit),
@@ -78,8 +89,4 @@ public class MasterReportService : IMasterReportService
         };
     }
 
-    private static DateTime? ToUtcStartOfDay(DateOnly? value) =>
-        value.HasValue
-            ? DateTime.SpecifyKind(value.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
-            : null;
 }

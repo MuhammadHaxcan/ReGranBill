@@ -9,6 +9,8 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
+import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
+import { getDeliveryLineWeight, getDeliveryLineAmount, getDeliveryTotalBags, getDeliveryTotalWeight, getDeliveryTotalAmount, isPackedLine } from '../../utils/delivery-calculations';
 
 @Component({
   selector: 'app-delivery-challan',
@@ -25,16 +27,12 @@ export class DeliveryChallanComponent implements OnInit {
   vehicleNumber = '';
 
   get dcDateIso(): string {
-    const y = this.dcDate.getFullYear();
-    const m = String(this.dcDate.getMonth() + 1).padStart(2, '0');
-    const d = String(this.dcDate.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return toDateInputValue(this.dcDate);
   }
 
   set dcDateIso(val: string) {
     if (!val) return;
-    const [y, m, d] = val.split('-').map(Number);
-    this.dcDate = new Date(y, m - 1, d);
+    this.dcDate = parseLocalDate(val);
   }
   description = '';
 
@@ -213,41 +211,31 @@ export class DeliveryChallanComponent implements OnInit {
   }
 
   getLineTotalWeight(line: ProductLine): number {
-    if (!line.product || !line.qty) return 0;
-    if (line.rbp === 'No') return line.qty;
-    return line.product.packingWeightKg * line.qty;
+    return getDeliveryLineWeight({ qty: line.qty, rbp: line.rbp, packingWeightKg: line.product?.packingWeightKg });
   }
 
   isLoose(line: ProductLine): boolean {
-    return line.rbp === 'No';
+    return !isPackedLine(line.rbp);
   }
 
   getLineAmount(line: ProductLine): number {
-    if (!line.product || !line.qty) return 0;
-    if (line.rbp === 'Yes') {
-      return line.product.packingWeightKg * line.qty * line.rate;
-    }
-    return line.qty * line.rate;
+    return getDeliveryLineAmount({ qty: line.qty, rate: line.rate, rbp: line.rbp, packingWeightKg: line.product?.packingWeightKg });
   }
 
   get totalBags(): number {
-    return this.lines
-      .filter(l => l.rbp === 'Yes')
-      .reduce((sum, l) => sum + (l.qty || 0), 0);
+    return getDeliveryTotalBags(this.lines.map(l => ({ qty: l.qty, rbp: l.rbp, packingWeightKg: l.product?.packingWeightKg })));
   }
 
   get totalWeight(): number {
-    return this.lines.reduce((sum, l) => sum + this.getLineTotalWeight(l), 0);
+    return getDeliveryTotalWeight(this.lines.map(l => ({ qty: l.qty, rbp: l.rbp, packingWeightKg: l.product?.packingWeightKg })));
   }
 
   get totalAmount(): number {
-    return this.lines.reduce((sum, l) => sum + this.getLineAmount(l), 0);
+    return getDeliveryTotalAmount(this.lines.map(l => ({ qty: l.qty, rate: l.rate, rbp: l.rbp, packingWeightKg: l.product?.packingWeightKg })));
   }
 
   get formattedDate(): string {
-    return this.dcDate.toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
+    return formatDateDisplay(this.dcDate);
   }
 
   // Cartage

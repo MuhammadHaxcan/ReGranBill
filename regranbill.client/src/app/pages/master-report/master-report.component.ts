@@ -1,15 +1,24 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { MasterReportService } from '../../services/master-report.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
 import { MasterReport, MasterReportEntry } from '../../models/master-report.model';
+import { formatDateDisplay } from '../../utils/date-utils';
 import { Account } from '../../models/account.model';
 import { forkJoin } from 'rxjs';
 
 interface Category {
   id: number;
   name: string;
+}
+
+type MasterReportColumnKey = 'voucher' | 'date' | 'description' | 'account' | 'quantity' | 'rate' | 'debit' | 'credit' | 'balance';
+
+interface MasterReportColumnOption {
+  key: MasterReportColumnKey;
+  label: string;
 }
 
 @Component({
@@ -19,12 +28,26 @@ interface Category {
   standalone: false
 })
 export class MasterReportComponent implements OnInit {
+  readonly columnOptions: MasterReportColumnOption[] = [
+    { key: 'voucher', label: 'Voucher' },
+    { key: 'date', label: 'Date' },
+    { key: 'description', label: 'Description' },
+    { key: 'account', label: 'Account' },
+    { key: 'quantity', label: 'Quantity' },
+    { key: 'rate', label: 'Rate' },
+    { key: 'debit', label: 'Debit' },
+    { key: 'credit', label: 'Credit' },
+    { key: 'balance', label: 'Balance' }
+  ];
+
   // Filters
   fromDate = '';
   toDate = '';
   selectedCategoryId: number | null = null;
   selectedAccountId: number | null = null;
   searchText = '';
+  visibleColumnKeys: MasterReportColumnKey[] = this.columnOptions.map(column => column.key);
+  showColumnPanel = false;
 
   // Data
   categories: Category[] = [];
@@ -35,6 +58,7 @@ export class MasterReportComponent implements OnInit {
 
   constructor(
     private http: HttpClient,
+    private router: Router,
     private reportService: MasterReportService,
     private accountService: AccountService,
     private cdr: ChangeDetectorRef,
@@ -78,6 +102,18 @@ export class MasterReportComponent implements OnInit {
     );
   }
 
+  get visibleColumns(): MasterReportColumnOption[] {
+    return this.columnOptions.filter(column => this.visibleColumnKeys.includes(column.key));
+  }
+
+  get totalColumns(): MasterReportColumnKey[] {
+    return this.visibleColumnKeys.filter(column => column === 'debit' || column === 'credit' || column === 'balance');
+  }
+
+  get totalsLabelSpan(): number {
+    return this.visibleColumnKeys.length - this.totalColumns.length;
+  }
+
   loadReport(): void {
     this.loading = true;
     this.reportService.getReport(
@@ -112,11 +148,43 @@ export class MasterReportComponent implements OnInit {
     this.selectedAccountId = null;
   }
 
+  isColumnVisible(column: MasterReportColumnKey): boolean {
+    return this.visibleColumnKeys.includes(column);
+  }
+
+  toggleColumn(column: MasterReportColumnKey): void {
+    if (this.isColumnVisible(column)) {
+      if (this.visibleColumnKeys.length === 1) {
+        this.toast.info('At least one column must remain visible.');
+        return;
+      }
+
+      this.visibleColumnKeys = this.visibleColumnKeys.filter(key => key !== column);
+      return;
+    }
+
+    this.visibleColumnKeys = this.columnOptions
+      .map(option => option.key)
+      .filter(key => key === column || this.visibleColumnKeys.includes(key));
+  }
+
   getFormattedDate(date: string): string {
     return new Date(date).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
+  }
+
+  openPrint(): void {
+    const queryParams: Record<string, string> = {};
+    if (this.fromDate) queryParams['from'] = this.fromDate;
+    if (this.toDate) queryParams['to'] = this.toDate;
+    if (this.selectedCategoryId !== null) queryParams['categoryId'] = this.selectedCategoryId.toString();
+    if (this.selectedAccountId !== null) queryParams['accountId'] = this.selectedAccountId.toString();
+    queryParams['columns'] = this.visibleColumnKeys.join(',');
+
+    const url = this.router.serializeUrl(this.router.createUrlTree(['/print-master-report'], { queryParams }));
+    window.open(url, '_blank');
   }
 }

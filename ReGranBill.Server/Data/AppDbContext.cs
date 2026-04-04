@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<CompanySettings> CompanySettings => Set<CompanySettings>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<ProductDetail> ProductDetails => Set<ProductDetail>();
@@ -29,6 +30,14 @@ public class AppDbContext : DbContext
             e.Property(u => u.Username).HasMaxLength(100);
             e.Property(u => u.Role).HasMaxLength(20)
                 .HasConversion(v => v.ToString(), v => Enum.Parse<UserRole>(v));
+        });
+
+        modelBuilder.Entity<CompanySettings>(e =>
+        {
+            e.ToTable("company_settings");
+            e.Property(cs => cs.CompanyName).HasMaxLength(200);
+            e.Property(cs => cs.Address).HasMaxLength(500);
+            e.Property(cs => cs.LogoContentType).HasMaxLength(100);
         });
 
         // Category
@@ -107,6 +116,7 @@ public class AppDbContext : DbContext
             e.Property(je => je.Description).HasMaxLength(500);
             e.Property(je => je.Debit).HasColumnType("decimal(14,2)");
             e.Property(je => je.Credit).HasColumnType("decimal(14,2)");
+            e.Property(je => je.ActualWeightKg).HasColumnType("decimal(14,2)");
             e.Property(je => je.Rbp).HasMaxLength(5);
             e.Property(je => je.Rate).HasColumnType("decimal(12,2)");
             e.Property(je => je.IsEdited).HasDefaultValue(false);

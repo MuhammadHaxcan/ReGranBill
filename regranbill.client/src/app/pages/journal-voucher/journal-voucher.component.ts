@@ -7,6 +7,7 @@ import { CreateJournalVoucherRequest, JournalVoucher } from '../../models/journa
 import { AccountService } from '../../services/account.service';
 import { JournalVoucherService } from '../../services/journal-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import { round2 } from '../../utils/delivery-calculations';
 
 interface EditableJournalLine {
   id?: number;
@@ -60,15 +61,15 @@ export class JournalVoucherComponent implements OnInit {
   }
 
   get totalDebit(): number {
-    return this.round2(this.lines.reduce((sum, line) => sum + (line.debit || 0), 0));
+    return round2(this.lines.reduce((sum, line) => sum + (line.debit || 0), 0));
   }
 
   get totalCredit(): number {
-    return this.round2(this.lines.reduce((sum, line) => sum + (line.credit || 0), 0));
+    return round2(this.lines.reduce((sum, line) => sum + (line.credit || 0), 0));
   }
 
   get difference(): number {
-    return this.round2(this.totalDebit - this.totalCredit);
+    return round2(this.totalDebit - this.totalCredit);
   }
 
   get isBalanced(): boolean {
@@ -245,8 +246,8 @@ export class JournalVoucherComponent implements OnInit {
       entries: this.lines.map((line, index) => ({
         accountId: line.accountId!,
         description: line.description.trim() || null,
-        debit: this.round2(line.debit || 0),
-        credit: this.round2(line.credit || 0),
+        debit: round2(line.debit || 0),
+        credit: round2(line.credit || 0),
         sortOrder: index
       }))
     };
@@ -298,12 +299,10 @@ export class JournalVoucherComponent implements OnInit {
 
   private sanitizeAmount(value: number): number {
     if (!Number.isFinite(value) || value < 0) return 0;
-    return this.round2(value);
+    return round2(value);
   }
 
-  private round2(value: number): number {
-    return Number((value || 0).toFixed(2));
-  }
+
 
   private newLine(): EditableJournalLine {
     return {

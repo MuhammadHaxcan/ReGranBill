@@ -13,8 +13,8 @@ public class CreatePurchaseVoucherRequest
 public class CreatePurchaseVoucherLineRequest
 {
     public int ProductId { get; set; }
-    public string Rbp { get; set; } = "Yes";
     public int Qty { get; set; }
+    public decimal TotalWeightKg { get; set; }
     public decimal Rate { get; set; }
     public int SortOrder { get; set; }
 }

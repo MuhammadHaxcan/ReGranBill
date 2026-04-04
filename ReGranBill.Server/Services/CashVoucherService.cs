@@ -4,6 +4,7 @@ using ReGranBill.Server.DTOs.CashVouchers;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
 using ReGranBill.Server.Exceptions;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
 
@@ -88,15 +89,15 @@ public class CashVoucherService : ICashVoucherService
 
         await ValidateRequestAsync(voucherType, request);
 
-        voucher.Date = NormalizeToUtc(request.Date);
-        voucher.Description = ToNullIfWhiteSpace(request.Description);
+        voucher.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        voucher.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
         voucher.RatesAdded = true;
         voucher.UpdatedAt = DateTime.UtcNow;
 
         _db.JournalEntries.RemoveRange(voucher.Entries);
         voucher.Entries.Clear();
 
-        var totalAmount = Round2(request.Lines.Sum(line => line.Amount));
+        var totalAmount = VoucherHelpers.Round2(request.Lines.Sum(line => line.Amount));
         voucher.Entries.Add(BuildPartyEntry(voucherType, request.PartyAccountId, voucher.VoucherNumber, totalAmount, isEdited: true));
 
         foreach (var (line, index) in request.Lines
@@ -149,7 +150,7 @@ public class CashVoucherService : ICashVoucherService
                 throw new RequestValidationException("Only cash and bank accounts are allowed in receipt and payment vouchers.");
         }
 
-        var totalAmount = Round2(request.Lines.Sum(line => line.Amount));
+        var totalAmount = VoucherHelpers.Round2(request.Lines.Sum(line => line.Amount));
         if (totalAmount <= 0)
             throw new RequestValidationException("Voucher total must be greater than zero.");
     }
@@ -181,13 +182,13 @@ public class CashVoucherService : ICashVoucherService
         int userId,
         bool isEdited)
     {
-        var totalAmount = Round2(request.Lines.Sum(line => line.Amount));
+        var totalAmount = VoucherHelpers.Round2(request.Lines.Sum(line => line.Amount));
         var voucher = new JournalVoucher
         {
             VoucherNumber = voucherNumber,
-            Date = NormalizeToUtc(request.Date),
+            Date = VoucherHelpers.NormalizeToUtc(request.Date),
             VoucherType = voucherType,
-            Description = ToNullIfWhiteSpace(request.Description),
+            Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description),
             RatesAdded = true,
             CreatedBy = userId
         };
@@ -230,9 +231,9 @@ public class CashVoucherService : ICashVoucherService
         new()
         {
             AccountId = line.AccountId,
-            Description = ToNullIfWhiteSpace(line.Description),
-            Debit = voucherType == VoucherType.ReceiptVoucher ? Round2(line.Amount) : 0,
-            Credit = voucherType == VoucherType.PaymentVoucher ? Round2(line.Amount) : 0,
+            Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description),
+            Debit = voucherType == VoucherType.ReceiptVoucher ? VoucherHelpers.Round2(line.Amount) : 0,
+            Credit = voucherType == VoucherType.PaymentVoucher ? VoucherHelpers.Round2(line.Amount) : 0,
             IsEdited = isEdited,
             SortOrder = sortOrder
         };
@@ -282,17 +283,4 @@ public class CashVoucherService : ICashVoucherService
             _ => false
         };
 
-    private static DateTime NormalizeToUtc(DateTime date) =>
-        date.Kind switch
-        {
-            DateTimeKind.Utc => date,
-            DateTimeKind.Local => date.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
-        };
-
-    private static decimal Round2(decimal value) =>
-        decimal.Round(value, 2, MidpointRounding.AwayFromZero);
-
-    private static string? ToNullIfWhiteSpace(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

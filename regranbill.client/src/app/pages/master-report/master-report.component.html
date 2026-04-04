@@ -36,6 +36,7 @@
     <div class="filter-actions">
       <button class="btn btn-primary" (click)="loadReport()">Apply</button>
       <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+      <button class="btn btn-secondary" (click)="openPrint()">Print</button>
     </div>
   </div>
 </section>
@@ -47,6 +48,20 @@
       <span class="card-header-title">Master Report Results</span>
       <span class="line-count">{{ filteredEntries.length }} of {{ report.totalEntries }} entries</span>
     </div>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="showColumnPanel = !showColumnPanel">
+      Columns
+    </button>
+  </div>
+
+  <div class="column-panel" *ngIf="showColumnPanel">
+    <label class="column-toggle" *ngFor="let column of columnOptions">
+      <input
+        type="checkbox"
+        [checked]="isColumnVisible(column.key)"
+        (change)="toggleColumn(column.key)"
+      />
+      <span>{{ column.label }}</span>
+    </label>
   </div>
 
   <!-- Search -->
@@ -82,20 +97,20 @@
     <table class="grid-table" *ngIf="filteredEntries.length > 0">
       <thead>
         <tr>
-          <th class="col-id">Id</th>
-          <th class="col-date">Entry Date</th>
-          <th class="col-description">Description</th>
-          <th class="col-account">Account</th>
-          <th class="col-qty">Quantity</th>
-          <th class="col-rate">Rate</th>
-          <th class="col-debit">Debit</th>
-          <th class="col-credit">Credit</th>
-          <th class="col-balance">Balance</th>
+          <th class="col-id" *ngIf="isColumnVisible('voucher')">Id</th>
+          <th class="col-date" *ngIf="isColumnVisible('date')">Entry Date</th>
+          <th class="col-description" *ngIf="isColumnVisible('description')">Description</th>
+          <th class="col-account" *ngIf="isColumnVisible('account')">Account</th>
+          <th class="col-qty" *ngIf="isColumnVisible('quantity')">Quantity</th>
+          <th class="col-rate" *ngIf="isColumnVisible('rate')">Rate</th>
+          <th class="col-debit" *ngIf="isColumnVisible('debit')">Debit</th>
+          <th class="col-credit" *ngIf="isColumnVisible('credit')">Credit</th>
+          <th class="col-balance" *ngIf="isColumnVisible('balance')">Balance</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let entry of filteredEntries">
-          <td class="col-id">
+          <td class="col-id" *ngIf="isColumnVisible('voucher')">
             <a *ngIf="entry.voucherType === 'SaleVoucher'" [routerLink]="['/print-dc', entry.voucherId]" target="_blank" class="voucher-link">
               <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             </a>
@@ -105,36 +120,36 @@
             <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             <div class="entry-id">Entry: {{ entry.entryId }}</div>
           </td>
-          <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
-          <td class="col-description">{{ entry.description || '-' }}</td>
-          <td class="col-account">{{ entry.accountName }}</td>
-          <td class="col-qty">
+          <td class="col-date" *ngIf="isColumnVisible('date')">{{ getFormattedDate(entry.date) }}</td>
+          <td class="col-description" *ngIf="isColumnVisible('description')">{{ entry.description || '-' }}</td>
+          <td class="col-account" *ngIf="isColumnVisible('account')">{{ entry.accountName }}</td>
+          <td class="col-qty" *ngIf="isColumnVisible('quantity')">
             <span *ngIf="entry.quantity">{{ entry.quantity }}</span>
             <span *ngIf="!entry.quantity" class="zero-amount">-</span>
           </td>
-          <td class="col-rate">
+          <td class="col-rate" *ngIf="isColumnVisible('rate')">
             <span *ngIf="entry.rate">{{ entry.rate | number:'1.2-2' }}</span>
             <span *ngIf="!entry.rate" class="zero-amount">-</span>
           </td>
-          <td class="col-debit">
+          <td class="col-debit" *ngIf="isColumnVisible('debit')">
             <span *ngIf="entry.debit > 0">{{ entry.debit | pkCurrency }}</span>
             <span *ngIf="entry.debit === 0" class="zero-amount">-</span>
           </td>
-          <td class="col-credit">
+          <td class="col-credit" *ngIf="isColumnVisible('credit')">
             <span *ngIf="entry.credit > 0">{{ entry.credit | pkCurrency }}</span>
             <span *ngIf="entry.credit === 0" class="zero-amount">-</span>
           </td>
-          <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
+          <td class="col-balance" *ngIf="isColumnVisible('balance')" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
             {{ entry.runningBalance | pkCurrency }}
           </td>
         </tr>
       </tbody>
       <tfoot>
         <tr class="totals-row">
-          <td colspan="6" class="totals-label">Totals</td>
-          <td class="col-debit totals-value">{{ report.totalDebit | pkCurrency }}</td>
-          <td class="col-credit totals-value">{{ report.totalCredit | pkCurrency }}</td>
-          <td class="col-balance totals-value" [class.balance-positive]="report.netBalance >= 0" [class.balance-negative]="report.netBalance < 0">
+          <td *ngIf="totalsLabelSpan > 0" [attr.colspan]="totalsLabelSpan" class="totals-label">Totals</td>
+          <td *ngIf="isColumnVisible('debit')" class="col-debit totals-value">{{ report.totalDebit | pkCurrency }}</td>
+          <td *ngIf="isColumnVisible('credit')" class="col-credit totals-value">{{ report.totalCredit | pkCurrency }}</td>
+          <td *ngIf="isColumnVisible('balance')" class="col-balance totals-value" [class.balance-positive]="report.netBalance >= 0" [class.balance-negative]="report.netBalance < 0">
             {{ report.netBalance | pkCurrency }}
           </td>
         </tr>

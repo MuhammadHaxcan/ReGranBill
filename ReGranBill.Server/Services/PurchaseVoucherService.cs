@@ -4,6 +4,7 @@ using ReGranBill.Server.DTOs.PurchaseVouchers;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
 using ReGranBill.Server.Exceptions;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
 
@@ -63,7 +64,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
     public async Task<PurchaseVoucherDto> CreateAsync(CreatePurchaseVoucherRequest request, int userId)
     {
         var validation = await ValidateRequestAsync(request);
-        var voucherDate = NormalizeToUtc(request.Date);
+        var voucherDate = VoucherHelpers.NormalizeToUtc(request.Date);
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -78,7 +79,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             Date = voucherDate,
             VoucherType = VoucherType.PurchaseVoucher,
             VehicleNumber = request.VehicleNumber,
-            Description = ResolveDescription(request.Description, "Purchase by", validation.VendorAccount.Name, request.Lines, validation.ProductAccounts),
+            Description = VoucherHelpers.ResolveDescription(request.Description, "Purchase by", validation.VendorAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts),
             RatesAdded = request.Lines.All(l => l.Rate > 0),
             CreatedBy = userId,
         };
@@ -89,17 +90,18 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         foreach (var line in request.Lines.OrderBy(l => l.SortOrder))
         {
             var product = validation.ProductAccounts[line.ProductId];
-            var lineAmount = CalculateLineAmount(product, line);
+            var lineAmount = CalculatePurchaseLineAmount(line.TotalWeightKg, line.Rate);
             totalProductAmount += lineAmount;
 
             purchaseJv.Entries.Add(new JournalEntry
             {
                 AccountId = line.ProductId,
-                Description = $"{product.Name} - {line.Qty} bags",
+                Description = $"{product.Name} - {line.Qty} bags / {line.TotalWeightKg:0.##} kg",
                 Debit = lineAmount,
                 Credit = 0,
                 Qty = line.Qty,
-                Rbp = NormalizeRbp(line.Rbp),
+                ActualWeightKg = line.TotalWeightKg,
+                Rbp = "Yes",
                 Rate = line.Rate > 0 ? line.Rate : null,
                 IsEdited = false,
                 SortOrder = ++sortOrder
@@ -120,7 +122,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 
         if (validation.TransporterAccount != null && request.Cartage != null && cartageNumber != null)
         {
-            var cartageJv = BuildCartageVoucher(
+            var cartageJv = VoucherHelpers.BuildCartageVoucher(
                 cartageNumber,
                 voucherDate,
                 voucherNumber,
@@ -157,9 +159,9 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        purchaseJv.Date = NormalizeToUtc(request.Date);
+        purchaseJv.Date = VoucherHelpers.NormalizeToUtc(request.Date);
         purchaseJv.VehicleNumber = request.VehicleNumber;
-        purchaseJv.Description = ResolveDescription(request.Description, "Purchase by", validation.VendorAccount.Name, request.Lines, validation.ProductAccounts);
+        purchaseJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Purchase by", validation.VendorAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         purchaseJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
         purchaseJv.UpdatedAt = DateTime.UtcNow;
 
@@ -172,17 +174,18 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         foreach (var line in request.Lines.OrderBy(l => l.SortOrder))
         {
             var product = validation.ProductAccounts[line.ProductId];
-            var lineAmount = CalculateLineAmount(product, line);
+            var lineAmount = CalculatePurchaseLineAmount(line.TotalWeightKg, line.Rate);
             totalProductAmount += lineAmount;
 
             purchaseJv.Entries.Add(new JournalEntry
             {
                 AccountId = line.ProductId,
-                Description = $"{product.Name} - {line.Qty} bags",
+                Description = $"{product.Name} - {line.Qty} bags / {line.TotalWeightKg:0.##} kg",
                 Debit = lineAmount,
                 Credit = 0,
                 Qty = line.Qty,
-                Rbp = NormalizeRbp(line.Rbp),
+                ActualWeightKg = line.TotalWeightKg,
+                Rbp = "Yes",
                 Rate = line.Rate > 0 ? line.Rate : null,
                 IsEdited = true,
                 SortOrder = ++sortOrder
@@ -223,11 +226,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             {
                 entry.Rate = update.Rate;
                 entry.IsEdited = true;
-
-                var weight = entry.Account?.ProductDetail?.PackingWeightKg ?? 0;
-                entry.Debit = string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase)
-                    ? weight * (entry.Qty ?? 0) * update.Rate
-                    : (entry.Qty ?? 0) * update.Rate;
+                entry.Debit = CalculatePurchaseLineAmount(entry.ActualWeightKg ?? 0m, update.Rate);
             }
         }
 
@@ -292,7 +291,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             if (cartageJv == null)
             {
                 var cartageNumber = await _voucherNumberService.ReserveNextNumberAsync(VoucherSequenceKeys.CartageVoucher, "CV-");
-                cartageJv = BuildCartageVoucher(
+                cartageJv = VoucherHelpers.BuildCartageVoucher(
                     cartageNumber,
                     purchaseJv.Date,
                     purchaseJv.VoucherNumber,
@@ -365,11 +364,11 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             if (line.Qty <= 0)
                 throw new RequestValidationException("Each line must have a quantity greater than zero.");
 
+            if (line.TotalWeightKg <= 0)
+                throw new RequestValidationException("Each line must have total weight greater than zero.");
+
             if (line.Rate < 0)
                 throw new RequestValidationException("Rates cannot be negative.");
-
-            if (!IsValidRbp(line.Rbp))
-                throw new RequestValidationException("RBP must be either Yes or No.");
         }
 
         if (request.Cartage != null)
@@ -406,10 +405,10 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         foreach (var productId in request.Lines.Select(line => line.ProductId).Distinct())
         {
             if (!accountsById.TryGetValue(productId, out var productAccount)
-                || productAccount.AccountType != AccountType.Product
+                || !IsInventoryAccount(productAccount)
                 || productAccount.ProductDetail == null)
             {
-                throw new RequestValidationException("One or more selected products are invalid.");
+                throw new RequestValidationException("One or more selected inventory items are invalid.");
             }
 
             productAccounts[productId] = productAccount;
@@ -430,71 +429,11 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         return new ValidatedVoucherRequest(productAccounts, vendorAccount, transporterAccount);
     }
 
-    private static bool IsValidRbp(string? rbp) =>
-        string.Equals(rbp, "Yes", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(rbp, "No", StringComparison.OrdinalIgnoreCase);
+    private static bool IsInventoryAccount(Account account) =>
+        VoucherHelpers.IsInventoryAccount(account);
 
-    private static string NormalizeRbp(string? rbp) =>
-        string.Equals(rbp, "No", StringComparison.OrdinalIgnoreCase) ? "No" : "Yes";
-
-    private static decimal CalculateLineAmount(Account productAccount, CreatePurchaseVoucherLineRequest line)
-    {
-        var weight = productAccount.ProductDetail?.PackingWeightKg ?? 0;
-        return NormalizeRbp(line.Rbp) == "Yes"
-            ? weight * line.Qty * line.Rate
-            : line.Qty * line.Rate;
-    }
-
-    private static JournalVoucher BuildCartageVoucher(
-        string voucherNumber,
-        DateTime date,
-        string relatedVoucherNumber,
-        int userId,
-        int vendorId,
-        int transporterId,
-        decimal amount,
-        bool isEdited)
-    {
-        var cartageJv = new JournalVoucher
-        {
-            VoucherNumber = voucherNumber,
-            Date = date,
-            VoucherType = VoucherType.CartageVoucher,
-            Description = $"Cartage entries for {relatedVoucherNumber}",
-            RatesAdded = true,
-            CreatedBy = userId,
-        };
-
-        cartageJv.Entries.Add(new JournalEntry
-        {
-            AccountId = vendorId,
-            Description = $"Cartage charge - {relatedVoucherNumber}",
-            Debit = amount,
-            Credit = 0,
-            IsEdited = isEdited,
-            SortOrder = 0
-        });
-
-        cartageJv.Entries.Add(new JournalEntry
-        {
-            AccountId = transporterId,
-            Description = $"Cartage for {relatedVoucherNumber}",
-            Debit = 0,
-            Credit = amount,
-            IsEdited = isEdited,
-            SortOrder = 1
-        });
-
-        return cartageJv;
-    }
-
-    private static DateTime NormalizeToUtc(DateTime date) =>
-        date.Kind switch
-        {
-            DateTimeKind.Utc => date,
-            DateTimeKind.Local => date.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
-        };
+    private static decimal CalculatePurchaseLineAmount(decimal totalWeightKg, decimal rate) =>
+        VoucherHelpers.Round2(totalWeightKg * rate);
 
     private static PurchaseVoucherDto MapToDto(JournalVoucher purchaseJv, JournalVoucher? cartageJv)
     {
@@ -519,8 +458,11 @@ public class PurchaseVoucherService : IPurchaseVoucherService
                 ProductName = e.Account?.Name,
                 Packing = e.Account?.ProductDetail?.Packing,
                 PackingWeightKg = e.Account?.ProductDetail?.PackingWeightKg ?? 0,
-                Rbp = e.Rbp ?? "Yes",
                 Qty = e.Qty ?? 0,
+                TotalWeightKg = e.ActualWeightKg ?? 0,
+                AvgWeightPerBagKg = (e.Qty ?? 0) > 0
+                    ? VoucherHelpers.Round2((e.ActualWeightKg ?? 0m) / (e.Qty ?? 0))
+                    : 0,
                 Rate = e.Rate ?? 0,
                 SortOrder = e.SortOrder
             }).ToList(),
@@ -573,31 +515,6 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             SortOrder = e.SortOrder
         }).ToList()
     };
-
-    private static string? ResolveDescription(
-        string? requestedDescription,
-        string prefix,
-        string? partyName,
-        IEnumerable<CreatePurchaseVoucherLineRequest> lines,
-        IReadOnlyDictionary<int, Account> productAccounts)
-    {
-        var trimmed = string.IsNullOrWhiteSpace(requestedDescription) ? null : requestedDescription.Trim();
-        if (trimmed != null)
-            return trimmed;
-
-        var productSummary = string.Join(", ", lines
-            .OrderBy(line => line.SortOrder)
-            .Select(line =>
-            {
-                var productName = productAccounts.GetValueOrDefault(line.ProductId)?.Name ?? $"Product {line.ProductId}";
-                return $"{productName} ({line.Qty})";
-            }));
-
-        if (string.IsNullOrWhiteSpace(productSummary))
-            return partyName == null ? null : $"{prefix} {partyName}";
-
-        return $"{prefix} {partyName ?? "Unknown"} - {productSummary}";
-    }
 
     private sealed record ValidatedVoucherRequest(
         IReadOnlyDictionary<int, Account> ProductAccounts,

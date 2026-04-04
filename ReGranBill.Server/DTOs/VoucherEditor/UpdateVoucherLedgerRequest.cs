@@ -17,6 +17,7 @@ public class UpdateVoucherLedgerEntryRequest
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
     public int? Qty { get; set; }
+    public decimal? TotalWeightKg { get; set; }
     public string? Rbp { get; set; }
     public decimal? Rate { get; set; }
     public int SortOrder { get; set; }

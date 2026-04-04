@@ -10,7 +10,12 @@ import {
 import { AccountService } from '../../services/account.service';
 import { VoucherEditorService } from '../../services/voucher-editor.service';
 import { ToastService } from '../../services/toast.service';
-import { getDeliveryLineAmount, round2 } from '../../utils/delivery-calculations';
+import {
+  getDeliveryLineAmount,
+  getPurchaseLineAmount,
+  getPurchaseLineAverageWeight as calculatePurchaseLineAverageWeight,
+  round2
+} from '../../utils/delivery-calculations';
 import { parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 
 interface EditableLedgerLine {
@@ -20,6 +25,7 @@ interface EditableLedgerLine {
   debit: number;
   credit: number;
   qty: number | null;
+  totalWeightKg: number | null;
   rbp: string | null;
   rate: number | null;
   isEdited: boolean;
@@ -88,16 +94,24 @@ export class VoucherEditorComponent implements OnInit {
     return this.voucher?.voucherType === 'SaleVoucher';
   }
 
+  get isPurchaseVoucher(): boolean {
+    return this.voucher?.voucherType === 'PurchaseVoucher';
+  }
+
+  get supportsVehicleNumber(): boolean {
+    return this.isSaleVoucher || this.isPurchaseVoucher;
+  }
+
   get totalDebit(): number {
-    return this.round2(this.lines.reduce((sum, line) => sum + (line.debit || 0), 0));
+    return round2(this.lines.reduce((sum, line) => sum + (line.debit || 0), 0));
   }
 
   get totalCredit(): number {
-    return this.round2(this.lines.reduce((sum, line) => sum + (line.credit || 0), 0));
+    return round2(this.lines.reduce((sum, line) => sum + (line.credit || 0), 0));
   }
 
   get difference(): number {
-    return this.round2(this.totalDebit - this.totalCredit);
+    return round2(this.totalDebit - this.totalCredit);
   }
 
   get isBalanced(): boolean {
@@ -116,14 +130,18 @@ export class VoucherEditorComponent implements OnInit {
 
   get validationMessage(): string | null {
     if (!this.hasValidLines()) {
-      return 'Each line must have one valid debit or credit amount, and sale voucher product lines require qty, RBP, and rate.';
+      return 'Each line must have one valid debit or credit amount with required inventory fields.';
     }
 
-    if (!this.isSaleVoucher) {
-      return null;
+    if (this.isSaleVoucher) {
+      return this.getSaleVoucherValidationError();
     }
 
-    return this.getSaleVoucherValidationError();
+    if (this.isPurchaseVoucher) {
+      return this.getPurchaseVoucherValidationError();
+    }
+
+    return null;
   }
 
   ngOnInit(): void {
@@ -293,6 +311,7 @@ export class VoucherEditorComponent implements OnInit {
         debit: entry.debit,
         credit: entry.credit,
         qty: entry.qty ?? null,
+        totalWeightKg: entry.totalWeightKg ?? null,
         rbp: entry.rbp ?? null,
         rate: entry.rate ?? null,
         isEdited: entry.isEdited
@@ -310,15 +329,16 @@ export class VoucherEditorComponent implements OnInit {
       voucherNumber: voucher.voucherNumber,
       date: this.voucherDate,
       description: this.description.trim() || null,
-      vehicleNumber: this.isSaleVoucher ? (this.vehicleNumber.trim() || null) : null,
+      vehicleNumber: this.supportsVehicleNumber ? (this.vehicleNumber.trim() || null) : null,
       entries: this.lines.map((line, index) => ({
         accountId: line.accountId!,
         description: line.description.trim() || null,
-        debit: this.round2(line.debit || 0),
-        credit: this.round2(line.credit || 0),
-        qty: this.isSaleVoucher ? (line.qty ?? null) : null,
-        rbp: this.isSaleVoucher ? (line.rbp ?? null) : null,
-        rate: this.isSaleVoucher ? (line.rate ?? null) : null,
+        debit: round2(line.debit || 0),
+        credit: round2(line.credit || 0),
+        qty: this.supportsInventoryMeta && this.isInventoryAccountId(line.accountId) ? (line.qty ?? null) : null,
+        totalWeightKg: this.isPurchaseVoucher && this.isInventoryAccountId(line.accountId) ? (line.totalWeightKg ?? null) : null,
+        rbp: this.isSaleVoucher && this.isInventoryAccountId(line.accountId) ? (line.rbp ?? null) : null,
+        rate: this.supportsInventoryMeta && this.isInventoryAccountId(line.accountId) ? (line.rate ?? null) : null,
         sortOrder: index
       }))
     };
@@ -337,21 +357,40 @@ export class VoucherEditorComponent implements OnInit {
     });
 
     if (!baseValid) return false;
-    if (!this.isSaleVoucher) return true;
 
-    const productLines = this.lines.filter(line => this.getAccountType(line.accountId) === 'Product');
-    if (productLines.length === 0) return false;
+    if (this.isSaleVoucher) {
+      const productLines = this.lines.filter(line => this.isInventoryLine(line));
+      if (productLines.length === 0) return false;
 
-    return productLines.every(line => {
-      const validQty = line.qty != null && line.qty > 0;
-      const validRbp = line.rbp === 'Yes' || line.rbp === 'No';
-      const validRate = line.rate != null && line.rate >= 0;
-      return validQty && validRbp && validRate;
-    });
+      return productLines.every(line => {
+        const validQty = line.qty != null && line.qty > 0;
+        const validRbp = line.rbp === 'Yes' || line.rbp === 'No';
+        const validRate = line.rate != null && line.rate >= 0;
+        return validQty && validRbp && validRate;
+      });
+    }
+
+    if (this.isPurchaseVoucher) {
+      const productLines = this.lines.filter(line => this.isInventoryLine(line));
+      if (productLines.length === 0) return false;
+
+      return productLines.every(line => {
+        const validQty = line.qty != null && line.qty > 0;
+        const validTotalWeight = line.totalWeightKg != null && line.totalWeightKg > 0;
+        const validRate = line.rate != null && line.rate >= 0;
+        return validQty && validTotalWeight && validRate;
+      });
+    }
+
+    return true;
   }
 
   isSaleProductLine(line: EditableLedgerLine): boolean {
-    return this.getAccountType(line.accountId) === AccountType.Product;
+    return this.isInventoryLine(line);
+  }
+
+  isPurchaseProductLine(line: EditableLedgerLine): boolean {
+    return this.isInventoryLine(line);
   }
 
   getExpectedSaleLineAmount(line: EditableLedgerLine): number | null {
@@ -369,10 +408,40 @@ export class VoucherEditorComponent implements OnInit {
     }));
   }
 
+  getExpectedPurchaseLineAmount(line: EditableLedgerLine): number | null {
+    if (!this.isPurchaseVoucher || !this.isPurchaseProductLine(line)) return null;
+    if (line.qty == null || line.qty <= 0 || line.totalWeightKg == null || line.totalWeightKg <= 0 || line.rate == null || line.rate < 0) {
+      return null;
+    }
+
+    return round2(getPurchaseLineAmount({
+      totalWeightKg: line.totalWeightKg,
+      rate: line.rate
+    }));
+  }
+
+  getPurchaseLineAverageWeight(line: EditableLedgerLine): number | null {
+    if (!this.isPurchaseVoucher || !this.isPurchaseProductLine(line)) return null;
+    if (line.qty == null || line.qty <= 0 || line.totalWeightKg == null || line.totalWeightKg <= 0) {
+      return null;
+    }
+
+    return round2(calculatePurchaseLineAverageWeight({
+      qty: line.qty,
+      totalWeightKg: line.totalWeightKg
+    }));
+  }
+
   isSaleLineAmountMismatch(line: EditableLedgerLine): boolean {
     const expected = this.getExpectedSaleLineAmount(line);
     if (expected == null) return false;
-    return this.round2(line.credit || 0) !== expected;
+    return round2(line.credit || 0) !== expected;
+  }
+
+  isPurchaseLineAmountMismatch(line: EditableLedgerLine): boolean {
+    const expected = this.getExpectedPurchaseLineAmount(line);
+    if (expected == null) return false;
+    return round2(line.debit || 0) !== expected;
   }
 
   getSaleCustomerExpectedDebit(): number {
@@ -381,10 +450,22 @@ export class VoucherEditorComponent implements OnInit {
       .reduce((sum, line) => sum + (this.getExpectedSaleLineAmount(line) ?? 0), 0));
   }
 
+  getPurchaseVendorExpectedCredit(): number {
+    return round2(this.lines
+      .filter(line => this.isPurchaseProductLine(line))
+      .reduce((sum, line) => sum + (this.getExpectedPurchaseLineAmount(line) ?? 0), 0));
+  }
+
   isSaleCustomerLine(line: EditableLedgerLine): boolean {
     const account = this.getAccount(line.accountId);
     return account?.accountType === AccountType.Party
       && (account.partyRole === PartyRole.Customer || account.partyRole === PartyRole.Both);
+  }
+
+  isPurchaseVendorLine(line: EditableLedgerLine): boolean {
+    const account = this.getAccount(line.accountId);
+    return account?.accountType === AccountType.Party
+      && (account.partyRole === PartyRole.Vendor || account.partyRole === PartyRole.Both);
   }
 
   private getAccountType(accountId: number | null): AccountType | null {
@@ -397,14 +478,26 @@ export class VoucherEditorComponent implements OnInit {
     return this.accounts.find(account => account.id === accountId);
   }
 
-  private sanitizeAmount(value: number): number {
-    if (!Number.isFinite(value) || value < 0) return 0;
-    return this.round2(value);
+  private isInventoryLine(line: EditableLedgerLine): boolean {
+    const accountType = this.getAccountType(line.accountId);
+    return accountType === AccountType.Product || accountType === AccountType.RawMaterial;
   }
 
-  private round2(value: number): number {
-    return Number((value || 0).toFixed(2));
+  private isInventoryAccountId(accountId: number | null): boolean {
+    const accountType = this.getAccountType(accountId);
+    return accountType === AccountType.Product || accountType === AccountType.RawMaterial;
   }
+
+  private sanitizeAmount(value: number): number {
+    if (!Number.isFinite(value) || value < 0) return 0;
+    return round2(value);
+  }
+
+  private get supportsInventoryMeta(): boolean {
+    return this.isSaleVoucher || this.isPurchaseVoucher;
+  }
+
+
 
   private newLine(): EditableLedgerLine {
     return {
@@ -413,6 +506,7 @@ export class VoucherEditorComponent implements OnInit {
       debit: 0,
       credit: 0,
       qty: null,
+      totalWeightKg: null,
       rbp: null,
       rate: null,
       isEdited: false
@@ -428,6 +522,7 @@ export class VoucherEditorComponent implements OnInit {
 
   private getAccountSublabel(account: Account): string {
     if (account.accountType === 'Product') return account.packing || 'Product';
+    if (account.accountType === 'RawMaterial') return account.packing || 'Raw material';
     if (account.accountType === 'Expense') return 'Expense';
     if (account.accountType === 'Account') return account.bankName || 'Cash / Bank';
     if (account.accountType === 'Party') return account.partyRole || 'Party';
@@ -447,11 +542,11 @@ export class VoucherEditorComponent implements OnInit {
       }
 
       if ((line.debit || 0) > 0) {
-        return `${this.getAccount(line.accountId)?.name || 'Product line'} must remain a credit line.`;
+        return `${this.getAccount(line.accountId)?.name || 'Inventory line'} must remain a credit line.`;
       }
 
-      if (this.round2(line.credit || 0) !== expectedAmount) {
-        return `${this.getAccount(line.accountId)?.name || 'Product line'} credit must be ${expectedAmount.toFixed(2)} based on qty, RBP, packing weight, and rate.`;
+      if (round2(line.credit || 0) !== expectedAmount) {
+        return `${this.getAccount(line.accountId)?.name || 'Inventory line'} credit must be ${expectedAmount.toFixed(2)} based on qty, RBP, packing weight, and rate.`;
       }
     }
 
@@ -465,14 +560,58 @@ export class VoucherEditorComponent implements OnInit {
     }
 
     const expectedDebit = this.getSaleCustomerExpectedDebit();
-    const actualDebit = this.round2(customerLines[0].debit || 0);
+    const actualDebit = round2(customerLines[0].debit || 0);
     if (actualDebit !== expectedDebit) {
       return `Customer debit must equal total product amount of ${expectedDebit.toFixed(2)}.`;
     }
 
     const nonProductCredits = this.lines.filter(line => (line.credit || 0) > 0 && !this.isSaleProductLine(line));
     if (nonProductCredits.length > 0) {
-      return 'Sale voucher credit lines must be product accounts only.';
+      return 'Sale voucher credit lines must be inventory accounts only.';
+    }
+
+    return null;
+  }
+
+  private getPurchaseVoucherValidationError(): string | null {
+    const productLines = this.lines.filter(line => this.isPurchaseProductLine(line));
+    if (productLines.length === 0) {
+      return 'Purchase voucher must contain at least one product line.';
+    }
+
+    for (const line of productLines) {
+      const expectedAmount = this.getExpectedPurchaseLineAmount(line);
+      if (expectedAmount == null) {
+        return 'Every purchase product line must have bags, total kg, and rate before saving.';
+      }
+
+      if ((line.credit || 0) > 0) {
+        return `${this.getAccount(line.accountId)?.name || 'Inventory line'} must remain a debit line.`;
+      }
+
+      if (round2(line.debit || 0) !== expectedAmount) {
+        return `${this.getAccount(line.accountId)?.name || 'Inventory line'} debit must be ${expectedAmount.toFixed(2)} based on total kg and rate.`;
+      }
+    }
+
+    const vendorLines = this.lines.filter(line => this.isPurchaseVendorLine(line) && (line.credit || 0) > 0);
+    if (vendorLines.length !== 1) {
+      return 'Purchase voucher must have exactly one vendor credit line.';
+    }
+
+    if (this.lines[0] !== vendorLines[0]) {
+      return 'Vendor credit line must remain the first line in the purchase voucher.';
+    }
+
+    const expectedCredit = this.getPurchaseVendorExpectedCredit();
+    const actualCredit = round2(vendorLines[0].credit || 0);
+    if (actualCredit !== expectedCredit) {
+      return `Vendor credit must equal total product amount of ${expectedCredit.toFixed(2)}.`;
+    }
+
+    const nonProductDebits = this.lines.filter(line => (line.debit || 0) > 0 && !this.isPurchaseProductLine(line));
+    if (nonProductDebits.length > 0) {
+      return 'Purchase voucher debit lines must be inventory accounts only.';
     }
 
     return null;

@@ -1,8 +1,11 @@
+using ReGranBill.Server.DTOs.AccountClosingReport;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ReGranBill.Server.DTOs.DeliveryChallans;
+using ReGranBill.Server.DTOs.MasterReport;
 using ReGranBill.Server.DTOs.PurchaseVouchers;
+using ReGranBill.Server.DTOs.ProductStockReport;
 using ReGranBill.Server.DTOs.SOA;
 
 namespace ReGranBill.Server.Services;
@@ -34,7 +37,8 @@ public class PdfService : IPdfService
                 line.Packing,
                 line.PackingWeightKg,
                 line.Rbp,
-                line.Qty)).ToList());
+                line.Qty,
+                null)).ToList());
 
     public byte[] GeneratePurchaseVoucherPdf(PurchaseVoucherDto dto) =>
         GenerateVoucherPdf(
@@ -47,8 +51,9 @@ public class PdfService : IPdfService
                 line.ProductName,
                 line.Packing,
                 line.PackingWeightKg,
-                line.Rbp,
-                line.Qty)).ToList());
+                "Yes",
+                line.Qty,
+                line.TotalWeightKg)).ToList());
 
     public byte[] GenerateStatementOfAccountPdf(StatementOfAccountDto dto)
     {
@@ -149,6 +154,344 @@ public class PdfService : IPdfService
                         table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderRight(1.5f).BorderColor(Green).Padding(6)
                             .AlignRight().Text(FormatCurrency(dto.NetBalance)).Bold().FontSize(11);
                     });
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    public byte[] GenerateMasterReportPdf(MasterReportDto dto, IReadOnlyCollection<string>? visibleColumns = null)
+    {
+        var columns = NormalizeMasterReportColumns(visibleColumns);
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(18);
+                page.DefaultTextStyle(x => x.FontSize(9).FontColor(Green).FontFamily("Times New Roman"));
+
+                page.Content().Border(1.5f).BorderColor(Green).Padding(20).Column(column =>
+                {
+                    column.Spacing(0);
+
+                    column.Item().Element(ComposeCompanyHeader);
+                    column.Item().PaddingVertical(12).LineHorizontal(1).LineColor(Green);
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(info =>
+                        {
+                            info.Item().Text("MASTER REPORT").Bold().FontSize(16).FontColor(Green);
+                            info.Item().PaddingTop(4).Text(BuildMasterReportScope(dto)).Bold().FontSize(11);
+                            info.Item().PaddingTop(4).Text($"Date Range: {BuildMasterReportDateRange(dto)}").FontSize(9);
+                        });
+
+                        row.ConstantItem(180).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
+                        {
+                            summary.Item().AlignRight().Text($"Entries: {dto.TotalEntries}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Debit: {FormatCurrency(dto.TotalDebit)}").FontSize(10);
+                            summary.Item().AlignRight().Text($"Credit: {FormatCurrency(dto.TotalCredit)}").FontSize(10);
+                            summary.Item().PaddingTop(2).AlignRight().Text($"Net: {FormatCurrency(dto.NetBalance)}").Bold().FontSize(11);
+                        });
+                    });
+
+                    column.Item().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(definition =>
+                        {
+                            foreach (var columnKey in columns)
+                            {
+                                ConfigureMasterReportColumn(definition, columnKey);
+                            }
+                        });
+
+                        table.Header(header =>
+                        {
+                            foreach (var columnKey in columns)
+                            {
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5)
+                                    .AlignCenter().AlignMiddle().Text(GetMasterReportHeader(columnKey)).Bold().FontSize(9).LetterSpacing(0.04f);
+                            }
+                        });
+
+                        foreach (var entry in dto.Entries)
+                        {
+                            foreach (var columnKey in columns)
+                            {
+                                AddBodyCell(table, GetMasterReportValue(entry, columnKey), GetMasterReportAlignment(columnKey));
+                            }
+                        }
+
+                        if (dto.Entries.Count == 0)
+                        {
+                            table.Cell().ColumnSpan((uint)columns.Count)
+                                .Border(0.5f).BorderColor(BorderGreen).Padding(10)
+                                .AlignCenter().Text("No entries found for the selected filters.").FontSize(10);
+                        }
+
+                        AddMasterReportTotalsRow(table, dto, columns);
+                    });
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    public byte[] GenerateAccountClosingReportPdf(AccountClosingReportDto dto)
+    {
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(18);
+                page.DefaultTextStyle(x => x.FontSize(9).FontColor(Green).FontFamily("Times New Roman"));
+
+                page.Content().Border(1.5f).BorderColor(Green).Padding(18).Column(column =>
+                {
+                    column.Item().Element(ComposeCompanyHeader);
+                    column.Item().PaddingVertical(10).LineHorizontal(1).LineColor(Green);
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(info =>
+                        {
+                            info.Item().Text("ACCOUNT CLOSING REPORT").Bold().FontSize(16).FontColor(Green);
+                            info.Item().PaddingTop(4).Text($"Date Range: {BuildAccountClosingDateRange(dto)}").FontSize(9);
+                            info.Item().PaddingTop(4).Text(BuildAccountClosingScope(dto)).Bold().FontSize(10);
+                        });
+
+                        row.ConstantItem(180).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
+                        {
+                            summary.Item().AlignRight().Text($"Accounts: {dto.TotalAccounts}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Opening: {FormatCurrency(dto.TotalOpeningBalance)}").FontSize(9);
+                            summary.Item().AlignRight().Text($"Debit: {FormatCurrency(dto.TotalDebit)}").FontSize(9);
+                            summary.Item().AlignRight().Text($"Credit: {FormatCurrency(dto.TotalCredit)}").FontSize(9);
+                            summary.Item().PaddingTop(2).AlignRight().Text($"Closing: {FormatCurrency(dto.TotalClosingBalance)}").Bold().FontSize(10);
+                        });
+                    });
+
+                    column.Item().PaddingTop(12).Text("Summary").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(1.7f);
+                            columns.ConstantColumn(95);
+                            columns.ConstantColumn(95);
+                            columns.ConstantColumn(95);
+                            columns.ConstantColumn(95);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("ACCOUNT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("OPENING").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("DEBIT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("CREDIT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("CLOSING").Bold().FontSize(9).LetterSpacing(0.04f);
+                        });
+
+                        foreach (var row in dto.Accounts)
+                        {
+                            AddBodyCell(table, row.AccountName, CellTextAlign.Left);
+                            AddBodyCell(table, FormatCurrency(row.OpeningBalance), CellTextAlign.Right);
+                            AddBodyCell(table, FormatCurrency(row.PeriodDebit), CellTextAlign.Right);
+                            AddBodyCell(table, FormatCurrency(row.PeriodCredit), CellTextAlign.Right);
+                            AddBodyCell(table, FormatCurrency(row.ClosingBalance), CellTextAlign.Right);
+                        }
+
+                        if (dto.Accounts.Count == 0)
+                        {
+                            table.Cell().ColumnSpan(5).Border(0.5f).BorderColor(BorderGreen).Padding(10)
+                                .AlignCenter().Text("No account rows found for the selected filters.").FontSize(10);
+                        }
+
+                        table.Cell().ColumnSpan(1).BorderTop(1.5f).BorderBottom(1.5f).BorderLeft(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text("Totals").Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.TotalOpeningBalance)).Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.TotalDebit)).Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.TotalCredit)).Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderRight(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.TotalClosingBalance)).Bold().FontSize(10);
+                    });
+
+                    if (dto.History.Count > 0)
+                    {
+                        column.Item().PaddingTop(14).Text($"History: {dto.HistoryAccountName ?? "Selected Account"}").Bold().FontSize(12);
+                        column.Item().PaddingTop(6).Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.ConstantColumn(80);
+                                columns.ConstantColumn(78);
+                                columns.RelativeColumn(1.9f);
+                                columns.ConstantColumn(52);
+                                columns.ConstantColumn(62);
+                                columns.ConstantColumn(82);
+                                columns.ConstantColumn(82);
+                                columns.ConstantColumn(88);
+                            });
+
+                            table.Header(header =>
+                            {
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("DATE").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("VOUCHER").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("DESCRIPTION").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("QTY").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("RATE").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("DEBIT").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("CREDIT").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("BALANCE").Bold().FontSize(9).LetterSpacing(0.04f);
+                            });
+
+                            foreach (var entry in dto.History)
+                            {
+                                AddBodyCell(table, entry.Date.ToString("dd/MM/yyyy"), CellTextAlign.Center);
+                                AddBodyCell(table, entry.VoucherNumber, CellTextAlign.Center);
+                                AddBodyCell(table, entry.Description ?? "-", CellTextAlign.Left);
+                                AddBodyCell(table, entry.Quantity?.ToString() ?? "-", CellTextAlign.Center);
+                                AddBodyCell(table, entry.Rate.HasValue ? entry.Rate.Value.ToString("N2") : "-", CellTextAlign.Right);
+                                AddBodyCell(table, entry.Debit > 0 ? FormatCurrency(entry.Debit) : "-", CellTextAlign.Right);
+                                AddBodyCell(table, entry.Credit > 0 ? FormatCurrency(entry.Credit) : "-", CellTextAlign.Right);
+                                AddBodyCell(table, FormatCurrency(entry.RunningBalance), CellTextAlign.Right);
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    public byte[] GenerateProductStockReportPdf(ProductStockReportDto dto, int? selectedMovementProductId = null)
+    {
+        var selectedProduct = selectedMovementProductId.HasValue
+            ? dto.Products.FirstOrDefault(product => product.ProductId == selectedMovementProductId.Value)
+            : null;
+        var selectedMovements = selectedMovementProductId.HasValue
+            ? dto.Movements.Where(movement => movement.ProductId == selectedMovementProductId.Value).ToList()
+            : new List<ProductStockMovementDto>();
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(18);
+                page.DefaultTextStyle(x => x.FontSize(8.5f).FontColor(Green).FontFamily("Times New Roman"));
+
+                page.Content().Border(1.5f).BorderColor(Green).Padding(18).Column(column =>
+                {
+                    column.Item().Element(ComposeCompanyHeader);
+                    column.Item().PaddingVertical(10).LineHorizontal(1).LineColor(Green);
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(info =>
+                        {
+                            info.Item().Text("PRODUCT STOCK REPORT").Bold().FontSize(16).FontColor(Green);
+                            info.Item().PaddingTop(4).Text($"Date Range: {BuildProductStockDateRange(dto)}").FontSize(9);
+                            info.Item().PaddingTop(4).Text(BuildProductStockScope(dto)).Bold().FontSize(10);
+                        });
+
+                        row.ConstantItem(180).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
+                        {
+                            summary.Item().AlignRight().Text($"Products: {dto.Totals.ProductCount}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Closing Kg: {dto.Totals.Closing.Kg:N2}").FontSize(9);
+                            summary.Item().PaddingTop(2).AlignRight().Text($"Closing Value: {FormatCurrency(dto.Totals.Closing.Value)}").Bold().FontSize(10);
+                        });
+                    });
+
+                    column.Item().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(2.2f);
+                            columns.ConstantColumn(70);
+                            columns.ConstantColumn(70);
+                            columns.ConstantColumn(70);
+                            columns.ConstantColumn(70);
+                            columns.ConstantColumn(86);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("PRODUCT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("OPEN KG").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("IN KG").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("OUT KG").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("CLOSE KG").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("CLOSE VALUE").Bold().FontSize(9).LetterSpacing(0.04f);
+                        });
+
+                        foreach (var row in dto.Products)
+                        {
+                            AddBodyCell(table, string.IsNullOrWhiteSpace(row.Packing) ? row.ProductName : $"{row.ProductName} ({row.Packing})", CellTextAlign.Left);
+                            AddBodyCell(table, row.Opening.Kg.ToString("N2"), CellTextAlign.Right);
+                            AddBodyCell(table, row.Inward.Kg.ToString("N2"), CellTextAlign.Right);
+                            AddBodyCell(table, row.Outward.Kg.ToString("N2"), CellTextAlign.Right);
+                            AddBodyCell(table, row.Closing.Kg.ToString("N2"), CellTextAlign.Right);
+                            AddBodyCell(table, FormatCurrency(row.Closing.Value), CellTextAlign.Right);
+                        }
+
+                        if (dto.Products.Count == 0)
+                        {
+                            table.Cell().ColumnSpan(7).Border(0.5f).BorderColor(BorderGreen).Padding(10)
+                                .AlignCenter().Text("No products matched the selected filters.").FontSize(10);
+                        }
+                    });
+
+                    if (selectedProduct != null && selectedMovements.Count > 0)
+                    {
+                        column.Item().PaddingTop(14).Text($"Movement Drilldown: {selectedProduct.ProductName}").Bold().FontSize(12);
+                        column.Item().PaddingTop(6).Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.ConstantColumn(74);
+                                columns.ConstantColumn(76);
+                                columns.ConstantColumn(72);
+                                columns.ConstantColumn(58);
+                                columns.ConstantColumn(70);
+                                columns.ConstantColumn(72);
+                                columns.ConstantColumn(70);
+                                columns.ConstantColumn(70);
+                            });
+
+                            table.Header(header =>
+                            {
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("DATE").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("VOUCHER").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("TYPE").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("QTY").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("WEIGHT").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("VALUE").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("DIRECTION").Bold().FontSize(9).LetterSpacing(0.04f);
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("EDITED").Bold().FontSize(9).LetterSpacing(0.04f);
+                            });
+
+                            foreach (var movement in selectedMovements)
+                            {
+                                AddBodyCell(table, movement.Date.ToString("dd/MM/yyyy"), CellTextAlign.Center);
+                                AddBodyCell(table, movement.VoucherNumber, CellTextAlign.Center);
+                                AddBodyCell(table, movement.VoucherType, CellTextAlign.Center);
+                                AddBodyCell(table, movement.Qty?.ToString() ?? "-", CellTextAlign.Center);
+                                AddBodyCell(table, movement.WeightKg.ToString("N2"), CellTextAlign.Right);
+                                AddBodyCell(table, FormatCurrency(movement.Value), CellTextAlign.Right);
+                                AddBodyCell(table, movement.Direction, CellTextAlign.Center);
+                                AddBodyCell(table, movement.IsEdited ? "Yes" : "No", CellTextAlign.Center);
+                            }
+                        });
+                    }
                 });
             });
         });
@@ -271,7 +614,12 @@ public class PdfService : IPdfService
                         foreach (var line in lines)
                         {
                             var isLoose = line.Rbp == "No";
-                            var weightText = isLoose ? "Loose" : $"{line.PackingWeightKg * line.Qty} kg";
+                            var lineWeight = line.ActualWeightKg ?? (isLoose ? line.Qty : line.PackingWeightKg * line.Qty);
+                            var weightText = line.ActualWeightKg.HasValue
+                                ? $"{FormatDecimal(lineWeight)} kg"
+                                : isLoose
+                                    ? "Loose"
+                                    : $"{FormatDecimal(lineWeight)} kg";
                             var desc = line.ProductName ?? string.Empty;
                             if (!string.IsNullOrEmpty(line.Packing))
                             {
@@ -292,11 +640,10 @@ public class PdfService : IPdfService
                         }
 
                         var totalQty = lines.Where(l => l.Rbp != "No").Sum(l => l.Qty);
-                        var looseWeightTotal = lines.Where(l => l.Rbp == "No").Sum(l => l.Qty);
-                        var packedWeightTotal = lines.Where(l => l.Rbp != "No").Sum(l => l.PackingWeightKg * l.Qty);
-                        var totalWeightAll = packedWeightTotal + looseWeightTotal;
+                        var totalWeightAll = lines.Sum(line =>
+                            line.ActualWeightKg ?? (line.Rbp == "No" ? line.Qty : line.PackingWeightKg * line.Qty));
 
-                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(1.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{totalWeightAll} kg").Bold().FontSize(12);
+                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(1.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{FormatDecimal(totalWeightAll)} kg").Bold().FontSize(12);
                         table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(0.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).Text("Total").Bold().FontSize(12);
                         table.Cell().BorderTop(2).BorderBottom(1.5f).BorderRight(1.5f).BorderLeft(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{totalQty}").Bold().FontSize(12);
                     });
@@ -361,7 +708,214 @@ public class PdfService : IPdfService
         });
     }
 
+    private static readonly string[] MasterReportColumnOrder =
+    [
+        "voucher", "date", "description", "account", "quantity", "rate", "debit", "credit", "balance"
+    ];
+
     private static string FormatCurrency(decimal amount) => $"Rs. {amount:N2}";
+
+    private enum CellTextAlign
+    {
+        Left,
+        Center,
+        Right
+    }
+
+    private static void AddBodyCell(TableDescriptor table, string text, CellTextAlign align)
+    {
+        var cell = table.Cell()
+            .Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignMiddle();
+
+        cell = align switch
+        {
+            CellTextAlign.Right => cell.AlignRight(),
+            CellTextAlign.Center => cell.AlignCenter(),
+            _ => cell.AlignLeft()
+        };
+
+        cell.Text(text).FontSize(9);
+    }
+
+    private static IReadOnlyList<string> NormalizeMasterReportColumns(IReadOnlyCollection<string>? visibleColumns)
+    {
+        if (visibleColumns == null || visibleColumns.Count == 0)
+            return MasterReportColumnOrder;
+
+        var selected = new HashSet<string>(visibleColumns, StringComparer.OrdinalIgnoreCase);
+        var normalized = MasterReportColumnOrder
+            .Where(column => selected.Contains(column))
+            .ToArray();
+
+        return normalized.Length > 0 ? normalized : MasterReportColumnOrder;
+    }
+
+    private static void ConfigureMasterReportColumn(TableColumnsDefinitionDescriptor columns, string columnKey)
+    {
+        switch (columnKey)
+        {
+            case "voucher":
+                columns.ConstantColumn(72);
+                break;
+            case "date":
+                columns.ConstantColumn(68);
+                break;
+            case "description":
+                columns.RelativeColumn(1.8f);
+                break;
+            case "account":
+                columns.RelativeColumn(1.3f);
+                break;
+            case "quantity":
+                columns.ConstantColumn(52);
+                break;
+            case "rate":
+                columns.ConstantColumn(58);
+                break;
+            case "debit":
+            case "credit":
+                columns.ConstantColumn(74);
+                break;
+            case "balance":
+                columns.ConstantColumn(78);
+                break;
+            default:
+                columns.RelativeColumn();
+                break;
+        }
+    }
+
+    private static string GetMasterReportHeader(string columnKey) => columnKey switch
+    {
+        "voucher" => "VOUCHER",
+        "date" => "DATE",
+        "description" => "DESCRIPTION",
+        "account" => "ACCOUNT",
+        "quantity" => "QTY",
+        "rate" => "RATE",
+        "debit" => "DEBIT",
+        "credit" => "CREDIT",
+        "balance" => "BALANCE",
+        _ => columnKey.ToUpperInvariant()
+    };
+
+    private static string GetMasterReportValue(MasterReportEntryDto entry, string columnKey) => columnKey switch
+    {
+        "voucher" => entry.VoucherNumber,
+        "date" => entry.Date.ToString("dd/MM/yyyy"),
+        "description" => entry.Description ?? "-",
+        "account" => entry.AccountName,
+        "quantity" => entry.Quantity?.ToString() ?? "-",
+        "rate" => entry.Rate.HasValue ? entry.Rate.Value.ToString("N2") : "-",
+        "debit" => entry.Debit > 0 ? FormatCurrency(entry.Debit) : "-",
+        "credit" => entry.Credit > 0 ? FormatCurrency(entry.Credit) : "-",
+        "balance" => FormatCurrency(entry.RunningBalance),
+        _ => "-"
+    };
+
+    private static CellTextAlign GetMasterReportAlignment(string columnKey) => columnKey switch
+    {
+        "voucher" => CellTextAlign.Center,
+        "date" => CellTextAlign.Center,
+        "quantity" => CellTextAlign.Center,
+        "debit" => CellTextAlign.Right,
+        "credit" => CellTextAlign.Right,
+        "rate" => CellTextAlign.Right,
+        "balance" => CellTextAlign.Right,
+        _ => CellTextAlign.Left
+    };
+
+    private static void AddMasterReportTotalsRow(TableDescriptor table, MasterReportDto dto, IReadOnlyList<string> columns)
+    {
+        var totalColumns = columns
+            .Where(column => column is "debit" or "credit" or "balance")
+            .ToList();
+        var leadingSpan = columns.Count - totalColumns.Count;
+
+        if (leadingSpan > 0)
+        {
+            table.Cell().ColumnSpan((uint)leadingSpan).BorderTop(1.5f).BorderBottom(1.5f).BorderLeft(1.5f).BorderColor(Green).Padding(6)
+                .AlignRight().Text("Totals").Bold().FontSize(11);
+        }
+
+        foreach (var totalColumn in totalColumns)
+        {
+            var isLast = totalColumn == totalColumns[^1];
+            var cell = table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderColor(Green).Padding(6).AlignRight();
+            if (isLast)
+                cell = cell.BorderRight(1.5f);
+
+            var value = totalColumn switch
+            {
+                "debit" => FormatCurrency(dto.TotalDebit),
+                "credit" => FormatCurrency(dto.TotalCredit),
+                "balance" => FormatCurrency(dto.NetBalance),
+                _ => "-"
+            };
+
+            cell.Text(value).Bold().FontSize(11);
+        }
+    }
+
+    private static string BuildMasterReportScope(MasterReportDto dto)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(dto.CategoryName))
+            parts.Add($"Category: {dto.CategoryName}");
+        if (!string.IsNullOrWhiteSpace(dto.AccountName))
+            parts.Add($"Account: {dto.AccountName}");
+
+        return parts.Count == 0 ? "All Categories / All Accounts" : string.Join(" | ", parts);
+    }
+
+    private static string BuildMasterReportDateRange(MasterReportDto dto)
+    {
+        if (dto.FromDate.HasValue && dto.ToDate.HasValue)
+            return $"{dto.FromDate.Value:dd/MM/yyyy} to {dto.ToDate.Value:dd/MM/yyyy}";
+        if (dto.FromDate.HasValue)
+            return $"From {dto.FromDate.Value:dd/MM/yyyy}";
+        if (dto.ToDate.HasValue)
+            return $"Up to {dto.ToDate.Value:dd/MM/yyyy}";
+        return "Full Report";
+    }
+
+    private static string BuildAccountClosingScope(AccountClosingReportDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.SelectedAccountName))
+            return $"Account Filter: {dto.SelectedAccountName}";
+
+        return "All Closing Accounts";
+    }
+
+    private static string BuildAccountClosingDateRange(AccountClosingReportDto dto)
+    {
+        if (dto.FromDate.HasValue && dto.ToDate.HasValue)
+            return $"{dto.FromDate.Value:dd/MM/yyyy} to {dto.ToDate.Value:dd/MM/yyyy}";
+        if (dto.FromDate.HasValue)
+            return $"From {dto.FromDate.Value:dd/MM/yyyy}";
+        if (dto.ToDate.HasValue)
+            return $"Up to {dto.ToDate.Value:dd/MM/yyyy}";
+        return "Full Report";
+    }
+
+    private static string BuildProductStockScope(ProductStockReportDto dto)
+    {
+        if (dto.CategoryId.HasValue || dto.ProductId.HasValue)
+            return "Filtered Inventory View";
+
+        return "All Categories / All Products";
+    }
+
+    private static string BuildProductStockDateRange(ProductStockReportDto dto)
+    {
+        if (dto.From.HasValue && dto.To.HasValue)
+            return $"{dto.From.Value:dd/MM/yyyy} to {dto.To.Value:dd/MM/yyyy}";
+        if (dto.From.HasValue)
+            return $"From {dto.From.Value:dd/MM/yyyy}";
+        if (dto.To.HasValue)
+            return $"Up to {dto.To.Value:dd/MM/yyyy}";
+        return "Full Report";
+    }
 
     private static string BuildDateRangeLabel(StatementOfAccountDto dto)
     {
@@ -376,6 +930,11 @@ public class PdfService : IPdfService
 
         return "Full Statement";
     }
+
+    private static string FormatDecimal(decimal value) =>
+        value == decimal.Truncate(value)
+            ? decimal.Truncate(value).ToString("0")
+            : value.ToString("0.##");
 
     private static string BuildContactLine(StatementOfAccountDto dto)
     {
@@ -396,5 +955,6 @@ public class PdfService : IPdfService
         string? Packing,
         decimal PackingWeightKg,
         string Rbp,
-        int Qty);
+        int Qty,
+        decimal? ActualWeightKg);
 }

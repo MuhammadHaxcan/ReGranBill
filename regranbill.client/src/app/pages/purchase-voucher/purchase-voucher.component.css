@@ -267,18 +267,22 @@
   font-weight: 500;
 }
 
-.col-rbp {
-  width: 7%;
-  min-width: 70px;
-}
-
 .col-qty {
   width: 9%;
   min-width: 70px;
 }
 
 .col-weight {
-  width: 12%;
+  width: 11%;
+  min-width: 100px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.col-avg {
+  width: 11%;
   min-width: 100px;
   text-align: center;
   font-size: 14px;
@@ -292,16 +296,10 @@
   font-weight: 400;
 }
 
-.col-weight .loose-label {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--warning);
-  background: var(--warning-light);
-  padding: 1px 6px;
-  border-radius: 4px;
-  margin-right: 4px;
-  vertical-align: middle;
+.col-avg .unit {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .col-rate {

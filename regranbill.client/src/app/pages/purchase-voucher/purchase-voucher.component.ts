@@ -14,6 +14,16 @@ import {
   PurchaseVoucherViewModel
 } from '../../models/purchase-voucher.model';
 import { parseLocalDate, toDateInputValue } from '../../utils/date-utils';
+import {
+  getPurchaseAverageWeightPerBag,
+  getPurchaseLineAmount,
+  getPurchaseLineAverageWeight,
+  getPurchaseLineWeight,
+  getPurchaseTotalAmount,
+  getPurchaseTotalBags,
+  getPurchaseTotalWeight,
+  toNumber
+} from '../../utils/delivery-calculations';
 
 @Component({
   selector: 'app-purchase-voucher',
@@ -49,10 +59,6 @@ export class PurchaseVoucherComponent implements OnInit {
   vendorOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
   transporterOptions: SelectOption[] = [];
-  rbpOptions: SelectOption[] = [
-    { value: 'Yes', label: 'Yes' },
-    { value: 'No', label: 'No' }
-  ];
 
   // Cartage
   cartage: Cartage | null = null;
@@ -138,8 +144,9 @@ export class PurchaseVoucherComponent implements OnInit {
               packing: l.packing || '',
               packingWeightKg: l.packingWeightKg
             } : null,
-            rbp: l.rbp,
+            rbp: 'Yes',
             qty: l.qty,
+            totalWeightKg: l.totalWeightKg,
             rate: l.rate,
             sortOrder: l.sortOrder
           }));
@@ -184,7 +191,7 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   addLine(): void {
-    this.lines.push({ product: null, rbp: 'Yes', qty: 0, rate: 0 });
+    this.lines.push({ product: null, rbp: 'Yes', qty: 0, totalWeightKg: 0, rate: 0 });
   }
 
   removeLine(index: number): void {
@@ -207,40 +214,32 @@ export class PurchaseVoucherComponent implements OnInit {
     }
   }
 
-  onRbpChange(line: ProductLine, val: string): void {
-    line.rbp = val as 'Yes' | 'No';
-  }
-
   getLineTotalWeight(line: ProductLine): number {
-    if (!line.product || !line.qty) return 0;
-    if (line.rbp === 'No') return line.qty;
-    return line.product.packingWeightKg * line.qty;
+    return getPurchaseLineWeight({ totalWeightKg: line.totalWeightKg });
   }
 
-  isLoose(line: ProductLine): boolean {
-    return line.rbp === 'No';
+  getLineAverageWeight(line: ProductLine): number {
+    return getPurchaseLineAverageWeight({ qty: line.qty, totalWeightKg: line.totalWeightKg });
   }
 
   getLineAmount(line: ProductLine): number {
-    if (!line.product || !line.qty) return 0;
-    if (line.rbp === 'Yes') {
-      return line.product.packingWeightKg * line.qty * line.rate;
-    }
-    return line.qty * line.rate;
+    return getPurchaseLineAmount({ totalWeightKg: line.totalWeightKg, rate: line.rate });
   }
 
   get totalBags(): number {
-    return this.lines
-      .filter(l => l.rbp === 'Yes')
-      .reduce((sum, l) => sum + (l.qty || 0), 0);
+    return getPurchaseTotalBags(this.lines.map(l => ({ qty: l.qty })));
   }
 
   get totalWeight(): number {
-    return this.lines.reduce((sum, l) => sum + this.getLineTotalWeight(l), 0);
+    return getPurchaseTotalWeight(this.lines.map(l => ({ totalWeightKg: l.totalWeightKg })));
+  }
+
+  get avgWeightPerBag(): number {
+    return getPurchaseAverageWeightPerBag(this.lines.map(l => ({ qty: l.qty, totalWeightKg: l.totalWeightKg })));
   }
 
   get totalAmount(): number {
-    return this.lines.reduce((sum, l) => sum + this.getLineAmount(l), 0);
+    return getPurchaseTotalAmount(this.lines.map(l => ({ totalWeightKg: l.totalWeightKg, rate: l.rate })));
   }
 
   get formattedDate(): string {
@@ -294,20 +293,20 @@ export class PurchaseVoucherComponent implements OnInit {
         .filter(l => l.product)
         .map((l, i) => ({
           productId: l.product!.id,
-          rbp: l.rbp,
-          qty: this.toNumber(l.qty),
-          rate: this.toNumber(l.rate),
+          qty: toNumber(l.qty),
+          totalWeightKg: toNumber(l.totalWeightKg),
+          rate: toNumber(l.rate),
           sortOrder: i
         })),
       cartage: this.cartage ? {
         transporterId: this.cartage.transporterId,
-        amount: this.toNumber(this.cartage.amount)
+        amount: toNumber(this.cartage.amount)
       } : null
     };
   }
 
   get validLines(): ProductLine[] {
-    return this.lines.filter(l => l.product && l.qty > 0);
+    return this.lines.filter(l => l.product && l.qty > 0 && toNumber(l.totalWeightKg) > 0);
   }
 
   get canSave(): boolean {
@@ -326,6 +325,10 @@ export class PurchaseVoucherComponent implements OnInit {
     }
     if (linesWithProduct.some(l => !l.qty || l.qty <= 0)) {
       this.toast.error('All line items must have a quantity greater than zero.');
+      return false;
+    }
+    if (linesWithProduct.some(l => !l.totalWeightKg || toNumber(l.totalWeightKg) <= 0)) {
+      this.toast.error('All line items must have total kg greater than zero.');
       return false;
     }
     return true;
@@ -417,8 +420,4 @@ export class PurchaseVoucherComponent implements OnInit {
     });
   }
 
-  private toNumber(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
 }
