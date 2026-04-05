@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CompanySettings } from '../models/company-settings.model';
+import { CompanySettings, UpdateVehicleOptionsRequest, VehicleOption } from '../models/company-settings.model';
 
 @Injectable({
   providedIn: 'root'
@@ -21,5 +21,13 @@ export class CompanySettingsService {
 
   getLogo(): Observable<Blob> {
     return this.http.get(`${this.url}/logo`, { responseType: 'blob' });
+  }
+
+  getVehicles(): Observable<VehicleOption[]> {
+    return this.http.get<VehicleOption[]>(`${this.url}/vehicles`);
+  }
+
+  updateVehicles(request: UpdateVehicleOptionsRequest): Observable<VehicleOption[]> {
+    return this.http.put<VehicleOption[]>(`${this.url}/vehicles`, request);
   }
 }

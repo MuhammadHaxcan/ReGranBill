@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AuthService } from '../../services/auth.service';
 
@@ -16,6 +16,7 @@ export class PrintAccountClosingReportComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private sanitizer: DomSanitizer,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
@@ -24,8 +25,8 @@ export class PrintAccountClosingReportComponent implements OnInit {
   ngOnInit(): void {
     const token = this.authService.currentUser?.token;
     if (!token) {
-      this.error = 'Not authenticated';
-      this.loading = false;
+      this.authService.logout();
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -53,9 +54,11 @@ export class PrintAccountClosingReportComponent implements OnInit {
       if (xhr.status === 200) {
         const objectUrl = URL.createObjectURL(xhr.response);
         this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
-        this.loading = false;
         document.title = 'Print Account Closing Report';
         this.cdr.detectChanges();
+      } else if (xhr.status === 401 || xhr.status === 403) {
+        this.authService.logout();
+        this.router.navigate(['/login']);
       } else {
         this.error = `Failed to load account closing report PDF (${xhr.status})`;
         this.loading = false;
@@ -70,5 +73,10 @@ export class PrintAccountClosingReportComponent implements OnInit {
     };
 
     xhr.send();
+  }
+
+  onIframeLoad(): void {
+    this.loading = false;
+    this.cdr.detectChanges();
   }
 }

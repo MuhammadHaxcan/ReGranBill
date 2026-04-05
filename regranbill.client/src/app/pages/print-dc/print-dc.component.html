@@ -1,5 +1,8 @@
-<div class="print-dc-container" *ngIf="!loading && !error && pdfUrl">
-  <iframe [src]="pdfUrl" class="pdf-viewer"></iframe>
+<div class="print-dc-container" *ngIf="!error && pdfUrl">
+  <iframe [src]="pdfUrl" class="pdf-viewer" (load)="onIframeLoad()"></iframe>
 </div>
-<div class="print-dc-loading" *ngIf="loading && !error">Loading PDF...</div>
+<div class="print-dc-loading" *ngIf="loading && !error">
+  <div class="spinner"></div>
+  <p>Loading PDF...</p>
+</div>
 <div class="print-dc-error" *ngIf="error">{{ error }}</div>

@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AuthService } from '../../services/auth.service';
 
@@ -16,6 +16,7 @@ export class PrintDcComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private sanitizer: DomSanitizer,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
@@ -31,8 +32,8 @@ export class PrintDcComponent implements OnInit {
 
     const token = this.authService.currentUser?.token;
     if (!token) {
-      this.error = 'Not authenticated';
-      this.loading = false;
+      this.authService.logout();
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -47,10 +48,12 @@ export class PrintDcComponent implements OnInit {
         const blob = xhr.response;
         const url = URL.createObjectURL(blob);
         this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-        this.loading = false;
         // Set tab title
         document.title = `Print DC - ${id}`;
         this.cdr.detectChanges();
+      } else if (xhr.status === 401 || xhr.status === 403) {
+        this.authService.logout();
+        this.router.navigate(['/login']);
       } else {
         this.error = `Failed to load PDF (${xhr.status})`;
         this.loading = false;
@@ -65,5 +68,10 @@ export class PrintDcComponent implements OnInit {
     };
 
     xhr.send();
+  }
+
+  onIframeLoad(): void {
+    this.loading = false;
+    this.cdr.detectChanges();
   }
 }

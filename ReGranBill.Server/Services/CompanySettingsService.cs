@@ -79,6 +79,95 @@ public class CompanySettingsService : ICompanySettingsService
         return (settings.LogoBytes, settings.LogoContentType);
     }
 
+    public async Task<List<VehicleOptionDto>> GetVehiclesAsync()
+    {
+        return await _db.VehicleOptions
+            .AsNoTracking()
+            .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Id)
+            .Select(v => new VehicleOptionDto
+            {
+                Id = v.Id,
+                Name = v.Name,
+                VehicleNumber = v.VehicleNumber,
+                SortOrder = v.SortOrder
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<VehicleOptionDto>> UpdateVehiclesAsync(UpdateVehicleOptionsRequest request)
+    {
+        var items = request.Vehicles ?? [];
+        var requestedIds = items
+            .Where(item => item.Id > 0)
+            .Select(item => item.Id)
+            .ToHashSet();
+
+        var staleVehicles = await _db.VehicleOptions
+            .Where(vehicle => !requestedIds.Contains(vehicle.Id))
+            .ToListAsync();
+        if (staleVehicles.Count > 0)
+        {
+            _db.VehicleOptions.RemoveRange(staleVehicles);
+            await _db.SaveChangesAsync();
+        }
+
+        var existingById = await _db.VehicleOptions.ToDictionaryAsync(v => v.Id);
+        var seenNormalized = new HashSet<string>(StringComparer.Ordinal);
+        var resultOrder = new List<VehicleOption>();
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var name = item.Name.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+                throw new RequestValidationException("Vehicle name is required.");
+
+            var number = item.VehicleNumber.Trim();
+            if (string.IsNullOrWhiteSpace(number))
+                throw new RequestValidationException("Vehicle number is required.");
+
+            var normalized = NormalizeVehicleNumber(number);
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new RequestValidationException("Vehicle number is invalid.");
+
+            if (!seenNormalized.Add(normalized))
+                throw new RequestValidationException("Duplicate vehicle numbers are not allowed.");
+
+            VehicleOption vehicle;
+            if (item.Id > 0 && existingById.TryGetValue(item.Id, out var existing))
+            {
+                vehicle = existing;
+            }
+            else
+            {
+                vehicle = new VehicleOption();
+                _db.VehicleOptions.Add(vehicle);
+            }
+
+            vehicle.Name = name;
+            vehicle.VehicleNumber = number;
+            vehicle.NormalizedVehicleNumber = normalized;
+            vehicle.SortOrder = i;
+            vehicle.UpdatedAt = DateTime.UtcNow;
+            resultOrder.Add(vehicle);
+        }
+
+        await _db.SaveChangesAsync();
+
+        return resultOrder
+            .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Id)
+            .Select(v => new VehicleOptionDto
+            {
+                Id = v.Id,
+                Name = v.Name,
+                VehicleNumber = v.VehicleNumber,
+                SortOrder = v.SortOrder
+            })
+            .ToList();
+    }
+
     private static CompanySettingsDto MapToDto(CompanySettings? settings) => new()
     {
         CompanyName = settings?.CompanyName ?? string.Empty,
@@ -86,4 +175,13 @@ public class CompanySettingsService : ICompanySettingsService
         HasLogo = settings?.LogoBytes is { Length: > 0 },
         UpdatedAt = settings?.UpdatedAt
     };
+
+    private static string NormalizeVehicleNumber(string value)
+    {
+        return new string(value
+            .Trim()
+            .ToUpperInvariant()
+            .Where(char.IsLetterOrDigit)
+            .ToArray());
+    }
 }

@@ -42,6 +42,48 @@
   </div>
 </section>
 
+<section class="card settings-card" *ngIf="!loading">
+  <div class="settings-header">
+    <h2>Vehicle Options</h2>
+    <button class="btn btn-outline" (click)="addVehicle()">+ Add Vehicle</button>
+  </div>
+
+  <div class="vehicle-table-wrap" *ngIf="vehicles.length > 0; else noVehicles">
+    <table class="vehicle-table">
+      <thead>
+        <tr>
+          <th class="vehicle-col-name">Name</th>
+          <th class="vehicle-col-number">Vehicle Number</th>
+          <th class="vehicle-col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let vehicle of vehicles; let i = index; trackBy: trackVehicle">
+          <td>
+            <input type="text" class="form-input" [(ngModel)]="vehicle.name" placeholder="e.g. Mazhar Truck" />
+          </td>
+          <td>
+            <input type="text" class="form-input" [(ngModel)]="vehicle.vehicleNumber" placeholder="e.g. ABC-1234" />
+          </td>
+          <td class="vehicle-actions">
+            <button class="btn btn-outline btn-xs" (click)="moveVehicleUp(i)" [disabled]="i === 0">&#8593;</button>
+            <button class="btn btn-outline btn-xs" (click)="moveVehicleDown(i)" [disabled]="i === vehicles.length - 1">&#8595;</button>
+            <button class="btn btn-danger btn-xs" (click)="removeVehicle(i)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #noVehicles>
+    <p class="vehicle-empty">No vehicles saved yet.</p>
+  </ng-template>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" (click)="saveVehicles()" [disabled]="savingVehicles">Save Vehicles</button>
+  </div>
+</section>
+
 <div class="loading-state" *ngIf="loading">
   <p>Loading company settings...</p>
 </div>

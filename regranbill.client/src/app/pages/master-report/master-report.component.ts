@@ -4,8 +4,7 @@ import { Router } from '@angular/router';
 import { MasterReportService } from '../../services/master-report.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
-import { MasterReport, MasterReportEntry } from '../../models/master-report.model';
-import { formatDateDisplay } from '../../utils/date-utils';
+import { MasterReport, MasterReportAccountSummary, MasterReportEntry } from '../../models/master-report.model';
 import { Account } from '../../models/account.model';
 import { forkJoin } from 'rxjs';
 
@@ -100,6 +99,22 @@ export class MasterReportComponent implements OnInit {
       e.description?.toLowerCase().includes(q) ||
       e.voucherNumber.toLowerCase().includes(q)
     );
+  }
+
+  get accountSummaries(): MasterReportAccountSummary[] {
+    return this.report?.accountSummaries ?? [];
+  }
+
+  get accountSummaryTotalDebit(): number {
+    return this.accountSummaries.reduce((sum, summary) => sum + summary.totalDebit, 0);
+  }
+
+  get accountSummaryTotalCredit(): number {
+    return this.accountSummaries.reduce((sum, summary) => sum + summary.totalCredit, 0);
+  }
+
+  get accountSummaryTotalBalance(): number {
+    return this.accountSummaries.reduce((sum, summary) => sum + summary.balance, 0);
   }
 
   get visibleColumns(): MasterReportColumnOption[] {

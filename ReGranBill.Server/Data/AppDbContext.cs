@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalVoucherReference> JournalVoucherReferences => Set<JournalVoucherReference>();
     public DbSet<VoucherCounter> VoucherCounters => Set<VoucherCounter>();
+    public DbSet<VehicleOption> VehicleOptions => Set<VehicleOption>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -143,6 +144,16 @@ public class AppDbContext : DbContext
             e.HasKey(vc => vc.SequenceKey);
             e.Property(vc => vc.SequenceKey).HasColumnName("sequence_key").HasMaxLength(10);
             e.Property(vc => vc.LastNumber).HasColumnName("last_number");
+        });
+
+        modelBuilder.Entity<VehicleOption>(e =>
+        {
+            e.ToTable("vehicle_options");
+            e.Property(v => v.Name).HasMaxLength(120);
+            e.Property(v => v.VehicleNumber).HasMaxLength(50);
+            e.Property(v => v.NormalizedVehicleNumber).HasMaxLength(50);
+            e.HasIndex(v => v.NormalizedVehicleNumber).IsUnique();
+            e.HasIndex(v => v.SortOrder);
         });
     }
 }

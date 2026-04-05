@@ -1,0 +1,29 @@
+[Unit]
+Description=PureLedger Backend
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/pureledger/backend-publish
+ExecStart=/usr/bin/dotnet /var/www/pureledger/backend-publish/pureledger-backend.dll
+Restart=always
+RestartSec=10
+User=www-data
+Group=www-data
+
+# Environment
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5104
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pureledger-backend
+
+[Install]
+WantedBy=multi-user.target

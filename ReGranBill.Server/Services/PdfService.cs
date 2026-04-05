@@ -33,6 +33,7 @@ public class PdfService : IPdfService
             dto.VehicleNumber,
             dto.Description,
             dto.Lines.Select(line => new VoucherPdfLine(
+                line.ProductId,
                 line.ProductName,
                 line.Packing,
                 line.PackingWeightKg,
@@ -48,6 +49,7 @@ public class PdfService : IPdfService
             dto.VehicleNumber,
             dto.Description,
             dto.Lines.Select(line => new VoucherPdfLine(
+                line.ProductId,
                 line.ProductName,
                 line.Packing,
                 line.PackingWeightKg,
@@ -164,6 +166,10 @@ public class PdfService : IPdfService
     public byte[] GenerateMasterReportPdf(MasterReportDto dto, IReadOnlyCollection<string>? visibleColumns = null)
     {
         var columns = NormalizeMasterReportColumns(visibleColumns);
+        var accountSummaries = dto.AccountSummaries
+            .OrderBy(summary => summary.AccountName)
+            .ThenBy(summary => summary.AccountId)
+            .ToList();
 
         var document = Document.Create(container =>
         {
@@ -233,6 +239,49 @@ public class PdfService : IPdfService
                         }
 
                         AddMasterReportTotalsRow(table, dto, columns);
+                    });
+
+                    column.Item().PaddingTop(14).Text("Account Summary").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(definition =>
+                        {
+                            definition.RelativeColumn(1.8f);
+                            definition.ConstantColumn(96);
+                            definition.ConstantColumn(96);
+                            definition.ConstantColumn(96);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("ACCOUNT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("TOTAL DEBIT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("TOTAL CREDIT").Bold().FontSize(9).LetterSpacing(0.04f);
+                            header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5).AlignCenter().AlignMiddle().Text("BALANCE").Bold().FontSize(9).LetterSpacing(0.04f);
+                        });
+
+                        foreach (var summary in accountSummaries)
+                        {
+                            AddBodyCell(table, summary.AccountName, CellTextAlign.Left);
+                            AddBodyCell(table, FormatCurrency(summary.TotalDebit), CellTextAlign.Right);
+                            AddBodyCell(table, FormatCurrency(summary.TotalCredit), CellTextAlign.Right);
+                            AddBodyCell(table, FormatCurrency(summary.Balance), CellTextAlign.Right);
+                        }
+
+                        if (accountSummaries.Count == 0)
+                        {
+                            table.Cell().ColumnSpan(4).Border(0.5f).BorderColor(BorderGreen).Padding(10)
+                                .AlignCenter().Text("No account totals found for the selected filters.").FontSize(10);
+                        }
+
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderLeft(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text("Totals").Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.TotalDebit)).Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.TotalCredit)).Bold().FontSize(10);
+                        table.Cell().BorderTop(1.5f).BorderBottom(1.5f).BorderRight(1.5f).BorderColor(Green).Padding(6)
+                            .AlignRight().Text(FormatCurrency(dto.NetBalance)).Bold().FontSize(10);
                     });
                 });
             });
@@ -597,55 +646,53 @@ public class PdfService : IPdfService
 
                     col.Item().Table(table =>
                     {
+                        var mergedLines = BuildMergedVoucherLines(lines);
+
                         table.ColumnsDefinition(columns =>
                         {
                             columns.ConstantColumn(90);
-                            columns.RelativeColumn();
                             columns.ConstantColumn(90);
+                            columns.RelativeColumn();
                         });
 
                         table.Header(header =>
                         {
-                            header.Cell().Border(1.5f).BorderColor(Green).Background(LightGreen).Padding(6).AlignCenter().AlignMiddle().Text("PACKAGES").Bold().FontSize(10).LetterSpacing(0.06f);
-                            header.Cell().Border(1.5f).BorderColor(Green).Background(LightGreen).Padding(6).AlignCenter().AlignMiddle().Text("DESCRIPTION").Bold().FontSize(10).LetterSpacing(0.06f);
+                            header.Cell().Border(1.5f).BorderColor(Green).Background(LightGreen).Padding(6).AlignCenter().AlignMiddle().Text("BAGS").Bold().FontSize(10).LetterSpacing(0.06f);
                             header.Cell().Border(1.5f).BorderColor(Green).Background(LightGreen).Padding(6).AlignCenter().AlignMiddle().Text("QTY").Bold().FontSize(10).LetterSpacing(0.06f);
+                            header.Cell().Border(1.5f).BorderColor(Green).Background(LightGreen).Padding(6).AlignCenter().AlignMiddle().Text("DESCRIPTION").Bold().FontSize(10).LetterSpacing(0.06f);
                         });
 
-                        foreach (var line in lines)
+                        foreach (var line in mergedLines)
                         {
-                            var isLoose = line.Rbp == "No";
-                            var lineWeight = line.ActualWeightKg ?? (isLoose ? line.Qty : line.PackingWeightKg * line.Qty);
-                            var weightText = line.ActualWeightKg.HasValue
-                                ? $"{FormatDecimal(lineWeight)} kg"
-                                : isLoose
-                                    ? "Loose"
-                                    : $"{FormatDecimal(lineWeight)} kg";
                             var desc = line.ProductName ?? string.Empty;
                             if (!string.IsNullOrEmpty(line.Packing))
                             {
                                 desc += $" ({line.Packing})";
                             }
+                            if (line.LooseWeightKg > 0)
+                            {
+                                desc += $" - Loose {FormatDecimal(line.LooseWeightKg)} kg";
+                            }
 
-                            table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(weightText).FontSize(11);
+                            table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(line.PackedBags > 0 ? $"{line.PackedBags}" : "-").FontSize(11);
+                            table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text($"{FormatDecimal(line.TotalWeightKg)} kg").FontSize(11);
                             table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).Text(desc).FontSize(11);
-                            table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(isLoose ? $"{line.Qty} kg" : $"{line.Qty}").FontSize(11);
                         }
 
-                        var emptyCount = Math.Max(0, MinRows - lines.Count);
+                        var emptyCount = Math.Max(0, MinRows - mergedLines.Count);
                         for (var i = 0; i < emptyCount; i++)
                         {
                             table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(" ").FontSize(11);
-                            table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).Text(" ").FontSize(11);
                             table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(" ").FontSize(11);
+                            table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(5).Text(" ").FontSize(11);
                         }
 
-                        var totalQty = lines.Where(l => l.Rbp != "No").Sum(l => l.Qty);
-                        var totalWeightAll = lines.Sum(line =>
-                            line.ActualWeightKg ?? (line.Rbp == "No" ? line.Qty : line.PackingWeightKg * line.Qty));
+                        var totalBags = mergedLines.Sum(line => line.PackedBags);
+                        var totalWeightAll = mergedLines.Sum(line => line.TotalWeightKg);
 
-                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(1.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{FormatDecimal(totalWeightAll)} kg").Bold().FontSize(12);
-                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(0.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).Text("Total").Bold().FontSize(12);
-                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderRight(1.5f).BorderLeft(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{totalQty}").Bold().FontSize(12);
+                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(1.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{totalBags}").Bold().FontSize(12);
+                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderLeft(0.5f).BorderRight(0.5f).BorderColor(Green).Padding(6).AlignCenter().Text($"{FormatDecimal(totalWeightAll)} kg").Bold().FontSize(12);
+                        table.Cell().BorderTop(2).BorderBottom(1.5f).BorderRight(1.5f).BorderLeft(0.5f).BorderColor(Green).Padding(6).Text("Total").Bold().FontSize(12);
                     });
 
                     if (!string.IsNullOrWhiteSpace(description))
@@ -931,10 +978,54 @@ public class PdfService : IPdfService
         return "Full Statement";
     }
 
+    private static List<MergedVoucherPdfLine> BuildMergedVoucherLines(IReadOnlyList<VoucherPdfLine> lines)
+    {
+        return lines
+            .GroupBy(line => new
+            {
+                line.ProductId,
+                Name = line.ProductName ?? string.Empty
+            })
+            .Select(group =>
+            {
+                var first = group.First();
+                var packedBags = 0;
+                decimal looseWeightKg = 0m;
+                decimal totalWeightKg = 0m;
+
+                foreach (var line in group)
+                {
+                    var isLoose = line.Rbp == "No" && !line.ActualWeightKg.HasValue;
+                    var lineWeight = line.ActualWeightKg ?? (isLoose ? line.Qty : line.PackingWeightKg * line.Qty);
+                    totalWeightKg += lineWeight;
+
+                    if (isLoose)
+                    {
+                        looseWeightKg += lineWeight;
+                    }
+                    else
+                    {
+                        packedBags += line.Qty;
+                    }
+                }
+
+                return new MergedVoucherPdfLine(
+                    first.ProductName,
+                    first.Packing,
+                    packedBags,
+                    Round2(looseWeightKg),
+                    Round2(totalWeightKg));
+            })
+            .ToList();
+    }
+
     private static string FormatDecimal(decimal value) =>
         value == decimal.Truncate(value)
             ? decimal.Truncate(value).ToString("0")
             : value.ToString("0.##");
+
+    private static decimal Round2(decimal value) =>
+        decimal.Round(value, 2, MidpointRounding.AwayFromZero);
 
     private static string BuildContactLine(StatementOfAccountDto dto)
     {
@@ -951,10 +1042,18 @@ public class PdfService : IPdfService
     }
 
     private sealed record VoucherPdfLine(
+        int ProductId,
         string? ProductName,
         string? Packing,
         decimal PackingWeightKg,
         string Rbp,
         int Qty,
         decimal? ActualWeightKg);
+
+    private sealed record MergedVoucherPdfLine(
+        string? ProductName,
+        string? Packing,
+        int PackedBags,
+        decimal LooseWeightKg,
+        decimal TotalWeightKg);
 }

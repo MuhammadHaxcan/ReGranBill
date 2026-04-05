@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { CompanySettings } from '../../models/company-settings.model';
+import { CompanySettings, VehicleOption } from '../../models/company-settings.model';
 import { CompanySettingsService } from '../../services/company-settings.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -13,10 +13,12 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
   companyName = '';
   address = '';
   currentSettings: CompanySettings | null = null;
+  vehicles: VehicleOption[] = [];
   selectedLogo: File | null = null;
   previewUrl: string | null = null;
   loading = false;
   saving = false;
+  savingVehicles = false;
 
   constructor(
     private companySettingsService: CompanySettingsService,
@@ -26,6 +28,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSettings();
+    this.loadVehicles();
   }
 
   ngOnDestroy(): void {
@@ -90,6 +93,85 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadVehicles(): void {
+    this.companySettingsService.getVehicles().subscribe({
+      next: vehicles => {
+        this.vehicles = vehicles
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load vehicle options.');
+      }
+    });
+  }
+
+  addVehicle(): void {
+    this.vehicles.push({
+      id: 0,
+      name: '',
+      vehicleNumber: '',
+      sortOrder: this.vehicles.length
+    });
+  }
+
+  removeVehicle(index: number): void {
+    this.vehicles.splice(index, 1);
+    this.reindexVehicles();
+  }
+
+  moveVehicleUp(index: number): void {
+    if (index <= 0) return;
+    const current = this.vehicles[index];
+    this.vehicles[index] = this.vehicles[index - 1];
+    this.vehicles[index - 1] = current;
+    this.reindexVehicles();
+  }
+
+  moveVehicleDown(index: number): void {
+    if (index >= this.vehicles.length - 1) return;
+    const current = this.vehicles[index];
+    this.vehicles[index] = this.vehicles[index + 1];
+    this.vehicles[index + 1] = current;
+    this.reindexVehicles();
+  }
+
+  saveVehicles(): void {
+    const payload = this.vehicles.map((vehicle, index) => ({
+      id: vehicle.id,
+      name: vehicle.name.trim(),
+      vehicleNumber: vehicle.vehicleNumber.trim(),
+      sortOrder: index
+    }));
+
+    if (payload.some(vehicle => !vehicle.name || !vehicle.vehicleNumber)) {
+      this.toast.error('Each vehicle must include both name and number.');
+      return;
+    }
+
+    this.savingVehicles = true;
+    this.companySettingsService.updateVehicles({ vehicles: payload }).subscribe({
+      next: vehicles => {
+        this.vehicles = vehicles
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+        this.savingVehicles = false;
+        this.toast.success('Vehicle options updated.');
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.toast.error(err?.error?.message || 'Unable to update vehicle options.');
+        this.savingVehicles = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  trackVehicle(index: number, vehicle: VehicleOption): number {
+    return vehicle.id > 0 ? vehicle.id : index;
+  }
+
   private loadLogoPreview(): void {
     this.revokePreviewUrl();
 
@@ -116,5 +198,12 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
       URL.revokeObjectURL(this.previewUrl);
     }
     this.previewUrl = null;
+  }
+
+  private reindexVehicles(): void {
+    this.vehicles = this.vehicles.map((vehicle, index) => ({
+      ...vehicle,
+      sortOrder: index
+    }));
   }
 }

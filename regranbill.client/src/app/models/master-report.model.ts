@@ -13,6 +13,14 @@ export interface MasterReportEntry {
   runningBalance: number;
 }
 
+export interface MasterReportAccountSummary {
+  accountId: number;
+  accountName: string;
+  totalDebit: number;
+  totalCredit: number;
+  balance: number;
+}
+
 export interface MasterReport {
   fromDate?: string | null;
   toDate?: string | null;
@@ -22,5 +30,6 @@ export interface MasterReport {
   totalDebit: number;
   totalCredit: number;
   netBalance: number;
+  accountSummaries: MasterReportAccountSummary[];
   entries: MasterReportEntry[];
 }

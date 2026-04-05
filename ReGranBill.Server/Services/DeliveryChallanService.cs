@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
+using ReGranBill.Server.DTOs.Common;
 using ReGranBill.Server.DTOs.DeliveryChallans;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
@@ -60,6 +61,51 @@ public class DeliveryChallanService : IDeliveryChallanService
 
     public Task<string> GetNextNumberAsync() =>
         _voucherNumberService.GetNextNumberPreviewAsync(VoucherSequenceKeys.DeliveryChallan, "DC-");
+
+    public async Task<List<LatestProductRateDto>> GetLatestRatesAsync(IReadOnlyCollection<int> productIds)
+    {
+        var ids = productIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToArray();
+
+        if (ids.Length == 0)
+            return [];
+
+        var entries = await _db.JournalEntries
+            .AsNoTracking()
+            .Where(e =>
+                e.SortOrder > 0 &&
+                ids.Contains(e.AccountId) &&
+                e.Rate.HasValue &&
+                e.Rate.Value > 0 &&
+                e.JournalVoucher.VoucherType == VoucherType.SaleVoucher)
+            .Select(e => new
+            {
+                e.AccountId,
+                Rate = e.Rate!.Value,
+                e.Id,
+                VoucherId = e.VoucherId,
+                VoucherNumber = e.JournalVoucher.VoucherNumber,
+                VoucherDate = e.JournalVoucher.Date
+            })
+            .OrderByDescending(e => e.VoucherDate)
+            .ThenByDescending(e => e.VoucherId)
+            .ThenByDescending(e => e.Id)
+            .ToListAsync();
+
+        return entries
+            .GroupBy(e => e.AccountId)
+            .Select(group => group.First())
+            .Select(item => new LatestProductRateDto
+            {
+                ProductId = item.AccountId,
+                Rate = item.Rate,
+                SourceVoucherNumber = item.VoucherNumber,
+                SourceDate = item.VoucherDate
+            })
+            .ToList();
+    }
 
     public async Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId)
     {

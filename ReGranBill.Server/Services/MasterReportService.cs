@@ -75,6 +75,29 @@ public class MasterReportService : IMasterReportService
             });
         }
 
+        var accountSummaries = entries
+            .GroupBy(entry => new
+            {
+                entry.AccountId,
+                AccountName = entry.Account.Name
+            })
+            .Select(group =>
+            {
+                var totalDebit = group.Sum(entry => entry.Debit);
+                var totalCredit = group.Sum(entry => entry.Credit);
+                return new MasterReportAccountSummaryDto
+                {
+                    AccountId = group.Key.AccountId,
+                    AccountName = group.Key.AccountName,
+                    TotalDebit = totalDebit,
+                    TotalCredit = totalCredit,
+                    Balance = totalDebit - totalCredit
+                };
+            })
+            .OrderBy(summary => summary.AccountName)
+            .ThenBy(summary => summary.AccountId)
+            .ToList();
+
         return new MasterReportDto
         {
             FromDate = fromDate,
@@ -85,6 +108,7 @@ public class MasterReportService : IMasterReportService
             TotalDebit = entryDtos.Sum(e => e.Debit),
             TotalCredit = entryDtos.Sum(e => e.Credit),
             NetBalance = runningBalance,
+            AccountSummaries = accountSummaries,
             Entries = entryDtos
         };
     }

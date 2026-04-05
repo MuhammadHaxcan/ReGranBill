@@ -22,6 +22,7 @@ public class SalePurchaseReportRowDto
     public string? Unit { get; set; }
     public string Rbp { get; set; } = "Yes";
     public int Qty { get; set; }
+    public decimal LooseWeightKg { get; set; }
     public decimal PackingWeightKg { get; set; }
     public decimal TotalWeightKg { get; set; }
     public string DisplayQuantity { get; set; } = string.Empty;

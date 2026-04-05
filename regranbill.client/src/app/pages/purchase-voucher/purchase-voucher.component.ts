@@ -1,9 +1,10 @@
 import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
+import { CompanySettingsService } from '../../services/company-settings.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
@@ -13,6 +14,7 @@ import {
   PurchaseVoucherUpsertRequest,
   PurchaseVoucherViewModel
 } from '../../models/purchase-voucher.model';
+import { VehicleOption } from '../../models/company-settings.model';
 import { parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 import {
   getPurchaseAverageWeightPerBag,
@@ -52,8 +54,10 @@ export class PurchaseVoucherComponent implements OnInit {
   products: Account[] = [];
   vendors: Account[] = [];
   transporters: Account[] = [];
+  vehicleOptions: VehicleOption[] = [];
   lines: ProductLine[] = [];
   loading = true;
+  private latestRatesByProductId = new Map<number, number>();
 
   // Dropdown options
   vendorOptions: SelectOption[] = [];
@@ -70,6 +74,7 @@ export class PurchaseVoucherComponent implements OnInit {
     private accountService: AccountService,
     private authService: AuthService,
     private purchaseService: PurchaseVoucherService,
+    private companySettingsService: CompanySettingsService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -90,9 +95,10 @@ export class PurchaseVoucherComponent implements OnInit {
     forkJoin({
       products: this.accountService.getProducts(),
       vendors: this.accountService.getVendors(),
-      transporters: this.accountService.getTransporters()
+      transporters: this.accountService.getTransporters(),
+      vehicles: this.companySettingsService.getVehicles().pipe(catchError(() => of([])))
     }).subscribe({
-      next: ({ products, vendors, transporters }) => {
+      next: ({ products, vendors, transporters, vehicles }) => {
         this.products = products;
         this.productOptions = products.map(p => ({
           value: p.id,
@@ -114,7 +120,18 @@ export class PurchaseVoucherComponent implements OnInit {
           sublabel: t.city || ''
         }));
 
-        this.loadChallan();
+        this.vehicleOptions = vehicles;
+
+        this.purchaseService.getLatestRates(this.products.map(p => p.id))
+          .pipe(finalize(() => this.loadChallan()))
+          .subscribe({
+            next: rates => {
+              this.latestRatesByProductId = new Map(rates.map(rate => [rate.productId, rate.rate]));
+            },
+            error: () => {
+              this.latestRatesByProductId.clear();
+            }
+          });
       },
       error: () => {
         this.toast.error('Unable to load form data.');
@@ -209,6 +226,10 @@ export class PurchaseVoucherComponent implements OnInit {
         packing: acct.packing!,
         packingWeightKg: acct.packingWeightKg!
       };
+
+      if (!line.rate || line.rate <= 0) {
+        line.rate = this.latestRatesByProductId.get(acct.id) ?? 0;
+      }
     } else {
       line.product = null;
     }

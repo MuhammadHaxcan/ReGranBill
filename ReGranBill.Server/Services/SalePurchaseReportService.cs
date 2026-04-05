@@ -80,20 +80,44 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                 .Where(entry => entry.SortOrder > 0 && IsInventoryAccount(entry.Account))
                 .OrderBy(entry => entry.SortOrder);
 
-            foreach (var entry in productEntries)
+            foreach (var entryGroup in productEntries.GroupBy(entry => entry.AccountId))
             {
-                if (productId.HasValue && entry.AccountId != productId.Value)
+                if (productId.HasValue && entryGroup.Key != productId.Value)
                 {
                     continue;
                 }
 
-                var packingWeight = entry.Account?.ProductDetail?.PackingWeightKg ?? 0m;
-                var quantity = entry.Qty ?? 0;
                 var isPurchaseLine = voucher.VoucherType == VoucherType.PurchaseVoucher;
-                var isPacked = isPurchaseLine || string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase);
-                var totalWeight = isPurchaseLine
-                    ? Round2(entry.ActualWeightKg ?? 0m)
-                    : Round2(isPacked ? packingWeight * quantity : quantity);
+                var sampleEntry = entryGroup.First();
+                var packingWeight = sampleEntry.Account?.ProductDetail?.PackingWeightKg ?? 0m;
+
+                var packedBags = 0;
+                decimal looseWeightKg = 0m;
+                decimal totalWeightKg = 0m;
+
+                foreach (var entry in entryGroup)
+                {
+                    var quantity = entry.Qty ?? 0;
+                    var isPacked = isPurchaseLine || string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase);
+                    var lineWeight = isPurchaseLine
+                        ? entry.ActualWeightKg ?? 0m
+                        : isPacked
+                            ? packingWeight * quantity
+                            : quantity;
+
+                    totalWeightKg += lineWeight;
+                    if (isPacked)
+                    {
+                        packedBags += quantity;
+                    }
+                    else
+                    {
+                        looseWeightKg += lineWeight;
+                    }
+                }
+
+                totalWeightKg = Round2(totalWeightKg);
+                looseWeightKg = Round2(looseWeightKg);
 
                 rows.Add(new SalePurchaseReportRowDto
                 {
@@ -101,15 +125,16 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                     VoucherNumber = voucher.VoucherNumber,
                     VoucherType = voucher.VoucherType.ToString(),
                     Date = voucher.Date,
-                    ProductId = entry.AccountId,
-                    ProductName = entry.Account?.Name ?? "-",
-                    Packing = entry.Account?.ProductDetail?.Packing,
-                    Unit = entry.Account?.ProductDetail?.Unit,
-                    Rbp = isPacked ? "Yes" : "No",
-                    Qty = quantity,
+                    ProductId = sampleEntry.AccountId,
+                    ProductName = sampleEntry.Account?.Name ?? "-",
+                    Packing = sampleEntry.Account?.ProductDetail?.Packing,
+                    Unit = sampleEntry.Account?.ProductDetail?.Unit,
+                    Rbp = looseWeightKg > 0 && packedBags > 0 ? "Mixed" : (packedBags > 0 ? "Yes" : "No"),
+                    Qty = packedBags,
+                    LooseWeightKg = looseWeightKg,
                     PackingWeightKg = packingWeight,
-                    TotalWeightKg = totalWeight,
-                    DisplayQuantity = BuildDisplayQuantity(quantity, totalWeight, isPacked),
+                    TotalWeightKg = totalWeightKg,
+                    DisplayQuantity = BuildDisplayQuantity(packedBags, totalWeightKg, looseWeightKg),
                     FromName = voucher.VoucherType == VoucherType.SaleVoucher ? CompanyName : partyName,
                     ToName = voucher.VoucherType == VoucherType.SaleVoucher ? partyName : CompanyName,
                     TransporterName = transporterName,
@@ -141,9 +166,7 @@ public class SalePurchaseReportService : ISalePurchaseReportService
             TotalRows = rows.Count,
             TotalSaleRows = rows.Count(row => row.VoucherType == VoucherType.SaleVoucher.ToString()),
             TotalPurchaseRows = rows.Count(row => row.VoucherType == VoucherType.PurchaseVoucher.ToString()),
-            TotalPackedBags = rows
-                .Where(row => row.Rbp == "Yes")
-                .Sum(row => row.Qty),
+            TotalPackedBags = rows.Sum(row => row.Qty),
             TotalWeightKg = Round2(rows.Sum(row => row.TotalWeightKg)),
             Rows = rows
         };
@@ -172,10 +195,16 @@ public class SalePurchaseReportService : ISalePurchaseReportService
     private static bool IsInventoryAccount(Account? account) =>
         VoucherHelpers.IsInventoryAccount(account);
 
-    private static string BuildDisplayQuantity(int qty, decimal totalWeightKg, bool isPacked) =>
-        isPacked
-            ? $"{qty} bags / {FormatDecimal(totalWeightKg)} kg"
-            : $"{FormatDecimal(totalWeightKg)} kg";
+    private static string BuildDisplayQuantity(int packedBags, decimal totalWeightKg, decimal looseWeightKg)
+    {
+        if (packedBags > 0 && looseWeightKg > 0)
+            return $"{packedBags} bags / {FormatDecimal(totalWeightKg)} kg (Loose {FormatDecimal(looseWeightKg)} kg)";
+
+        if (packedBags > 0)
+            return $"{packedBags} bags / {FormatDecimal(totalWeightKg)} kg";
+
+        return $"{FormatDecimal(totalWeightKg)} kg (Loose {FormatDecimal(looseWeightKg)} kg)";
+    }
 
     private static string FormatDecimal(decimal value) =>
         value == decimal.Truncate(value)

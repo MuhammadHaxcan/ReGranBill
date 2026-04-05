@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import {
   DeliveryChallanUpsertRequest,
   DeliveryChallanViewModel,
   UpdateDeliveryRatesRequest
 } from '../models/delivery-challan.model';
+import { LatestProductRate } from '../models/latest-product-rate.model';
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +28,14 @@ export class DeliveryChallanService {
     return this.http.get<{ dcNumber: string }>(`${this.url}/next-number`).pipe(
       map(res => res.dcNumber)
     );
+  }
+
+  getLatestRates(productIds: number[]): Observable<LatestProductRate[]> {
+    const ids = productIds.filter(id => id > 0);
+    if (ids.length === 0) return of([]);
+
+    const query = encodeURIComponent(ids.join(','));
+    return this.http.get<LatestProductRate[]>(`${this.url}/latest-rates?productIds=${query}`);
   }
 
   create(request: DeliveryChallanUpsertRequest): Observable<DeliveryChallanViewModel> {

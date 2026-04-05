@@ -11,6 +11,7 @@ export interface SalePurchaseReportRow {
   unit: string | null;
   rbp: string;
   qty: number;
+  looseWeightKg: number;
   packingWeightKg: number;
   totalWeightKg: number;
   displayQuantity: string;

@@ -1,4 +1,5 @@
 using ReGranBill.Server.DTOs.PurchaseVouchers;
+using ReGranBill.Server.DTOs.Common;
 
 namespace ReGranBill.Server.Services;
 
@@ -11,4 +12,5 @@ public interface IPurchaseVoucherService
     Task<PurchaseVoucherDto?> UpdateAsync(int id, CreatePurchaseVoucherRequest request);
     Task<bool> UpdateRatesAsync(int id, UpdatePurchaseVoucherRatesRequest request);
     Task<(bool Success, string? Error)> SoftDeleteAsync(int id);
+    Task<List<LatestProductRateDto>> GetLatestRatesAsync(IReadOnlyCollection<int> productIds);
 }

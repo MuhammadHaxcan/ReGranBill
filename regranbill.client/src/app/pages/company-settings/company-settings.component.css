@@ -96,6 +96,23 @@
   cursor: not-allowed;
 }
 
+.btn-outline {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.btn-danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.btn-xs {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .logo-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -138,8 +155,59 @@
   color: var(--text-muted);
 }
 
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.settings-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.vehicle-table-wrap {
+  overflow-x: auto;
+}
+
+.vehicle-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vehicle-table th,
+.vehicle-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 8px;
+  vertical-align: middle;
+}
+
+.vehicle-col-name,
+.vehicle-col-number {
+  width: 40%;
+}
+
+.vehicle-col-actions {
+  width: 20%;
+}
+
+.vehicle-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.vehicle-empty {
+  color: var(--text-muted);
+  padding: 8px 0 12px;
+}
+
 @media (max-width: 900px) {
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+
+  .vehicle-actions {
+    flex-wrap: wrap;
   }
 }

@@ -47,8 +47,12 @@
         type="text"
         class="form-control vehicle-input"
         placeholder="e.g. ABC-1234"
+        list="delivery-vehicle-list"
         [(ngModel)]="vehicleNumber"
       />
+      <datalist id="delivery-vehicle-list">
+        <option *ngFor="let vehicle of vehicleOptions" [value]="vehicle.vehicleNumber">{{ vehicle.name }}</option>
+      </datalist>
     </div>
   </div>
 </section>

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReGranBill.Server.DTOs.PurchaseVouchers;
@@ -39,6 +40,13 @@ public class PurchaseVouchersController : ControllerBase
     {
         var voucherNumber = await _purchaseService.GetNextNumberAsync();
         return Ok(new { voucherNumber });
+    }
+
+    [HttpGet("latest-rates")]
+    public async Task<IActionResult> GetLatestRates([FromQuery] string? productIds)
+    {
+        var ids = ParseProductIds(Request.Query["productIds"], productIds);
+        return Ok(await _purchaseService.GetLatestRatesAsync(ids));
     }
 
     [HttpPost]
@@ -83,5 +91,21 @@ public class PurchaseVouchersController : ControllerBase
         if (error != null) return Conflict(new { message = error });
         if (!success) return NotFound();
         return NoContent();
+    }
+
+    private static IReadOnlyCollection<int> ParseProductIds(StringValues values, string? productIds)
+    {
+        IEnumerable<string> rawValues = values;
+        if (!string.IsNullOrWhiteSpace(productIds))
+        {
+            rawValues = rawValues.Append(productIds);
+        }
+
+        return rawValues
+            .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Select(v => int.TryParse(v, out var parsed) ? parsed : 0)
+            .Where(v => v > 0)
+            .Distinct()
+            .ToArray();
     }
 }

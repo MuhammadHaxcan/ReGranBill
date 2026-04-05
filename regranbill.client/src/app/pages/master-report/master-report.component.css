@@ -139,6 +139,10 @@
   padding: 0;
 }
 
+.account-summary-card {
+  padding: 0;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -438,6 +442,14 @@
 
 .totals-value {
   font-size: 14px;
+}
+
+.account-summary-table .col-account {
+  min-width: 220px;
+}
+
+.account-summary-card .empty-state {
+  padding: 32px 24px;
 }
 
 /* Empty State */

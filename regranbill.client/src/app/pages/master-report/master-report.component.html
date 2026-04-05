@@ -170,6 +170,54 @@
   </div>
 </section>
 
+<!-- Account Summary Section -->
+<section class="card account-summary-card" *ngIf="report && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Account Totals</span>
+      <span class="line-count">{{ accountSummaries.length }} accounts</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table account-summary-table" *ngIf="accountSummaries.length > 0">
+      <thead>
+        <tr>
+          <th class="col-account">Account</th>
+          <th class="col-debit">Total Debit</th>
+          <th class="col-credit">Total Credit</th>
+          <th class="col-balance">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let summary of accountSummaries">
+          <td class="col-account">{{ summary.accountName }}</td>
+          <td class="col-debit">{{ summary.totalDebit | pkCurrency }}</td>
+          <td class="col-credit">{{ summary.totalCredit | pkCurrency }}</td>
+          <td class="col-balance" [class.balance-positive]="summary.balance >= 0" [class.balance-negative]="summary.balance < 0">
+            {{ summary.balance | pkCurrency }}
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td class="totals-label">Totals</td>
+          <td class="col-debit totals-value">{{ accountSummaryTotalDebit | pkCurrency }}</td>
+          <td class="col-credit totals-value">{{ accountSummaryTotalCredit | pkCurrency }}</td>
+          <td class="col-balance totals-value" [class.balance-positive]="accountSummaryTotalBalance >= 0" [class.balance-negative]="accountSummaryTotalBalance < 0">
+            {{ accountSummaryTotalBalance | pkCurrency }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="accountSummaries.length === 0">
+    <p class="empty-text">No account totals found</p>
+    <p class="empty-subtext">Try adjusting your filters</p>
+  </div>
+</section>
+
 <!-- Loading State -->
 <div class="loading-state" *ngIf="loading">
   <p>Loading report...</p>
