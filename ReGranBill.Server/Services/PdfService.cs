@@ -21,7 +21,9 @@ public class PdfService : IPdfService
 
     public PdfService(IWebHostEnvironment env)
     {
-        var logoPath = Path.Combine(env.ContentRootPath, "..", "regranbill.client", "public", "KPI_LOGO.svg");
+        var logoPath = Path.Combine(env.ContentRootPath, "KPI_LOGO.svg");
+        if (!File.Exists(logoPath))
+            logoPath = Path.Combine(env.ContentRootPath, "..", "regranbill.client", "public", "KPI_LOGO.svg");
         _logoSvg = File.ReadAllText(logoPath);
     }
 
