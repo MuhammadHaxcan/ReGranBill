@@ -143,6 +143,13 @@
   box-shadow: 0 0 0 3px var(--primary-muted);
 }
 
+.form-control-locked {
+  background: var(--slate-50);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
 .form-control-sm {
   padding: 6px 10px;
   font-size: 14px;
