@@ -39,12 +39,11 @@
     </div>
     <div class="form-group">
       <label class="form-label">Vehicle No.</label>
-      <input
-        type="text"
-        class="form-control vehicle-input"
-        placeholder="e.g. ABC-1234"
+      <app-searchable-select
+        [options]="vehicleSelectOptions"
+        [placeholder]="'Select vehicle number...'"
         [(ngModel)]="vehicleNumber"
-      />
+      ></app-searchable-select>
     </div>
   </div>
 </section>

@@ -1123,7 +1123,9 @@ public class PdfService : IPdfService
                         row.ConstantItem(200).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
                         {
                             summary.Item().AlignRight().Text($"Entries: {dto.Entries.Count}").Bold().FontSize(10);
-                            summary.Item().PaddingTop(4).AlignRight().Text($"Opening: {FormatCurrency(dto.OpeningBalance)}").FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text(dto.HasOpeningBalance
+                                ? $"Opening: {FormatCurrency(dto.OpeningBalance)}"
+                                : "Opening: ").FontSize(10);
                             summary.Item().AlignRight().Text($"Closing: {FormatCurrency(dto.ClosingBalance)}").Bold().FontSize(10);
                         });
                     });

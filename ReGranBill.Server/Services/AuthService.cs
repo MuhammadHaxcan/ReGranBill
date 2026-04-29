@@ -15,20 +15,37 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
     }
 
-    public async Task<LoginResponse?> LoginAsync(LoginRequest request)
+    public async Task<LoginAttemptResult> LoginAsync(LoginRequest request)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
-        if (user == null) return null;
+        var normalizedUsername = (request.Username ?? string.Empty).Trim();
+        var user = await _db.Users.FirstOrDefaultAsync(u =>
+            u.IsActive &&
+            u.Username.ToLower() == normalizedUsername.ToLower());
+        if (user == null)
+        {
+            return new LoginAttemptResult
+            {
+                ErrorMessage = "User Name is wrong"
+            };
+        }
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return null;
-
-        return new LoginResponse
         {
-            Token = _tokenService.GenerateToken(user),
-            Username = user.Username,
-            FullName = user.FullName,
-            Role = user.Role.ToString()
+            return new LoginAttemptResult
+            {
+                ErrorMessage = "Password is wrong"
+            };
+        }
+
+        return new LoginAttemptResult
+        {
+            Response = new LoginResponse
+            {
+                Token = _tokenService.GenerateToken(user),
+                Username = user.Username,
+                FullName = user.FullName,
+                Role = user.Role.ToString()
+            }
         };
     }
 }

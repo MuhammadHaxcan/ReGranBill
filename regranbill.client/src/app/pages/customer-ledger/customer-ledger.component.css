@@ -32,42 +32,6 @@
   margin: 4px 0 0 0;
 }
 
-/* ===== Tab Bar ===== */
-.tab-bar {
-  display: flex;
-  gap: 0;
-  margin-bottom: 20px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  padding: 4px;
-  width: fit-content;
-}
-
-.tab-btn {
-  padding: 8px 24px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  transition: all 0.15s var(--ease);
-  font-family: inherit;
-}
-
-.tab-btn.active {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
-}
-
-.tab-btn:not(.active):hover {
-  background: var(--slate-50);
-  color: var(--text-primary);
-}
-
 /* ===== Filter Card ===== */
 .filter-card {
   background: var(--card-bg);

@@ -8,25 +8,22 @@
   </div>
 </section>
 
-<!-- Tab Switcher -->
-<div class="tab-bar">
-  <button class="tab-btn" [class.active]="activeTab === 'customer'" (click)="switchTab('customer')">
-    Customer Ledger
-  </button>
-  <button class="tab-btn" [class.active]="activeTab === 'vendor'" (click)="switchTab('vendor')">
-    Vendor Ledger
-  </button>
-</div>
-
 <!-- Filter Card -->
 <section class="card filter-card">
   <div class="filter-row">
     <div class="filter-field">
-      <label>{{ activeTab === 'customer' ? 'Customer' : 'Vendor' }}</label>
+      <label>Category</label>
+      <select class="filter-input" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
+        <option [ngValue]="null">Select category...</option>
+        <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Party Account</label>
       <app-searchable-select
         [options]="accountOptions"
         [(ngModel)]="selectedAccountId"
-        [placeholder]="'Select ' + (activeTab === 'customer' ? 'customer' : 'vendor') + '...'">
+        [placeholder]="'Select party account...'">
       </app-searchable-select>
     </div>
     <div class="filter-field">
@@ -38,7 +35,7 @@
       <input type="date" [(ngModel)]="toDate" class="filter-input" />
     </div>
     <div class="filter-actions">
-      <button class="btn btn-primary" (click)="loadLedger()" [disabled]="!selectedAccountId || !fromDate || !toDate">View</button>
+      <button class="btn btn-primary" (click)="loadLedger()" [disabled]="!selectedCategoryId || !selectedAccountId">View</button>
       <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
     </div>
   </div>
@@ -56,7 +53,7 @@
         <div class="balance-item">
           <span class="balance-label">Opening</span>
           <span class="balance-value" [class.balance-positive]="ledger.openingBalance >= 0" [class.balance-negative]="ledger.openingBalance < 0">
-            {{ ledger.openingBalance | flexNumber }}
+            {{ ledger.hasOpeningBalance ? (ledger.openingBalance | flexNumber) : '' }}
           </span>
         </div>
         <div class="balance-item">

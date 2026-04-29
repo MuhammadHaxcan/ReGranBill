@@ -7,7 +7,7 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/voucher-editor")]
-[Authorize(Roles = "Admin,Operator")]
+[Authorize(Roles = "Admin")]
 public class VoucherEditorController : ControllerBase
 {
     private readonly IVoucherEditorService _voucherEditorService;

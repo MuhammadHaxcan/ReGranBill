@@ -5,6 +5,7 @@ import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseReturnService } from '../../services/purchase-return.service';
 import { CategoryService } from '../../services/category.service';
+import { CompanySettingsService } from '../../services/company-settings.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
@@ -51,12 +52,14 @@ export class PurchaseReturnComponent implements OnInit {
 
   // Category filter per line
   lineCategoryIds: (number | null)[] = [];
+  vehicleSelectOptions: SelectOption[] = [];
 
   constructor(
     private accountService: AccountService,
     private authService: AuthService,
     private purchaseReturnService: PurchaseReturnService,
     private categoryService: CategoryService,
+    private companySettingsService: CompanySettingsService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -77,7 +80,7 @@ export class PurchaseReturnComponent implements OnInit {
     forkJoin({
       products: this.accountService.getProducts(),
       vendors: this.accountService.getVendors(),
-      vehicles: of([]),
+      vehicles: this.companySettingsService.getVehicles().pipe(catchError(() => of([]))),
       categories: this.categoryService.getAll()
     }).subscribe({
       next: ({ products, vendors, vehicles, categories }) => {
@@ -93,6 +96,12 @@ export class PurchaseReturnComponent implements OnInit {
           value: v.id,
           label: v.name,
           sublabel: v.city || ''
+        }));
+        this.vehicleOptions = vehicles;
+        this.vehicleSelectOptions = vehicles.map(vehicle => ({
+          value: vehicle.vehicleNumber,
+          label: vehicle.vehicleNumber,
+          sublabel: vehicle.name
         }));
 
         this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));

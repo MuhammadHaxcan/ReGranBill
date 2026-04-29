@@ -11,18 +11,25 @@ export class CustomerLedgerService {
 
   constructor(private http: HttpClient) {}
 
-  getLedger(accountId: number, fromDate: string, toDate: string): Observable<CustomerLedger> {
-    const params = new HttpParams()
-      .set('fromDate', fromDate)
-      .set('toDate', toDate);
+  getLedger(accountId: number, fromDate?: string, toDate?: string): Observable<CustomerLedger> {
+    let params = new HttpParams();
+    if (fromDate) {
+      params = params.set('fromDate', fromDate);
+    }
+    if (toDate) {
+      params = params.set('toDate', toDate);
+    }
     return this.http.get<CustomerLedger>(`${this.url}/${accountId}`, { params });
   }
 
-  getAllLedgers(partyType: string, fromDate: string, toDate: string): Observable<CustomerLedger[]> {
-    const params = new HttpParams()
-      .set('partyType', partyType)
-      .set('fromDate', fromDate)
-      .set('toDate', toDate);
+  getAllLedgers(partyType: string, fromDate?: string, toDate?: string): Observable<CustomerLedger[]> {
+    let params = new HttpParams().set('partyType', partyType);
+    if (fromDate) {
+      params = params.set('fromDate', fromDate);
+    }
+    if (toDate) {
+      params = params.set('toDate', toDate);
+    }
     return this.http.get<CustomerLedger[]>(`${this.url}/all`, { params });
   }
 }

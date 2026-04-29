@@ -15,7 +15,7 @@
     </div>
   </div>
 
-  <div class="form-row form-row-3">
+  <div class="form-row form-row-4">
     <div class="form-group">
       <label class="form-label">Date</label>
       <input type="date" class="form-control" [(ngModel)]="saleReturnDateIso" />
@@ -36,6 +36,14 @@
         placeholder="Optional note..."
         [(ngModel)]="description"
       />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Vehicle No.</label>
+      <app-searchable-select
+        [options]="vehicleSelectOptions"
+        [placeholder]="'Select vehicle number...'"
+        [(ngModel)]="vehicleNumber"
+      ></app-searchable-select>
     </div>
   </div>
 </section>

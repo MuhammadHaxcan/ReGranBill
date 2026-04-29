@@ -69,6 +69,7 @@ export class PurchaseVoucherComponent implements OnInit {
 
   // Category filter per line
   lineCategoryIds: (number | null)[] = [];
+  vehicleSelectOptions: SelectOption[] = [];
 
   // Cartage
   cartage: Cartage | null = null;
@@ -130,6 +131,11 @@ export class PurchaseVoucherComponent implements OnInit {
 
         this.vehicleOptions = vehicles;
         this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+        this.vehicleSelectOptions = vehicles.map(vehicle => ({
+          value: vehicle.vehicleNumber,
+          label: vehicle.vehicleNumber,
+          sublabel: vehicle.name
+        }));
 
         this.purchaseService.getLatestRates(this.products.map(p => p.id))
           .pipe(finalize(() => this.loadChallan()))

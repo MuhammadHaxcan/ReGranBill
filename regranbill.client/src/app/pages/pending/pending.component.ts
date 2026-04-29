@@ -181,6 +181,13 @@ export class PendingComponent implements OnInit {
 
   // Status helpers
   private hasRatesDc(dc: DeliveryChallanViewModel): boolean {
+    const operatorCreated = (dc.createdByRole || '').toLowerCase() === 'operator';
+    if (operatorCreated) {
+      // Operator-created challans should stay in Pending until Admin confirms rates.
+      // Once rates are explicitly saved, backend sets ratesAdded=true and they become Rated.
+      return dc.ratesAdded;
+    }
+
     return dc.ratesAdded || dc.lines.some((l: { rate?: number }) => l.rate && l.rate > 0);
   }
   private hasRatesSr(sr: SaleReturnViewModel): boolean {

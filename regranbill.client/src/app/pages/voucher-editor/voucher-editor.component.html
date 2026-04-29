@@ -54,7 +54,11 @@
     </div>
     <div class="form-group" *ngIf="supportsVehicleNumber">
       <label class="form-label">Vehicle Number</label>
-      <input type="text" class="form-control vehicle-input" [(ngModel)]="vehicleNumber" placeholder="e.g. ABC-1234" />
+      <app-searchable-select
+        [options]="vehicleOptions"
+        [placeholder]="'Select vehicle number...'"
+        [(ngModel)]="vehicleNumber"
+      ></app-searchable-select>
     </div>
   </div>
 </section>

@@ -4,5 +4,5 @@ namespace ReGranBill.Server.Services;
 
 public interface IAuthService
 {
-    Task<LoginResponse?> LoginAsync(LoginRequest request);
+    Task<LoginAttemptResult> LoginAsync(LoginRequest request);
 }

@@ -19,6 +19,7 @@ export interface CustomerLedger {
   accountId: number;
   accountName: string;
   partyType: string;
+  hasOpeningBalance: boolean;
   openingBalance: number;
   closingBalance: number;
   entries: CustomerLedgerEntry[];

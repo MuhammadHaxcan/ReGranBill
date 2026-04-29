@@ -1,11 +1,12 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { forkJoin } from 'rxjs';
 import { CustomerLedgerService } from '../../services/customer-ledger.service';
 import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { CustomerLedger, CustomerLedgerEntry } from '../../models/customer-ledger.model';
-import { Account, PartyRole } from '../../models/account.model';
+import { Account, AccountType, PartyRole } from '../../models/account.model';
+import { Category } from '../../models/category.model';
 import { formatDateDisplay } from '../../utils/date-utils';
 
 @Component({
@@ -16,39 +17,63 @@ import { formatDateDisplay } from '../../utils/date-utils';
 })
 export class CustomerLedgerComponent implements OnInit {
   accounts: Account[] = [];
+  categories: Category[] = [];
   accountOptions: SelectOption[] = [];
+  selectedCategoryId: number | null = null;
   selectedAccountId: number | null = null;
   fromDate = '';
   toDate = '';
   ledger: CustomerLedger | null = null;
   loading = false;
-  activeTab: 'customer' | 'vendor' = 'customer';
 
   constructor(
     private ledgerService: CustomerLedgerService,
     private accountService: AccountService,
+    private categoryService: CategoryService,
     private cdr: ChangeDetectorRef,
     private toast: ToastService
   ) {}
 
   ngOnInit(): void {
-    this.loadAccounts();
+    this.loadCategories();
   }
 
-  loadAccounts(): void {
-    forkJoin({
-      customers: this.accountService.getCustomers(),
-      vendors: this.accountService.getVendors()
-    }).subscribe({
-      next: ({ customers, vendors }) => {
+  loadCategories(): void {
+    this.categoryService.getAll().subscribe({
+      next: (categories) => {
+        this.categories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to load categories.');
+      }
+    });
+  }
+
+  loadAccountsByCategory(): void {
+    if (!this.selectedCategoryId) {
+      this.accounts = [];
+      this.accountOptions = [];
+      this.selectedAccountId = null;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.accountService.getAll().subscribe({
+      next: (accounts) => {
+        const filtered = accounts.filter(account =>
+          account.accountType === AccountType.Party &&
+          account.categoryId === this.selectedCategoryId &&
+          (account.partyRole === PartyRole.Customer
+            || account.partyRole === PartyRole.Vendor
+            || account.partyRole === PartyRole.Both)
+        );
         const unique = new Map<number, Account>();
-        const targetType = this.activeTab === 'customer' ? PartyRole.Customer : PartyRole.Vendor;
-        const sourceList = this.activeTab === 'customer' ? customers : vendors;
-        sourceList.forEach(account => unique.set(account.id, account));
+        filtered.forEach(account => unique.set(account.id, account));
         this.accounts = Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
         this.accountOptions = this.accounts.map(account => ({
           value: account.id,
-          label: account.name,
+          label: `${account.name} (${this.getAccountSublabel(account)})`,
           sublabel: this.getAccountSublabel(account)
         }));
         this.cdr.detectChanges();
@@ -59,16 +84,19 @@ export class CustomerLedgerComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'customer' | 'vendor'): void {
-    this.activeTab = tab;
+  onCategoryChange(): void {
     this.ledger = null;
     this.selectedAccountId = null;
-    this.loadAccounts();
+    this.loadAccountsByCategory();
   }
 
   loadLedger(): void {
-    if (!this.selectedAccountId || !this.fromDate || !this.toDate) {
-      this.toast.error('Please select an account and date range.');
+    if (!this.selectedCategoryId) {
+      this.toast.error('Please select a category.');
+      return;
+    }
+    if (!this.selectedAccountId) {
+      this.toast.error('Please select an account.');
       return;
     }
     this.loading = true;
@@ -91,9 +119,14 @@ export class CustomerLedgerComponent implements OnInit {
   }
 
   clearFilters(): void {
+    this.selectedCategoryId = null;
+    this.selectedAccountId = null;
+    this.accounts = [];
+    this.accountOptions = [];
     this.fromDate = '';
     this.toDate = '';
     this.ledger = null;
+    this.cdr.detectChanges();
   }
 
   getFormattedDate(date: string): string {
@@ -117,8 +150,19 @@ export class CustomerLedgerComponent implements OnInit {
   }
 
   printLedger(): void {
-    if (!this.selectedAccountId || !this.fromDate || !this.toDate) return;
-    const target = `/print-customer-ledger/${this.selectedAccountId}?fromDate=${this.fromDate}&toDate=${this.toDate}`;
+    if (!this.selectedAccountId) return;
+    let target = `/print-customer-ledger/${this.selectedAccountId}`;
+    const query = new URLSearchParams();
+    if (this.fromDate) {
+      query.set('fromDate', this.fromDate);
+    }
+    if (this.toDate) {
+      query.set('toDate', this.toDate);
+    }
+    const queryString = query.toString();
+    if (queryString) {
+      target += `?${queryString}`;
+    }
     window.open(target, '_blank');
   }
 

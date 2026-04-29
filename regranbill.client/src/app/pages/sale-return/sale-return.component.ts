@@ -37,6 +37,7 @@ export class SaleReturnComponent implements OnInit {
     this.saleReturnDate = parseLocalDate(val);
   }
   selectedCustomerId: number | null = null;
+  vehicleNumber = '';
   description = '';
 
   products: Account[] = [];
@@ -53,6 +54,7 @@ export class SaleReturnComponent implements OnInit {
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
   ];
+  vehicleSelectOptions: SelectOption[] = [];
 
   // Category filter per line
   lineCategoryIds: (number | null)[] = [];
@@ -103,6 +105,11 @@ export class SaleReturnComponent implements OnInit {
 
         this.vehicleOptions = vehicles;
         this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+        this.vehicleSelectOptions = vehicles.map(vehicle => ({
+          value: vehicle.vehicleNumber,
+          label: vehicle.vehicleNumber,
+          sublabel: vehicle.name
+        }));
 
         this.saleReturnService.getLatestRates(this.products.map(p => p.id))
           .pipe(finalize(() => this.loadSaleReturn()))
@@ -133,6 +140,7 @@ export class SaleReturnComponent implements OnInit {
           this.srNumber = sr.srNumber;
           this.saleReturnDate = parseLocalDate(sr.date);
           this.selectedCustomerId = sr.customerId;
+          this.vehicleNumber = sr.vehicleNumber || '';
           this.description = sr.description || '';
           this.lines = sr.lines.map((l: any) => {
             const product = l.productId ? this.products.find(p => p.id === l.productId) : null;
@@ -269,7 +277,7 @@ export class SaleReturnComponent implements OnInit {
     return {
       date: this.saleReturnDate,
       customerId: this.selectedCustomerId!,
-      vehicleNumber: null,
+      vehicleNumber: this.vehicleNumber || null,
       description: this.description,
       lines: this.lines
         .filter(l => l.product)
@@ -376,6 +384,7 @@ export class SaleReturnComponent implements OnInit {
 
   private resetForm(): void {
     this.selectedCustomerId = null;
+    this.vehicleNumber = '';
     this.description = '';
     this.saleReturnDate = new Date();
     this.lines = [];

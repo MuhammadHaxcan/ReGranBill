@@ -67,7 +67,7 @@ const routes: Routes = [
   { path: 'receipt-voucher/:id', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'receipt' } },
   { path: 'payment-voucher', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'payment' } },
   { path: 'payment-voucher/:id', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'payment' } },
-  { path: 'voucher-editor', component: VoucherEditorComponent, canActivate: [AuthGuard] },
+  { path: 'voucher-editor', component: VoucherEditorComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'purchase-voucher', component: PurchaseVoucherComponent, canActivate: [AuthGuard] },
   { path: 'purchase-voucher/:id', component: PurchaseVoucherComponent, canActivate: [AuthGuard] },
   { path: 'pending-challans', component: PendingChallansComponent, canActivate: [AuthGuard, AdminGuard] },

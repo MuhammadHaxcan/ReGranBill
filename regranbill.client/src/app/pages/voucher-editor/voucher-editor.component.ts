@@ -10,6 +10,7 @@ import {
 } from '../../models/voucher-editor.model';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
+import { CompanySettingsService } from '../../services/company-settings.service';
 import { VoucherEditorService } from '../../services/voucher-editor.service';
 import { ToastService } from '../../services/toast.service';
 import {
@@ -58,6 +59,7 @@ export class VoucherEditorComponent implements OnInit {
   accounts: Account[] = [];
   categoryOptions: SelectOption[] = [];
   accountOptions: SelectOption[] = [];
+  vehicleOptions: SelectOption[] = [];
   lines: EditableLedgerLine[] = [];
 
   private categories: Category[] = [];
@@ -87,6 +89,7 @@ export class VoucherEditorComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private accountService: AccountService,
     private categoryService: CategoryService,
+    private companySettingsService: CompanySettingsService,
     private voucherEditorService: VoucherEditorService,
     private toast: ToastService
   ) {}
@@ -278,11 +281,17 @@ export class VoucherEditorComponent implements OnInit {
 
     forkJoin({
       allAccounts: this.accountService.getAll(),
-      categories: this.categoryService.getAll()
+      categories: this.categoryService.getAll(),
+      vehicles: this.companySettingsService.getVehicles()
     }).subscribe({
-      next: ({ allAccounts, categories }) => {
+      next: ({ allAccounts, categories, vehicles }) => {
         this.categories = categories;
         this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+        this.vehicleOptions = vehicles.map(v => ({
+          value: v.vehicleNumber,
+          label: v.vehicleNumber,
+          sublabel: v.name
+        }));
 
         const uniqueById = new Map<number, Account>();
         for (const account of allAccounts) {

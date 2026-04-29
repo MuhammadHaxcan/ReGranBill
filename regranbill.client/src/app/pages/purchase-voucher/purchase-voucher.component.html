@@ -43,16 +43,11 @@
     </div>
     <div class="form-group">
       <label class="form-label">Vehicle No.</label>
-      <input
-        type="text"
-        class="form-control vehicle-input"
-        placeholder="e.g. ABC-1234"
-        list="purchase-vehicle-list"
+      <app-searchable-select
+        [options]="vehicleSelectOptions"
+        [placeholder]="'Select vehicle number...'"
         [(ngModel)]="vehicleNumber"
-      />
-      <datalist id="purchase-vehicle-list">
-        <option *ngFor="let vehicle of vehicleOptions" [value]="vehicle.vehicleNumber">{{ vehicle.name }}</option>
-      </datalist>
+      ></app-searchable-select>
     </div>
   </div>
 </section>

@@ -53,6 +53,7 @@ export class DeliveryChallanComponent implements OnInit {
   productOptions: SelectOption[] = [];
   transporterOptions: SelectOption[] = [];
   categoryOptions: SelectOption[] = [];
+  vehicleSelectOptions: SelectOption[] = [];
   rbpOptions: SelectOption[] = [
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
@@ -121,6 +122,11 @@ export class DeliveryChallanComponent implements OnInit {
 
         this.vehicleOptions = vehicles;
         this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+        this.vehicleSelectOptions = vehicles.map(vehicle => ({
+          value: vehicle.vehicleNumber,
+          label: vehicle.vehicleNumber,
+          sublabel: vehicle.name
+        }));
 
         this.dcService.getLatestRates(this.products.map(p => p.id))
           .pipe(finalize(() => this.loadChallan()))

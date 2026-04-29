@@ -40,13 +40,18 @@ export class PrintCustomerLedgerComponent implements OnInit {
     const fromDate = this.route.snapshot.queryParamMap.get('fromDate');
     const toDate = this.route.snapshot.queryParamMap.get('toDate');
 
-    if (!fromDate || !toDate) {
-      this.error = 'Date range is required';
-      this.loading = false;
-      return;
+    let url = `/api/customer-ledger/${accountId}/pdf`;
+    const query = new URLSearchParams();
+    if (fromDate) {
+      query.set('fromDate', fromDate);
     }
-
-    const url = `/api/customer-ledger/${accountId}/pdf?fromDate=${fromDate}&toDate=${toDate}`;
+    if (toDate) {
+      query.set('toDate', toDate);
+    }
+    const queryString = query.toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
 
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);

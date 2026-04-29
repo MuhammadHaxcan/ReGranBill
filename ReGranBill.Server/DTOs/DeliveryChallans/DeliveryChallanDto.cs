@@ -10,6 +10,7 @@ public class DeliveryChallanDto
     public string? VehicleNumber { get; set; }
     public string? Description { get; set; }
     public string VoucherType { get; set; } = "SaleVoucher";
+    public string? CreatedByRole { get; set; }
     public bool RatesAdded { get; set; }
     public List<DcLineDto> Lines { get; set; } = new();
     public DcCartageDto? Cartage { get; set; }
