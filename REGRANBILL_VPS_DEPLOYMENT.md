@@ -49,8 +49,8 @@ At your domain registrar for `regranbill.online`, add two A records pointing to 
 
 ```
 Type  Name    Value
-A     @       YOUR_VPS_IP
-A     www     YOUR_VPS_IP
+A     @       72.60.209.26
+A     www     72.60.209.26
 ```
 
 DNS propagation can take a few minutes to a few hours. You can check propagation with:
@@ -60,6 +60,7 @@ nslookup regranbill.online
 ```
 
 ---
+ssh root@72.60.209.26
 
 ## 2. Install .NET 10 Runtime
 
@@ -73,19 +74,13 @@ The VPS already has .NET 8 for PureLedger. Installing .NET 10 alongside it is sa
 # rm packages-microsoft-prod.deb
 
 apt update
-apt install -y aspnetcore-runtime-10.0
+apt install -y dotnet-sdk-10.0
 
 # Verify both runtimes are present
 dotnet --list-runtimes
 # You should see both:
 #   Microsoft.AspNetCore.App 8.x.x
 #   Microsoft.AspNetCore.App 10.x.x
-```
-
-> **If building on VPS:** Install the SDK instead (it includes the runtime):
-> ```bash
-> apt install -y dotnet-sdk-10.0
-> ```
 
 ---
 
@@ -102,7 +97,7 @@ sudo -u postgres psql
 CREATE DATABASE regranbilldb;
 
 -- Create user with a strong password
-CREATE USER regranbilluser WITH ENCRYPTED PASSWORD 'YOUR_SECURE_PASSWORD';
+CREATE USER regranbilluser WITH ENCRYPTED PASSWORD '1324';
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE regranbilldb TO regranbilluser;
@@ -159,18 +154,9 @@ Final structure:
 
 ### 5.1 Transfer Source Code
 
-**Option A: Git**
-
 ```bash
 cd /var/www/regranbill/backend-source
-git clone YOUR_REPO_URL .
-```
-
-**Option B: SCP from local machine**
-
-```bash
-# Run this on your local machine (Windows Git Bash or WSL)
-scp -r /c/Users/Claude/Desktop/ReGranBill/ReGranBill root@YOUR_VPS_IP:/var/www/regranbill/backend-source/
+git clone https://github.com/MuhammadHaxcan/ReGranBill.git .
 ```
 
 ### 5.2 Create the .env File (Secrets)
@@ -216,7 +202,7 @@ chmod 600 /var/www/regranbill/backend-publish/.env
 This file configures CORS for the production domain and other non-secret settings. Create it inside the source directory:
 
 ```bash
-nano /var/www/regranbill/backend-source/ReGranBill/ReGranBill.Server/appsettings.Production.json
+nano /var/www/regranbill/backend-source/ReGranBill.Server/appsettings.Production.json
 ```
 
 ```json
@@ -241,33 +227,29 @@ nano /var/www/regranbill/backend-source/ReGranBill/ReGranBill.Server/appsettings
 
 ### 5.4 Build the Backend
 
-**Option A: Build on VPS (requires .NET 10 SDK)**
-
 ```bash
-cd /var/www/regranbill/backend-source/ReGranBill/ReGranBill.Server
+cd /var/www/regranbill/backend-source/ReGranBill.Server
 dotnet publish -c Release -o /var/www/regranbill/backend-publish
-```
-
-**Option B: Build locally, transfer artifacts**
-
-```bash
-# On your local machine
-cd C:\Users\Claude\Desktop\ReGranBill\ReGranBill\ReGranBill.Server
-dotnet publish -c Release -o ./publish
-
-# Transfer publish output to VPS
-scp -r ./publish/* root@YOUR_VPS_IP:/var/www/regranbill/backend-publish/
 ```
 
 ### 5.5 Run Database Migrations
 
+Migrations are not in the repo, so generate them fresh from the current model then apply.
+
 ```bash
-# Requires .NET 10 SDK and EF Core tools on VPS
-cd /var/www/regranbill/backend-source/ReGranBill/ReGranBill.Server
+# Install EF Core CLI tool (once per VPS)
+dotnet tool install --global dotnet-ef
+export PATH="$PATH:$HOME/.dotnet/tools"
 
-# Set env vars so the migration connects to the right database
-export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=regranbilldb;Username=regranbilluser;Password=YOUR_SECURE_PASSWORD;"
+cd /var/www/regranbill/backend-source/ReGranBill.Server
 
+# Set the connection string so EF can reach the database
+export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=regranbilldb;Username=regranbilluser;Password=1324;"
+
+# Generate a single migration from the current model
+dotnet ef migrations add InitialCreate
+
+# Apply it to the database
 dotnet ef database update
 ```
 
@@ -286,31 +268,8 @@ chmod 600 /var/www/regranbill/backend-publish/.env
 
 ## 6. Frontend: Build and Deploy
 
-### 6.1 Build Locally (Recommended)
-
-The Angular frontend is built locally and the output is transferred. This avoids needing Node.js on the VPS.
-
 ```bash
-# On your local machine
-cd C:\Users\Claude\Desktop\ReGranBill\ReGranBill\regranbill.client
-
-npm install
-npm run build
-# Output lands at: dist/regranbill.client/browser/
-```
-
-Transfer the build output to the VPS:
-
-```bash
-scp -r dist/regranbill.client/browser/* root@YOUR_VPS_IP:/var/www/regranbill/frontend-build/
-```
-
-### 6.2 Build on VPS (Alternative)
-
-If Node.js is installed on the VPS (it was installed for PureLedger):
-
-```bash
-cd /var/www/regranbill/backend-source/ReGranBill/regranbill.client
+cd /var/www/regranbill/backend-source/regranbill.client
 
 npm install
 npm run build
@@ -319,7 +278,7 @@ npm run build
 cp -r dist/regranbill.client/browser/* /var/www/regranbill/frontend-build/
 ```
 
-### 6.3 Set Permissions
+### 6.1 Set Permissions
 
 ```bash
 chown -R www-data:www-data /var/www/regranbill/frontend-build
@@ -678,9 +637,11 @@ nano /var/www/regranbill/deploy.sh
 
 set -e
 
-BACKEND_SOURCE="/var/www/regranbill/backend-source/ReGranBill/ReGranBill.Server"
+export PATH="$PATH:$HOME/.dotnet/tools"
+
+BACKEND_SOURCE="/var/www/regranbill/backend-source/ReGranBill.Server"
 BACKEND_PUBLISH="/var/www/regranbill/backend-publish"
-FRONTEND_SOURCE="/var/www/regranbill/backend-source/ReGranBill/regranbill.client"
+FRONTEND_SOURCE="/var/www/regranbill/backend-source/regranbill.client"
 FRONTEND_PUBLISH="/var/www/regranbill/frontend-build"
 
 echo "=== Deploying ReGranBill Update ==="
@@ -695,12 +656,17 @@ echo "--- Backing up current build ---"
 cp -r "$BACKEND_PUBLISH" "${BACKEND_PUBLISH}.bak" 2>/dev/null || true
 cp -r "$FRONTEND_PUBLISH" "${FRONTEND_PUBLISH}.bak" 2>/dev/null || true
 
-# 3. Build backend
-echo "--- Building backend ---"
+# 3. Apply any new migrations (safe to run even if nothing changed)
+echo "--- Running migrations ---"
 cd "$BACKEND_SOURCE"
+export ConnectionStrings__DefaultConnection=$(grep 'ConnectionStrings__DefaultConnection' "$BACKEND_PUBLISH/.env" | cut -d'=' -f2-)
+dotnet ef database update
+
+# 4. Build backend
+echo "--- Building backend ---"
 dotnet publish -c Release -o "$BACKEND_PUBLISH"
 
-# 4. Restore .env (publish may overwrite it - keep the original)
+# 5. Restore .env (publish may overwrite it - keep the original)
 # The .env is preserved because dotnet publish does not touch it
 # but double-check it exists:
 if [ ! -f "$BACKEND_PUBLISH/.env" ]; then
@@ -713,7 +679,7 @@ fi
 chown www-data:www-data "$BACKEND_PUBLISH/.env"
 chmod 600 "$BACKEND_PUBLISH/.env"
 
-# 5. Build frontend
+# 6. Build frontend
 echo "--- Building frontend ---"
 cd "$FRONTEND_SOURCE"
 npm install
@@ -721,18 +687,18 @@ npm run build
 rm -rf "$FRONTEND_PUBLISH"/*
 cp -r dist/regranbill.client/browser/* "$FRONTEND_PUBLISH/"
 
-# 6. Set permissions
+# 7. Set permissions
 echo "--- Setting permissions ---"
 chown -R www-data:www-data /var/www/regranbill/
 chmod -R 755 "$BACKEND_PUBLISH"
 chmod -R 755 "$FRONTEND_PUBLISH"
 chmod 600 "$BACKEND_PUBLISH/.env"
 
-# 7. Restart backend (does NOT restart pureledger-backend)
+# 8. Restart backend (does NOT restart pureledger-backend)
 echo "--- Restarting ReGranBill backend ---"
 systemctl restart regranbill-backend
 
-# 8. Verify
+# 9. Verify
 sleep 3
 systemctl status regranbill-backend --no-pager
 
@@ -747,13 +713,14 @@ chmod +x /var/www/regranbill/deploy.sh
 
 ```bash
 # Backend only update
-cd /var/www/regranbill/backend-source/ReGranBill/ReGranBill.Server && \
+cd /var/www/regranbill/backend-source/ReGranBill.Server && \
 dotnet publish -c Release -o /var/www/regranbill/backend-publish && \
 systemctl restart regranbill-backend
 
-# Frontend only update (from local machine)
-# Build locally, then:
-scp -r dist/regranbill.client/browser/* root@YOUR_VPS_IP:/var/www/regranbill/frontend-build/
+# Frontend only update
+cd /var/www/regranbill/backend-source/regranbill.client && \
+npm install && npm run build && \
+cp -r dist/regranbill.client/browser/* /var/www/regranbill/frontend-build/
 
 # Check all services
 systemctl status nginx pureledger-backend regranbill-backend postgresql
