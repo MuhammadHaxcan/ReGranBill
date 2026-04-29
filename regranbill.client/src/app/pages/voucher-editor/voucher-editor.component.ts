@@ -1,13 +1,15 @@
 import { ChangeDetectorRef, Component, HostListener, OnInit, QueryList, ViewChildren } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { Account, AccountType, PartyRole } from '../../models/account.model';
+import { Category } from '../../models/category.model';
 import {
   UpdateVoucherEditorRequest,
   VoucherEditorVoucher,
   VoucherType
 } from '../../models/voucher-editor.model';
 import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
 import { VoucherEditorService } from '../../services/voucher-editor.service';
 import { ToastService } from '../../services/toast.service';
 import {
@@ -20,6 +22,7 @@ import { parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 
 interface EditableLedgerLine {
   id?: number;
+  categoryId: number | null;
   accountId: number | null;
   description: string;
   debit: number;
@@ -53,8 +56,17 @@ export class VoucherEditorComponent implements OnInit {
   vehicleNumber = '';
 
   accounts: Account[] = [];
+  categoryOptions: SelectOption[] = [];
   accountOptions: SelectOption[] = [];
   lines: EditableLedgerLine[] = [];
+
+  private categories: Category[] = [];
+  // per-category account cache, keyed by categoryId
+  accountsByCategory = new Map<number, Account[]>();
+  // all accounts for categoryId resolution
+  allAccounts: Account[] = [];
+  // track in-flight API calls per categoryId
+  private categoryAccountRequests = new Map<number, Observable<Account[]>>();
 
   voucherTypeOptions: SelectOption[] = [
     { value: 'JournalVoucher', label: 'Journal Voucher' },
@@ -74,6 +86,7 @@ export class VoucherEditorComponent implements OnInit {
   constructor(
     private cdr: ChangeDetectorRef,
     private accountService: AccountService,
+    private categoryService: CategoryService,
     private voucherEditorService: VoucherEditorService,
     private toast: ToastService
   ) {}
@@ -264,22 +277,24 @@ export class VoucherEditorComponent implements OnInit {
     this.loadingAccounts = true;
 
     forkJoin({
-      journal: this.accountService.getJournalAccounts(),
-      products: this.accountService.getProducts()
+      allAccounts: this.accountService.getAll(),
+      categories: this.categoryService.getAll()
     }).subscribe({
-      next: ({ journal, products }) => {
-        const merged = [...journal, ...products];
+      next: ({ allAccounts, categories }) => {
+        this.categories = categories;
+        this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+
         const uniqueById = new Map<number, Account>();
-        for (const account of merged) {
+        for (const account of allAccounts) {
           if (!uniqueById.has(account.id)) {
             uniqueById.set(account.id, account);
           }
         }
 
-        this.accounts = Array.from(uniqueById.values())
+        this.allAccounts = Array.from(uniqueById.values())
           .sort((a, b) => a.name.localeCompare(b.name));
 
-        this.accountOptions = this.accounts.map(account => ({
+        this.accountOptions = this.allAccounts.map(account => ({
           value: account.id,
           label: account.name,
           sublabel: this.getAccountSublabel(account)
@@ -296,6 +311,26 @@ export class VoucherEditorComponent implements OnInit {
     });
   }
 
+  private loadAccountsForCategory(categoryId: number): void {
+    if (this.accountsByCategory.has(categoryId)) return;
+    if (this.categoryAccountRequests.has(categoryId)) return;
+
+    const request = this.accountService.getByCategory(categoryId);
+    this.categoryAccountRequests.set(categoryId, request);
+
+    request.subscribe({
+      next: accounts => {
+        this.accountsByCategory.set(categoryId, accounts);
+        this.categoryAccountRequests.delete(categoryId);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.categoryAccountRequests.delete(categoryId);
+        this.toast.error('Unable to load accounts for selected category.');
+      }
+    });
+  }
+
   private setVoucher(voucher: VoucherEditorVoucher): void {
     this.voucher = voucher;
     this.searchVoucherType = voucher.voucherType;
@@ -305,21 +340,31 @@ export class VoucherEditorComponent implements OnInit {
     this.vehicleNumber = voucher.vehicleNumber || '';
     this.lines = voucher.entries
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(entry => ({
-        id: entry.id,
-        accountId: entry.accountId,
-        description: entry.description || '',
-        debit: entry.debit,
-        credit: entry.credit,
-        qty: entry.qty ?? null,
-        totalWeightKg: entry.totalWeightKg ?? null,
-        rbp: entry.rbp ?? null,
-        rate: entry.rate ?? null,
-        isEdited: entry.isEdited
-      }));
+      .map(entry => {
+        const account = this.allAccounts.find(a => a.id === entry.accountId);
+        return {
+          id: entry.id,
+          categoryId: account?.categoryId ?? null,
+          accountId: entry.accountId,
+          description: entry.description || '',
+          debit: entry.debit,
+          credit: entry.credit,
+          qty: entry.qty ?? null,
+          totalWeightKg: entry.totalWeightKg ?? null,
+          rbp: entry.rbp ?? null,
+          rate: entry.rate ?? null,
+          isEdited: entry.isEdited
+        };
+      });
 
     while (this.lines.length < 2) {
       this.lines.push(this.newLine());
+    }
+
+    // Prime account cache for each category present in the voucher
+    const uniqueCategoryIds = [...new Set(this.lines.map(l => l.categoryId).filter(id => id != null) as number[])];
+    for (const catId of uniqueCategoryIds) {
+      this.loadAccountsForCategory(catId);
     }
   }
 
@@ -349,6 +394,7 @@ export class VoucherEditorComponent implements OnInit {
     if (this.lines.length < 2) return false;
 
     const baseValid = this.lines.every(line => {
+      if (line.categoryId == null) return false;
       if (line.accountId == null) return false;
       if (line.debit < 0 || line.credit < 0) return false;
 
@@ -471,12 +517,12 @@ export class VoucherEditorComponent implements OnInit {
 
   private getAccountType(accountId: number | null): AccountType | null {
     if (accountId == null) return null;
-    return this.accounts.find(a => a.id === accountId)?.accountType || null;
+    return this.allAccounts.find(a => a.id === accountId)?.accountType || null;
   }
 
   private getAccount(accountId: number | null): Account | undefined {
     if (accountId == null) return undefined;
-    return this.accounts.find(account => account.id === accountId);
+    return this.allAccounts.find(account => account.id === accountId);
   }
 
   private isInventoryLine(line: EditableLedgerLine): boolean {
@@ -502,6 +548,7 @@ export class VoucherEditorComponent implements OnInit {
 
   private newLine(): EditableLedgerLine {
     return {
+      categoryId: null,
       accountId: null,
       description: '',
       debit: 0,
@@ -512,6 +559,23 @@ export class VoucherEditorComponent implements OnInit {
       rate: null,
       isEdited: false
     };
+  }
+
+  getAccountOptionsForLine(line: EditableLedgerLine): SelectOption[] {
+    if (line.categoryId == null) return [];
+    const accounts = this.accountsByCategory.get(line.categoryId);
+    if (!accounts) return [];
+    return accounts.map(account => ({
+      value: account.id,
+      label: account.name,
+      sublabel: this.getAccountSublabel(account)
+    }));
+  }
+
+  onCategoryChange(line: EditableLedgerLine, categoryId: number): void {
+    line.categoryId = categoryId;
+    line.accountId = null;
+    this.loadAccountsForCategory(categoryId);
   }
 
   private focusAccountSelector(index: number): void {

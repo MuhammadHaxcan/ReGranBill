@@ -162,6 +162,21 @@
   font-size: 13px;
 }
 
+/* Disabled state */
+.ss-disabled .ss-trigger {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--slate-50);
+}
+
+.ss-disabled .ss-trigger:hover {
+  border-color: var(--border);
+}
+
+.ss-disabled .ss-chevron {
+  opacity: 0.5;
+}
+
 /* Compact variant (for table cells) */
 .ss-compact .ss-trigger {
   padding: 5px 8px;

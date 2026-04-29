@@ -25,6 +25,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
   @Input() options: SelectOption[] = [];
   @Input() placeholder = 'Select...';
   @Input() compact = false;
+  @Input() disabled = false;
 
   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('trigger') triggerRef!: ElementRef<HTMLElement>;
@@ -77,6 +78,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
 
   toggleDropdown(): void {
+    if (this.disabled) return;
     this.isOpen ? this.close() : this.open();
   }
 
@@ -87,6 +89,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
   }
 
   open(): void {
+    if (this.disabled) return;
     this.updatePosition();
     this.isOpen = true;
     this.searchTerm = '';

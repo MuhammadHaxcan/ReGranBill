@@ -5,9 +5,11 @@ import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { SaleReturnService } from '../../services/sale-return.service';
 import { CompanySettingsService } from '../../services/company-settings.service';
+import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
+import { Category } from '../../models/category.model';
 import { SaleReturnLine, SaleReturnViewModel, SaleReturnUpsertRequest } from '../../models/sale-return.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { VehicleOption } from '../../models/company-settings.model';
@@ -46,16 +48,21 @@ export class SaleReturnComponent implements OnInit {
 
   customerOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
+  categoryOptions: SelectOption[] = [];
   rbpOptions: SelectOption[] = [
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
   ];
+
+  // Category filter per line
+  lineCategoryIds: (number | null)[] = [];
 
   constructor(
     private accountService: AccountService,
     private authService: AuthService,
     private saleReturnService: SaleReturnService,
     private companySettingsService: CompanySettingsService,
+    private categoryService: CategoryService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -76,9 +83,10 @@ export class SaleReturnComponent implements OnInit {
     forkJoin({
       products: this.accountService.getProducts(),
       customers: this.accountService.getCustomers(),
-      vehicles: this.companySettingsService.getVehicles().pipe(catchError(() => of([])))
+      vehicles: this.companySettingsService.getVehicles().pipe(catchError(() => of([]))),
+      categories: this.categoryService.getAll()
     }).subscribe({
-      next: ({ products, customers, vehicles }) => {
+      next: ({ products, customers, vehicles, categories }) => {
         this.products = products;
         this.productOptions = products.map(p => ({
           value: p.id,
@@ -94,6 +102,7 @@ export class SaleReturnComponent implements OnInit {
         }));
 
         this.vehicleOptions = vehicles;
+        this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
 
         this.saleReturnService.getLatestRates(this.products.map(p => p.id))
           .pipe(finalize(() => this.loadSaleReturn()))
@@ -125,19 +134,27 @@ export class SaleReturnComponent implements OnInit {
           this.saleReturnDate = parseLocalDate(sr.date);
           this.selectedCustomerId = sr.customerId;
           this.description = sr.description || '';
-          this.lines = sr.lines.map((l: any) => ({
-            id: l.id,
-            product: l.productId ? {
-              id: l.productId,
-              name: l.productName || '',
-              packing: l.packing || '',
-              packingWeightKg: l.packingWeightKg
-            } : null,
-            rbp: l.rbp as 'Yes' | 'No',
-            qty: l.qty,
-            rate: l.rate,
-            sortOrder: l.sortOrder
-          }));
+          this.lines = sr.lines.map((l: any) => {
+            const product = l.productId ? this.products.find(p => p.id === l.productId) : null;
+            return {
+              id: l.id,
+              product: l.productId && product ? {
+                id: l.productId,
+                name: l.productName || '',
+                packing: l.packing || '',
+                packingWeightKg: l.packingWeightKg
+              } : null,
+              rbp: l.rbp as 'Yes' | 'No',
+              qty: l.qty,
+              rate: l.rate,
+              sortOrder: l.sortOrder
+            };
+          });
+          this.lineCategoryIds = this.lines.map(l => {
+            if (!l.product) return null;
+            const product = this.products.find(p => p.id === l.product!.id);
+            return product?.categoryId ?? null;
+          });
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -174,12 +191,28 @@ export class SaleReturnComponent implements OnInit {
 
   addLine(): void {
     this.lines.push({ product: null, rbp: 'Yes', qty: 0, rate: 0 });
+    this.lineCategoryIds.push(null);
   }
 
   removeLine(index: number): void {
     if (this.lines.length > 1) {
       this.lines.splice(index, 1);
+      this.lineCategoryIds.splice(index, 1);
     }
+  }
+
+  onCategoryChange(lineIndex: number, categoryId: number): void {
+    this.lineCategoryIds[lineIndex] = categoryId;
+    this.lines[lineIndex].product = null;
+  }
+
+  getFilteredProductOptions(lineIndex: number): SelectOption[] {
+    const catId = this.lineCategoryIds[lineIndex];
+    if (catId == null) return [];
+    return this.productOptions.filter(opt => {
+      const product = this.products.find(p => p.id === opt.value);
+      return product?.categoryId === catId;
+    });
   }
 
   onProductChange(line: SaleReturnLine, productId: number): void {

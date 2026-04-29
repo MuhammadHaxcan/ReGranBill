@@ -1,16 +1,19 @@
 import { ChangeDetectorRef, Component, HostListener, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { Account } from '../../models/account.model';
+import { Category } from '../../models/category.model';
 import { CreateJournalVoucherRequest, JournalVoucher } from '../../models/journal-voucher.model';
 import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
 import { JournalVoucherService } from '../../services/journal-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { round2 } from '../../utils/delivery-calculations';
 
 interface EditableJournalLine {
   id?: number;
+  categoryId: number | null;
   accountId: number | null;
   description: string;
   debit: number;
@@ -36,14 +39,22 @@ export class JournalVoucherComponent implements OnInit {
   voucherDate = new Date();
   description = '';
 
-  accounts: Account[] = [];
-  accountOptions: SelectOption[] = [];
+  categories: Category[] = [];
+  categoryOptions: SelectOption[] = [];
+  // per-category account cache, keyed by categoryId
+  accountsByCategory = new Map<number, Account[]>();
+  // all accounts loaded once (used in edit mode to resolve categoryId from accountId)
+  allAccounts: Account[] = [];
   lines: EditableJournalLine[] = [];
+
+  // track in-flight API calls per categoryId to avoid duplicate requests
+  private categoryAccountRequests = new Map<number, Observable<Account[]>>();
 
   constructor(
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private accountService: AccountService,
+    private categoryService: CategoryService,
     private journalVoucherService: JournalVoucherService,
     private toast: ToastService
   ) {}
@@ -102,11 +113,13 @@ export class JournalVoucherComponent implements OnInit {
 
     if (this.isEditMode && this.voucherId) {
       forkJoin({
-        accounts: this.accountService.getJournalAccounts(),
+        allAccounts: this.accountService.getAll(),
+        categories: this.categoryService.getAll(),
         voucher: this.journalVoucherService.getById(this.voucherId)
       }).subscribe({
-        next: ({ accounts, voucher }) => {
-          this.setAccounts(accounts);
+        next: ({ allAccounts, categories, voucher }) => {
+          this.allAccounts = allAccounts;
+          this.setCategories(categories);
           this.setVoucher(voucher);
           this.loading = false;
           this.cdr.detectChanges();
@@ -121,11 +134,11 @@ export class JournalVoucherComponent implements OnInit {
     }
 
     forkJoin({
-      accounts: this.accountService.getJournalAccounts(),
+      categories: this.categoryService.getAll(),
       voucherNumber: this.journalVoucherService.getNextNumber()
     }).subscribe({
-      next: ({ accounts, voucherNumber }) => {
-        this.setAccounts(accounts);
+      next: ({ categories, voucherNumber }) => {
+        this.setCategories(categories);
         this.voucherNumber = voucherNumber;
         this.description = '';
         this.voucherDate = new Date();
@@ -257,6 +270,7 @@ export class JournalVoucherComponent implements OnInit {
     if (this.lines.length < 2) return false;
 
     return this.lines.every(line => {
+      if (line.categoryId == null) return false;
       if (line.accountId == null) return false;
       if (line.debit < 0 || line.credit < 0) return false;
 
@@ -266,13 +280,46 @@ export class JournalVoucherComponent implements OnInit {
     });
   }
 
-  private setAccounts(accounts: Account[]): void {
-    this.accounts = accounts;
-    this.accountOptions = accounts.map(account => ({
+  private setCategories(categories: Category[]): void {
+    this.categories = categories;
+    this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+  }
+
+  getAccountOptionsForLine(line: EditableJournalLine): SelectOption[] {
+    if (line.categoryId == null) return [];
+    const accounts = this.accountsByCategory.get(line.categoryId);
+    if (!accounts) return [];
+    return accounts.map(account => ({
       value: account.id,
       label: account.name,
       sublabel: this.getAccountSublabel(account)
     }));
+  }
+
+  onCategoryChange(line: EditableJournalLine, categoryId: number): void {
+    line.categoryId = categoryId;
+    line.accountId = null;
+    this.loadAccountsForCategory(categoryId);
+  }
+
+  private loadAccountsForCategory(categoryId: number): void {
+    if (this.accountsByCategory.has(categoryId)) return;
+    if (this.categoryAccountRequests.has(categoryId)) return;
+
+    const request = this.accountService.getByCategory(categoryId);
+    this.categoryAccountRequests.set(categoryId, request);
+
+    request.subscribe({
+      next: accounts => {
+        this.accountsByCategory.set(categoryId, accounts);
+        this.categoryAccountRequests.delete(categoryId);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.categoryAccountRequests.delete(categoryId);
+        this.toast.error('Unable to load accounts for selected category.');
+      }
+    });
   }
 
   private setVoucher(voucher: JournalVoucher): void {
@@ -283,14 +330,18 @@ export class JournalVoucherComponent implements OnInit {
     this.description = voucher.description || '';
     this.lines = voucher.entries
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(entry => ({
-        id: entry.id,
-        accountId: entry.accountId,
-        description: entry.description || '',
-        debit: entry.debit,
-        credit: entry.credit,
-        isEdited: entry.isEdited
-      }));
+      .map(entry => {
+        const account = this.allAccounts.find(a => a.id === entry.accountId);
+        return {
+          id: entry.id,
+          categoryId: account?.categoryId ?? null,
+          accountId: entry.accountId,
+          description: entry.description || '',
+          debit: entry.debit,
+          credit: entry.credit,
+          isEdited: entry.isEdited
+        };
+      });
 
     while (this.lines.length < 2) {
       this.lines.push(this.newLine());
@@ -306,6 +357,7 @@ export class JournalVoucherComponent implements OnInit {
 
   private newLine(): EditableJournalLine {
     return {
+      categoryId: null,
       accountId: null,
       description: '',
       debit: 0,

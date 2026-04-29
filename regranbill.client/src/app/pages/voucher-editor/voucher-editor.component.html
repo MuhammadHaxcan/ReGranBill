@@ -80,6 +80,7 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
+          <th class="col-category">Category</th>
           <th class="col-account">Account</th>
           <th class="col-desc">Description</th>
           <th class="col-amount">Debit</th>
@@ -101,12 +102,22 @@
           [class.row-mismatch]="(isSaleVoucher && isSaleLineAmountMismatch(line)) || (isPurchaseVoucher && isPurchaseLineAmountMismatch(line))"
         >
           <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-category">
+            <app-searchable-select
+              [options]="categoryOptions"
+              [placeholder]="'Category'"
+              [compact]="true"
+              [ngModel]="line.categoryId"
+              (ngModelChange)="onCategoryChange(line, $event)"
+            ></app-searchable-select>
+          </td>
           <td class="col-account">
             <app-searchable-select
               #accountSelect
-              [options]="accountOptions"
+              [options]="getAccountOptionsForLine(line)"
               [placeholder]="'Select account...'"
               [compact]="true"
+              [disabled]="line.categoryId == null"
               [ngModel]="line.accountId"
               (ngModelChange)="onAccountChange(line, $event)"
             ></app-searchable-select>

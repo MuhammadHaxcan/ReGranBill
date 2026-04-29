@@ -1,9 +1,10 @@
-<div class="ss-container" [class.ss-compact]="compact" [class.ss-open]="isOpen">
+<div class="ss-container" [class.ss-compact]="compact" [class.ss-open]="isOpen" [class.ss-disabled]="disabled">
   <!-- Trigger -->
   <div
     #trigger
     class="ss-trigger"
     tabindex="0"
+    [attr.aria-disabled]="disabled ? true : null"
     (click)="toggleDropdown()"
     (keydown)="onTriggerKeydown($event)"
   >

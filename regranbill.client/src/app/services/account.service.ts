@@ -35,6 +35,10 @@ export class AccountService {
     return this.http.get<Account[]>(`${this.url}/journal`);
   }
 
+  getByCategory(categoryId: number): Observable<Account[]> {
+    return this.http.get<Account[]>(`${this.url}/by-category/${categoryId}`);
+  }
+
   add(account: Omit<Account, 'id'>): Observable<Account> {
     return this.http.post<Account>(this.url, account);
   }

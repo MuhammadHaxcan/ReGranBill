@@ -4,9 +4,11 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseReturnService } from '../../services/purchase-return.service';
+import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
+import { Category } from '../../models/category.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { VehicleOption } from '../../models/company-settings.model';
 import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
@@ -45,11 +47,16 @@ export class PurchaseReturnComponent implements OnInit {
 
   vendorOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
+  categoryOptions: SelectOption[] = [];
+
+  // Category filter per line
+  lineCategoryIds: (number | null)[] = [];
 
   constructor(
     private accountService: AccountService,
     private authService: AuthService,
     private purchaseReturnService: PurchaseReturnService,
+    private categoryService: CategoryService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -70,9 +77,10 @@ export class PurchaseReturnComponent implements OnInit {
     forkJoin({
       products: this.accountService.getProducts(),
       vendors: this.accountService.getVendors(),
-      vehicles: of([])
+      vehicles: of([]),
+      categories: this.categoryService.getAll()
     }).subscribe({
-      next: ({ products, vendors, vehicles }) => {
+      next: ({ products, vendors, vehicles, categories }) => {
         this.products = products;
         this.productOptions = products.map(p => ({
           value: p.id,
@@ -86,6 +94,8 @@ export class PurchaseReturnComponent implements OnInit {
           label: v.name,
           sublabel: v.city || ''
         }));
+
+        this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
 
         this.purchaseReturnService.getLatestRates(this.products.map(p => p.id))
           .pipe(finalize(() => this.loadPurchaseReturn()))
@@ -118,19 +128,27 @@ export class PurchaseReturnComponent implements OnInit {
           this.selectedVendorId = pr.vendorId;
           this.vehicleNumber = pr.vehicleNumber || '';
           this.description = pr.description || '';
-          this.lines = pr.lines.map((l: any) => ({
-            id: l.id,
-            product: l.productId ? {
-              id: l.productId,
-              name: l.productName || '',
-              packing: l.packing || '',
-              packingWeightKg: l.packingWeightKg
-            } : null,
-            qty: l.qty,
-            totalWeightKg: l.totalWeightKg || 0,
-            rate: l.rate,
-            sortOrder: l.sortOrder
-          }));
+          this.lines = pr.lines.map((l: any) => {
+            const product = l.productId ? this.products.find(p => p.id === l.productId) : null;
+            return {
+              id: l.id,
+              product: l.productId && product ? {
+                id: l.productId,
+                name: l.productName || '',
+                packing: l.packing || '',
+                packingWeightKg: l.packingWeightKg
+              } : null,
+              qty: l.qty,
+              totalWeightKg: l.totalWeightKg || 0,
+              rate: l.rate,
+              sortOrder: l.sortOrder
+            };
+          });
+          this.lineCategoryIds = this.lines.map(l => {
+            if (!l.product) return null;
+            const product = this.products.find(p => p.id === l.product!.id);
+            return product?.categoryId ?? null;
+          });
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -167,12 +185,28 @@ export class PurchaseReturnComponent implements OnInit {
 
   addLine(): void {
     this.lines.push({ product: null, qty: 0, totalWeightKg: 0, rate: 0 });
+    this.lineCategoryIds.push(null);
   }
 
   removeLine(index: number): void {
     if (this.lines.length > 1) {
       this.lines.splice(index, 1);
+      this.lineCategoryIds.splice(index, 1);
     }
+  }
+
+  onCategoryChange(lineIndex: number, categoryId: number): void {
+    this.lineCategoryIds[lineIndex] = categoryId;
+    this.lines[lineIndex].product = null;
+  }
+
+  getFilteredProductOptions(lineIndex: number): SelectOption[] {
+    const catId = this.lineCategoryIds[lineIndex];
+    if (catId == null) return [];
+    return this.productOptions.filter(opt => {
+      const product = this.products.find(p => p.id === opt.value);
+      return product?.categoryId === catId;
+    });
   }
 
   onProductChange(line: PurchaseReturnLine, productId: number): void {

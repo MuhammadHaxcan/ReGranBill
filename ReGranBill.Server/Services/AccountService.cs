@@ -80,6 +80,18 @@ public class AccountService : IAccountService
         return accounts.Select(MapToDto).ToList();
     }
 
+    public async Task<List<AccountDto>> GetByCategoryAsync(int categoryId)
+    {
+        var accounts = await _db.Accounts
+            .Include(a => a.ProductDetail)
+            .Include(a => a.BankDetail)
+            .Include(a => a.PartyDetail)
+            .Where(a => a.CategoryId == categoryId)
+            .OrderBy(a => a.Name)
+            .ToListAsync();
+        return accounts.Select(MapToDto).ToList();
+    }
+
     public async Task<AccountDto> CreateAsync(CreateAccountRequest request)
     {
         var accountName = ValidateName(request.Name);

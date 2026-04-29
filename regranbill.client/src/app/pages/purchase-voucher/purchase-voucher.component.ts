@@ -5,9 +5,11 @@ import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { CompanySettingsService } from '../../services/company-settings.service';
+import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Account } from '../../models/account.model';
+import { Category } from '../../models/category.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
 import {
@@ -63,6 +65,10 @@ export class PurchaseVoucherComponent implements OnInit {
   vendorOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
   transporterOptions: SelectOption[] = [];
+  categoryOptions: SelectOption[] = [];
+
+  // Category filter per line
+  lineCategoryIds: (number | null)[] = [];
 
   // Cartage
   cartage: Cartage | null = null;
@@ -75,6 +81,7 @@ export class PurchaseVoucherComponent implements OnInit {
     private authService: AuthService,
     private purchaseService: PurchaseVoucherService,
     private companySettingsService: CompanySettingsService,
+    private categoryService: CategoryService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -96,9 +103,10 @@ export class PurchaseVoucherComponent implements OnInit {
       products: this.accountService.getProducts(),
       vendors: this.accountService.getVendors(),
       transporters: this.accountService.getTransporters(),
-      vehicles: this.companySettingsService.getVehicles().pipe(catchError(() => of([])))
+      vehicles: this.companySettingsService.getVehicles().pipe(catchError(() => of([]))),
+      categories: this.categoryService.getAll()
     }).subscribe({
-      next: ({ products, vendors, transporters, vehicles }) => {
+      next: ({ products, vendors, transporters, vehicles, categories }) => {
         this.products = products;
         this.productOptions = products.map(p => ({
           value: p.id,
@@ -121,6 +129,7 @@ export class PurchaseVoucherComponent implements OnInit {
         }));
 
         this.vehicleOptions = vehicles;
+        this.categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
 
         this.purchaseService.getLatestRates(this.products.map(p => p.id))
           .pipe(finalize(() => this.loadChallan()))
@@ -153,20 +162,28 @@ export class PurchaseVoucherComponent implements OnInit {
           this.selectedVendorId = voucher.vendorId;
           this.vehicleNumber = voucher.vehicleNumber || '';
           this.description = voucher.description || '';
-          this.lines = voucher.lines.map(l => ({
-            id: l.id,
-            product: l.productId ? {
-              id: l.productId,
-              name: l.productName || '',
-              packing: l.packing || '',
-              packingWeightKg: l.packingWeightKg
-            } : null,
-            rbp: 'Yes',
-            qty: l.qty,
-            totalWeightKg: l.totalWeightKg,
-            rate: l.rate,
-            sortOrder: l.sortOrder
-          }));
+          this.lines = voucher.lines.map(l => {
+            const product = l.productId ? this.products.find(p => p.id === l.productId) : null;
+            return {
+              id: l.id,
+              product: l.productId && product ? {
+                id: l.productId,
+                name: l.productName || '',
+                packing: l.packing || '',
+                packingWeightKg: l.packingWeightKg
+              } : null,
+              rbp: 'Yes',
+              qty: l.qty,
+              totalWeightKg: l.totalWeightKg,
+              rate: l.rate,
+              sortOrder: l.sortOrder
+            };
+          });
+          this.lineCategoryIds = this.lines.map(l => {
+            if (!l.product) return null;
+            const product = this.products.find(p => p.id === l.product!.id);
+            return product?.categoryId ?? null;
+          });
           this.cartage = voucher.cartage ? {
             transporterId: voucher.cartage.transporterId,
             transporterName: voucher.cartage.transporterName || '',
@@ -209,12 +226,28 @@ export class PurchaseVoucherComponent implements OnInit {
 
   addLine(): void {
     this.lines.push({ product: null, rbp: 'Yes', qty: 0, totalWeightKg: 0, rate: 0 });
+    this.lineCategoryIds.push(null);
   }
 
   removeLine(index: number): void {
     if (this.lines.length > 1) {
       this.lines.splice(index, 1);
+      this.lineCategoryIds.splice(index, 1);
     }
+  }
+
+  onCategoryChange(lineIndex: number, categoryId: number): void {
+    this.lineCategoryIds[lineIndex] = categoryId;
+    this.lines[lineIndex].product = null;
+  }
+
+  getFilteredProductOptions(lineIndex: number): SelectOption[] {
+    const catId = this.lineCategoryIds[lineIndex];
+    if (catId == null) return [];
+    return this.productOptions.filter(opt => {
+      const product = this.products.find(p => p.id === opt.value);
+      return product?.categoryId === catId;
+    });
   }
 
   onProductChange(line: ProductLine, productId: number): void {

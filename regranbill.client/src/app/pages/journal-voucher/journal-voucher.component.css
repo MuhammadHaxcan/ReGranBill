@@ -232,8 +232,12 @@
   font-size: 13px;
 }
 
+.col-category {
+  width: 220px;
+}
+
 .col-account {
-  width: 280px;
+  width: 260px;
 }
 
 .col-actions {

@@ -51,6 +51,12 @@ public class AccountsController : ControllerBase
         return Ok(await _accountService.GetJournalAccountsAsync());
     }
 
+    [HttpGet("by-category/{categoryId:int}")]
+    public async Task<IActionResult> GetByCategory(int categoryId)
+    {
+        return Ok(await _accountService.GetByCategoryAsync(categoryId));
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateAccountRequest request)

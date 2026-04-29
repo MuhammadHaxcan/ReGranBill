@@ -58,6 +58,7 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
+          <th class="col-category">Category</th>
           <th class="col-product">Product</th>
           <th class="col-packing">Packing</th>
           <th class="col-rbp">RBP</th>
@@ -71,11 +72,21 @@
       <tbody>
         <tr *ngFor="let line of lines; let i = index">
           <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-category">
+            <app-searchable-select
+              [options]="categoryOptions"
+              [placeholder]="'Category'"
+              [compact]="true"
+              [ngModel]="lineCategoryIds[i]"
+              (ngModelChange)="onCategoryChange(i, $event)"
+            ></app-searchable-select>
+          </td>
           <td class="col-product">
             <app-searchable-select
-              [options]="productOptions"
+              [options]="getFilteredProductOptions(i)"
               [placeholder]="'Select product...'"
               [compact]="true"
+              [disabled]="lineCategoryIds[i] == null"
               [ngModel]="line.product?.id"
               (ngModelChange)="onProductChange(line, $event)"
             ></app-searchable-select>
