@@ -52,7 +52,12 @@ public class PurchaseReturnsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePurchaseReturnRequest request)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "Invalid user session." });
+        }
+
         var result = await _prService.CreateAsync(request, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }

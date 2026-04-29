@@ -103,7 +103,7 @@ public class AppDbContext : DbContext
             e.Property(j => j.VoucherNumber).HasMaxLength(20);
             e.Property(j => j.VehicleNumber).HasMaxLength(20);
             e.Property(j => j.Description).HasMaxLength(500);
-            e.Property(j => j.VoucherType).HasMaxLength(20)
+            e.Property(j => j.VoucherType).HasMaxLength(50)
                 .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
             e.Property(j => j.IsDeleted).HasDefaultValue(false);
             e.HasOne(j => j.Creator).WithMany().HasForeignKey(j => j.CreatedBy).OnDelete(DeleteBehavior.Restrict);

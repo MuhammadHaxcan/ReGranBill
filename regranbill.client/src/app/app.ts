@@ -1,6 +1,6 @@
 import { Component, ChangeDetectorRef, HostListener, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, Subscription } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { Toast, ToastService } from './services/toast.service';
 import { ConfirmModal, ConfirmModalService } from './services/confirm-modal.service';
@@ -16,6 +16,7 @@ export class App implements OnInit, OnDestroy {
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'success';
   private toastSub!: Subscription;
+  private routeSub!: Subscription;
   private toastTimer: any;
 
   // Sidebar dropdown groups
@@ -38,6 +39,10 @@ export class App implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.routeSub = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.updatePageTitle());
+
     this.toastSub = this.toastService.toast$.subscribe((toast: Toast) => {
       this.showToast(toast);
     });
@@ -55,6 +60,7 @@ export class App implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.toastSub?.unsubscribe();
+    this.routeSub?.unsubscribe();
     this.modalSub?.unsubscribe();
     clearTimeout(this.toastTimer);
   }
@@ -132,5 +138,39 @@ export class App implements OnInit, OnDestroy {
     if (group === 'purchase') this.purchaseGroupOpen = !this.purchaseGroupOpen;
     if (group === 'return') this.returnGroupOpen = !this.returnGroupOpen;
     if (group === 'pending') this.pendingGroupOpen = !this.pendingGroupOpen;
+  }
+
+  private updatePageTitle(): void {
+    const path = this.router.url.split('?')[0].toLowerCase();
+    const projectName = 'ReGranBooks';
+
+    const routeTitles: Array<{ startsWith: string; title: string }> = [
+      { startsWith: '/login', title: 'Login' },
+      { startsWith: '/delivery-challan', title: 'Delivery Challan' },
+      { startsWith: '/purchase-voucher', title: 'Purchase Voucher' },
+      { startsWith: '/sale-return', title: 'Sale Return' },
+      { startsWith: '/purchase-return', title: 'Purchase Return' },
+      { startsWith: '/journal-voucher', title: 'Journal Voucher' },
+      { startsWith: '/receipt-voucher', title: 'Receipt Voucher' },
+      { startsWith: '/payment-voucher', title: 'Payment Voucher' },
+      { startsWith: '/voucher-editor', title: 'Voucher Editor' },
+      { startsWith: '/pending', title: 'Pending Review' },
+      { startsWith: '/customer-ledger', title: 'Customer / Vendor Ledger' },
+      { startsWith: '/soa', title: 'Statement of Account' },
+      { startsWith: '/master-report', title: 'Master Report' },
+      { startsWith: '/account-closing-report', title: 'Account Closing Report' },
+      { startsWith: '/sale-purchase-report', title: 'Sale Purchase Register' },
+      { startsWith: '/product-stock-report', title: 'Product Stock Report' },
+      { startsWith: '/metadata', title: 'Metadata' },
+      { startsWith: '/company-settings', title: 'Company Settings' },
+      { startsWith: '/users', title: 'User Management' },
+      { startsWith: '/add-rate', title: 'Add Rate' },
+      { startsWith: '/add-purchase-rate', title: 'Add Purchase Rate' },
+      { startsWith: '/add-sale-return-rate', title: 'Add Sale Return Rate' },
+      { startsWith: '/add-purchase-return-rate', title: 'Add Purchase Return Rate' }
+    ];
+
+    const matched = routeTitles.find(r => path.startsWith(r.startsWith));
+    document.title = matched ? `${projectName} - ${matched.title}` : projectName;
   }
 }

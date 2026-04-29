@@ -271,6 +271,12 @@ public class PurchaseReturnService : IPurchaseReturnService
 
     private async Task<ValidatedPurchaseReturnRequest> ValidateRequestAsync(CreatePurchaseReturnRequest request)
     {
+        if (request == null)
+            throw new RequestValidationException("Request payload is required.");
+
+        if (request.Lines == null)
+            throw new RequestValidationException("Product lines are required.");
+
         if (request.VendorId <= 0)
             throw new RequestValidationException("Select a valid vendor.");
 
