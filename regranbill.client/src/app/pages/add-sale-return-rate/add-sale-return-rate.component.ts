@@ -102,7 +102,7 @@ export class AddSaleReturnRateComponent implements OnInit {
           this.journalVouchers = updatedSr.journalVouchers || [];
           this.ratesAdded = updatedSr.ratesAdded;
           this.toast.success(`${this.srNumber} rates saved successfully.`);
-          this.router.navigate(['/pending-sale-returns']);
+      this.router.navigate(['/pending']);
         },
         error: err => {
           this.toast.error(err?.error?.message || 'Unable to save rates.');
@@ -112,6 +112,6 @@ export class AddSaleReturnRateComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/pending-sale-returns']);
+      this.router.navigate(['/pending']);
   }
 }

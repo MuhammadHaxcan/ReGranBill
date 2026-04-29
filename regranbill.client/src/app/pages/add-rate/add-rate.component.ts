@@ -112,7 +112,7 @@ export class AddRateComponent implements OnInit {
           this.journalVouchers = updatedDc.journalVouchers || [];
           this.ratesAdded = updatedDc.ratesAdded;
           this.toast.success(`${this.dcNumber} rates saved successfully.`);
-          this.router.navigate(['/pending-challans']);
+      this.router.navigate(['/pending']);
         },
         error: err => {
           this.toast.error(err?.error?.message || 'Unable to save rates.');
@@ -122,6 +122,6 @@ export class AddRateComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/pending-challans']);
+      this.router.navigate(['/pending']);
   }
 }

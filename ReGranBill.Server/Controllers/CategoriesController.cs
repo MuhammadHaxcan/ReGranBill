@@ -7,7 +7,7 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/categories")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
@@ -15,12 +15,14 @@ public class CategoriesController : ControllerBase
     public CategoriesController(ICategoryService categoryService) => _categoryService = categoryService;
 
     [HttpGet]
+    [Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await _categoryService.GetAllAsync());
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
     {
         var result = await _categoryService.CreateAsync(request);
@@ -28,6 +30,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateCategoryRequest request)
     {
         var result = await _categoryService.UpdateAsync(id, request);
@@ -36,6 +39,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _categoryService.DeleteAsync(id);
