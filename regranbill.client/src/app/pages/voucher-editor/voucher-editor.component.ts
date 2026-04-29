@@ -49,7 +49,11 @@ export class VoucherEditorComponent implements OnInit {
   saving = false;
 
   searchVoucherType: VoucherType = 'JournalVoucher';
-  searchVoucherNumber = '';
+  searchVoucherNumber = 'JV-';
+
+  // Lock the number field when a prefixed type (DC, PR) is selected
+  private _searchVoucherNumberLocked = false;
+  private _pendingPrefix = '';
 
   voucher: VoucherEditorVoucher | null = null;
   voucherDate = new Date();
@@ -74,10 +78,11 @@ export class VoucherEditorComponent implements OnInit {
     { value: 'JournalVoucher', label: 'Journal Voucher' },
     { value: 'ReceiptVoucher', label: 'Receipt Voucher' },
     { value: 'PaymentVoucher', label: 'Payment Voucher' },
-    { value: 'SaleVoucher', label: 'Sale Voucher' },
+    { value: 'SaleVoucher', label: 'Delivery Challan' },
     { value: 'SaleReturnVoucher', label: 'Sale Return Voucher' },
     { value: 'CartageVoucher', label: 'Cartage Voucher' },
-    { value: 'PurchaseVoucher', label: 'Purchase Voucher' }
+    { value: 'PurchaseVoucher', label: 'Purchase Voucher' },
+    { value: 'PurchaseReturnVoucher', label: 'Purchase Return Voucher' }
   ];
 
   rbpOptions: SelectOption[] = [
@@ -200,6 +205,31 @@ export class VoucherEditorComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  get searchVoucherNumberLocked(): boolean {
+    return this._searchVoucherNumberLocked;
+  }
+
+  onSearchVoucherTypeChange(voucherType: VoucherType): void {
+    this.searchVoucherType = voucherType;
+    this._pendingPrefix = this.getPrefixForType(voucherType);
+    this.searchVoucherNumber = this._pendingPrefix;
+    this.cdr.detectChanges();
+  }
+
+  private getPrefixForType(voucherType: VoucherType): string {
+    switch (voucherType) {
+      case 'SaleVoucher': return 'DC-';
+      case 'PurchaseVoucher': return 'PV-';
+      case 'JournalVoucher': return 'JV-';
+      case 'ReceiptVoucher': return 'RV-';
+      case 'PaymentVoucher': return 'PMV-';
+      case 'CartageVoucher': return 'CV-';
+      case 'SaleReturnVoucher': return 'SR-';
+      case 'PurchaseReturnVoucher': return 'PR-';
+      default: return '';
+    }
   }
 
   addLine(focusNewLine = false): void {

@@ -13,7 +13,8 @@
       <app-searchable-select
         [options]="voucherTypeOptions"
         [placeholder]="'Select voucher type...'"
-        [(ngModel)]="searchVoucherType"
+        [ngModel]="searchVoucherType"
+        (ngModelChange)="onSearchVoucherTypeChange($event)"
       ></app-searchable-select>
     </div>
     <div class="form-group">
@@ -21,6 +22,7 @@
       <input
         type="text"
         class="form-control"
+        [class.form-control-locked]="searchVoucherNumberLocked"
         placeholder="e.g. JV-0001 / DC-0004 / CV-0002"
         [(ngModel)]="searchVoucherNumber"
       />
