@@ -110,6 +110,12 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
     this.close();
   }
 
+  onOptionMouseDown(event: MouseEvent, option: SelectOption): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.selectOption(option);
+  }
+
   clear(event: Event): void {
     event.stopPropagation();
     this.selectedOption = null;

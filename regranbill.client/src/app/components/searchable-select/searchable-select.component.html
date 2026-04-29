@@ -40,7 +40,7 @@
         *ngFor="let opt of filteredOptions; let i = index"
         [class.ss-highlighted]="i === highlightIndex"
         [class.ss-selected]="selectedOption?.value === opt.value"
-        (click)="selectOption(opt)"
+        (mousedown)="onOptionMouseDown($event, opt)"
         (mouseenter)="highlightIndex = i"
       >
         <span class="ss-option-label">{{ opt.label }}</span>
