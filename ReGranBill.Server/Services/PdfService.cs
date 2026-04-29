@@ -4,9 +4,12 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ReGranBill.Server.DTOs.DeliveryChallans;
 using ReGranBill.Server.DTOs.MasterReport;
-using ReGranBill.Server.DTOs.PurchaseVouchers;
 using ReGranBill.Server.DTOs.ProductStockReport;
+using ReGranBill.Server.DTOs.PurchaseVouchers;
+using ReGranBill.Server.DTOs.PurchaseReturns;
 using ReGranBill.Server.DTOs.SOA;
+using ReGranBill.Server.DTOs.SaleReturns;
+using ReGranBill.Server.DTOs.CustomerLedger;
 
 namespace ReGranBill.Server.Services;
 
@@ -46,6 +49,38 @@ public class PdfService : IPdfService
     public byte[] GeneratePurchaseVoucherPdf(PurchaseVoucherDto dto) =>
         GenerateVoucherPdf(
             dto.VoucherNumber,
+            dto.Date,
+            dto.VendorName,
+            dto.VehicleNumber,
+            dto.Description,
+            dto.Lines.Select(line => new VoucherPdfLine(
+                line.ProductId,
+                line.ProductName,
+                line.Packing,
+                line.PackingWeightKg,
+                "Yes",
+                line.Qty,
+                line.TotalWeightKg)).ToList());
+
+    public byte[] GenerateSaleReturnPdf(SaleReturnDto dto) =>
+        GenerateVoucherPdf(
+            dto.SrNumber,
+            dto.Date,
+            dto.CustomerName,
+            null,
+            dto.Description,
+            dto.Lines.Select(line => new VoucherPdfLine(
+                line.ProductId,
+                line.ProductName,
+                line.Packing,
+                line.PackingWeightKg,
+                line.Rbp,
+                line.Qty,
+                null)).ToList());
+
+    public byte[] GeneratePurchaseReturnPdf(PurchaseReturnDto dto) =>
+        GenerateVoucherPdf(
+            dto.PrNumber,
             dto.Date,
             dto.VendorName,
             dto.VehicleNumber,
@@ -1058,4 +1093,94 @@ public class PdfService : IPdfService
         int PackedBags,
         decimal LooseWeightKg,
         decimal TotalWeightKg);
+
+    public byte[] GenerateCustomerLedgerPdf(CustomerLedgerDto dto)
+    {
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(18);
+                page.DefaultTextStyle(x => x.FontSize(9).FontColor(Green).FontFamily("Times New Roman"));
+
+                page.Content().Border(1.5f).BorderColor(Green).Padding(20).Column(column =>
+                {
+                    column.Spacing(0);
+
+                    column.Item().Element(ComposeCompanyHeader);
+                    column.Item().PaddingVertical(12).LineHorizontal(1).LineColor(Green);
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(info =>
+                        {
+                            info.Item().Text("CUSTOMER / VENDOR LEDGER").Bold().FontSize(16).FontColor(Green);
+                            info.Item().PaddingTop(4).Text(dto.AccountName).Bold().FontSize(13);
+                            info.Item().PaddingTop(4).Text(dto.PartyType).FontSize(10);
+                        });
+
+                        row.ConstantItem(200).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
+                        {
+                            summary.Item().AlignRight().Text($"Entries: {dto.Entries.Count}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Opening: {FormatCurrency(dto.OpeningBalance)}").FontSize(10);
+                            summary.Item().AlignRight().Text($"Closing: {FormatCurrency(dto.ClosingBalance)}").Bold().FontSize(10);
+                        });
+                    });
+
+                    column.Item().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(def =>
+                        {
+                            def.ConstantColumn(46); // #
+                            def.ConstantColumn(72); // Date
+                            def.ConstantColumn(70); // Voucher #
+                            def.ConstantColumn(80); // Type
+                            def.RelativeColumn(3);   // Description
+                            def.RelativeColumn(2);   // Product
+                            def.ConstantColumn(46); // Qty
+                            def.ConstantColumn(56); // Weight
+                            def.ConstantColumn(56); // Rate
+                            def.ConstantColumn(80); // Debit
+                            def.ConstantColumn(80); // Credit
+                            def.ConstantColumn(90); // Balance
+                        });
+
+                        table.Header(header =>
+                        {
+                            var headers = new[] { "#", "Date", "Vchr #", "Type", "Description", "Product", "Qty", "Wt(Kg)", "Rate", "Debit", "Credit", "Balance" };
+                            foreach (var h in headers)
+                                header.Cell().Border(1.2f).BorderColor(Green).Background(LightGreen).Padding(5)
+                                    .AlignCenter().AlignMiddle().Text(h).Bold().FontSize(9).LetterSpacing(0.04f);
+                        });
+
+                        var runningBalance = dto.OpeningBalance;
+                        var idx = 1;
+                        foreach (var entry in dto.Entries)
+                        {
+                            var rowBg = idx % 2 == 0 ? Color.FromHex("#f0f8f0") : Color.FromHex("#ffffff");
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(idx.ToString()).FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(entry.Date.ToString("yyyy-MM-dd")).FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(entry.VoucherNumber).FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignCenter().Text(entry.VoucherType).FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).Text(entry.Description ?? "-").FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).Text(entry.ProductName ?? "-").FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignRight().Text(entry.Qty?.ToString() ?? "-").FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignRight().Text(entry.Weight?.ToString("0.##") ?? "-").FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignRight().Text(entry.Rate?.ToString("0.##") ?? "-").FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignRight().Text(entry.Debit > 0 ? FormatCurrency(entry.Debit) : "-").FontSize(9);
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignRight().Text(entry.Credit > 0 ? FormatCurrency(entry.Credit) : "-").FontSize(9);
+
+                            runningBalance += entry.Debit - entry.Credit;
+                            table.Cell().Background(rowBg).Border(0.5f).BorderColor(BorderGreen).Padding(5).AlignRight().Text(FormatCurrency(runningBalance)).Bold().FontSize(9);
+
+                            idx++;
+                        }
+                    });
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+    }
 }

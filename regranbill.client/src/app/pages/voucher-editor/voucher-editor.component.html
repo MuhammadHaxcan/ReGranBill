@@ -38,6 +38,9 @@
   <div class="voucher-details-header">
     <span class="voucher-type-badge">{{ voucher?.voucherType }}</span>
     <span class="voucher-number-badge">{{ voucher?.voucherNumber }}</span>
+    <span *ngIf="voucher?.linkedCartageVoucherNumber" class="linked-cv-badge">
+      → {{ voucher?.linkedCartageVoucherNumber }}
+    </span>
   </div>
 
   <div class="form-row" [class.form-row-3]="supportsVehicleNumber">
@@ -183,27 +186,27 @@
           </td>
           <td class="col-sale col-expected" *ngIf="isPurchaseVoucher">
             <span class="expected-value" *ngIf="isPurchaseProductLine(line)">
-              {{ (getPurchaseLineAverageWeight(line) ?? 0) | number:'1.2-2' }}
+              {{ (getPurchaseLineAverageWeight(line) ?? 0) | flexNumber }}
             </span>
             <span class="expected-placeholder" *ngIf="!isPurchaseProductLine(line)">-</span>
           </td>
           <td class="col-sale col-expected" *ngIf="isSaleVoucher || isPurchaseVoucher">
             <div class="expected-amount" *ngIf="isSaleVoucher && isSaleProductLine(line); else purchaseExpectedTemplate">
-              <span class="expected-value">{{ (getExpectedSaleLineAmount(line) ?? 0) | number:'1.2-2' }}</span>
+              <span class="expected-value">{{ (getExpectedSaleLineAmount(line) ?? 0) | flexNumber }}</span>
               <span class="expected-error" *ngIf="isSaleLineAmountMismatch(line)">Credit mismatch</span>
             </div>
             <ng-template #purchaseExpectedTemplate>
               <div class="expected-amount" *ngIf="isPurchaseVoucher && isPurchaseProductLine(line); else saleLinePlaceholder">
-                <span class="expected-value">{{ (getExpectedPurchaseLineAmount(line) ?? 0) | number:'1.2-2' }}</span>
+                <span class="expected-value">{{ (getExpectedPurchaseLineAmount(line) ?? 0) | flexNumber }}</span>
                 <span class="expected-error" *ngIf="isPurchaseLineAmountMismatch(line)">Debit mismatch</span>
               </div>
             </ng-template>
             <ng-template #saleLinePlaceholder>
               <span class="expected-placeholder" *ngIf="isSaleCustomerLine(line)">
-                Debit {{ getSaleCustomerExpectedDebit() | number:'1.2-2' }}
+                Debit {{ getSaleCustomerExpectedDebit() | flexNumber }}
               </span>
               <span class="expected-placeholder" *ngIf="isPurchaseVendorLine(line)">
-                Credit {{ getPurchaseVendorExpectedCredit() | number:'1.2-2' }}
+                Credit {{ getPurchaseVendorExpectedCredit() | flexNumber }}
               </span>
               <span class="expected-placeholder" *ngIf="!isSaleCustomerLine(line) && !isPurchaseVendorLine(line)">-</span>
             </ng-template>
@@ -233,15 +236,15 @@
   <div class="lines-summary">
     <div class="summary-item">
       <span class="summary-label">Total Debit</span>
-      <span class="summary-value">{{ totalDebit | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ totalDebit | flexNumber }}</span>
     </div>
     <div class="summary-item">
       <span class="summary-label">Total Credit</span>
-      <span class="summary-value">{{ totalCredit | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ totalCredit | flexNumber }}</span>
     </div>
     <div class="summary-item" [class.summary-danger]="difference !== 0">
       <span class="summary-label">Difference</span>
-      <span class="summary-value">{{ difference | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ difference | flexNumber }}</span>
     </div>
     <div class="summary-item" [class.summary-balanced]="isBalanced" [class.summary-unbalanced]="!isBalanced">
       <span class="summary-label">Status</span>

@@ -1,10 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { Account } from '../../models/account.model';
 import { SalePurchaseReport, SalePurchaseReportRow, SalePurchaseReportType } from '../../models/sale-purchase-report.model';
 import { AccountService } from '../../services/account.service';
 import { SalePurchaseReportService } from '../../services/sale-purchase-report.service';
 import { ToastService } from '../../services/toast.service';
-import { formatDateDisplay } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-sale-purchase-report',
@@ -20,6 +20,7 @@ export class SalePurchaseReportComponent implements OnInit {
   searchText = '';
 
   products: Account[] = [];
+  productOptions: SelectOption[] = [];
   report: SalePurchaseReport | null = null;
   loading = false;
   filtersLoaded = false;
@@ -35,6 +36,14 @@ export class SalePurchaseReportComponent implements OnInit {
     this.accountService.getProducts().subscribe({
       next: products => {
         this.products = products;
+        this.productOptions = [
+          { value: null as any, label: 'All Products' },
+          ...products.map(p => ({
+            value: p.id,
+            label: p.name,
+            sublabel: p.packing || ''
+          }))
+        ];
         this.filtersLoaded = true;
         this.cdr.detectChanges();
       },
@@ -105,20 +114,27 @@ export class SalePurchaseReportComponent implements OnInit {
   }
 
   isPrintableVoucher(row: SalePurchaseReportRow): boolean {
-    return row.voucherType === 'SaleVoucher' || row.voucherType === 'PurchaseVoucher';
+    return row.voucherType === 'SaleVoucher' || row.voucherType === 'SaleReturnVoucher' || row.voucherType === 'PurchaseVoucher' || row.voucherType === 'PurchaseReturnVoucher';
   }
 
   getVoucherLink(row: SalePurchaseReportRow): string[] {
-    return row.voucherType === 'SaleVoucher'
-      ? ['/print-dc', row.voucherId.toString()]
-      : ['/print-pv', row.voucherId.toString()];
+    if (row.voucherType === 'SaleVoucher') return ['/print-dc', row.voucherId.toString()];
+    if (row.voucherType === 'SaleReturnVoucher') return ['/print-sr', row.voucherId.toString()];
+    if (row.voucherType === 'PurchaseReturnVoucher') return ['/print-pr', row.voucherId.toString()];
+    return ['/print-pv', row.voucherId.toString()];
   }
 
   getTypeLabel(row: SalePurchaseReportRow): string {
-    return row.voucherType === 'SaleVoucher' ? 'Sale' : 'Purchase';
+    if (row.voucherType === 'SaleVoucher') return 'Sale';
+    if (row.voucherType === 'SaleReturnVoucher') return 'Sale Return';
+    if (row.voucherType === 'PurchaseReturnVoucher') return 'Purchase Return';
+    return 'Purchase';
   }
 
   getTypeClass(row: SalePurchaseReportRow): string {
-    return row.voucherType === 'SaleVoucher' ? 'type-sale' : 'type-purchase';
+    if (row.voucherType === 'SaleVoucher') return 'type-sale';
+    if (row.voucherType === 'SaleReturnVoucher') return 'type-sale-return';
+    if (row.voucherType === 'PurchaseReturnVoucher') return 'type-purchase-return';
+    return 'type-purchase';
   }
 }

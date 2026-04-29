@@ -4,6 +4,7 @@ import { forkJoin } from 'rxjs';
 import { StatementService } from '../../services/statement.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
+import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { StatementEntry, StatementOfAccount } from '../../models/statement.model';
 import { Account, PartyRole } from '../../models/account.model';
 import { formatDateDisplay } from '../../utils/date-utils';
@@ -16,6 +17,7 @@ import { formatDateDisplay } from '../../utils/date-utils';
 })
 export class SoaComponent implements OnInit {
   customers: Account[] = [];
+  accountOptions: SelectOption[] = [];
   selectedAccountId: number | null = null;
   fromDate = '';
   toDate = '';
@@ -40,6 +42,11 @@ export class SoaComponent implements OnInit {
         const unique = new Map<number, Account>();
         [...customers, ...vendors, ...transporters].forEach(account => unique.set(account.id, account));
         this.customers = Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
+        this.accountOptions = this.customers.map(account => ({
+          value: account.id,
+          label: account.name,
+          sublabel: this.getAccountSublabel(account)
+        }));
         this.cdr.detectChanges();
       },
       error: () => {
@@ -119,5 +126,21 @@ export class SoaComponent implements OnInit {
       : `/print-soa/${this.selectedAccountId}`;
 
     window.open(target, '_blank');
+  }
+
+  private getAccountSublabel(account: Account): string {
+    if (account.accountType === 'Party') {
+      switch (account.partyRole) {
+        case PartyRole.Customer: return 'Customer';
+        case PartyRole.Vendor: return 'Vendor';
+        case PartyRole.Transporter: return 'Transporter';
+        case PartyRole.Both: return 'Customer & Vendor';
+      }
+    }
+    if (account.accountType === 'Account') return account.bankName || 'Cash / Bank';
+    if (account.accountType === 'Product') return account.packing || 'Product';
+    if (account.accountType === 'RawMaterial') return account.packing || 'Raw Material';
+    if (account.accountType === 'Expense') return 'Expense';
+    return account.accountType;
   }
 }

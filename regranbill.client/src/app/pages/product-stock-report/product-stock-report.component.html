@@ -19,19 +19,22 @@
       <label>To</label>
       <input type="date" [(ngModel)]="toDate" class="filter-input" />
     </div>
-    <div class="filter-field">
+    <div class="filter-field filter-field-wide">
       <label>Category</label>
-      <select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()" class="filter-input">
-        <option [ngValue]="null">All Categories</option>
-        <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="categoryOptions"
+        [(ngModel)]="selectedCategoryId"
+        (ngModelChange)="onCategoryChange()"
+        placeholder="All Categories">
+      </app-searchable-select>
     </div>
-    <div class="filter-field">
+    <div class="filter-field filter-field-xwide">
       <label>Product</label>
-      <select [(ngModel)]="selectedProductId" class="filter-input">
-        <option [ngValue]="null">All Products</option>
-        <option *ngFor="let product of filteredProducts" [ngValue]="product.id">{{ product.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="productOptions"
+        [(ngModel)]="selectedProductId"
+        placeholder="All Products">
+      </app-searchable-select>
     </div>
     <div class="filter-field filter-search">
       <label>Search</label>
@@ -87,34 +90,34 @@
             <div class="product-name">{{ row.productName }}</div>
             <div class="product-sub">{{ row.packing || 'No packing' }}</div>
           </td>
-          <td>{{ row.opening.bags | number:'1.2-2' }}</td>
-          <td class="metric-emphasis">{{ row.opening.kg | number:'1.2-2' }}</td>
+          <td>{{ row.opening.bags | flexNumber }}</td>
+          <td class="metric-emphasis">{{ row.opening.kg | flexNumber }}</td>
           <td>{{ row.opening.value | pkCurrency }}</td>
-          <td>{{ row.inward.bags | number:'1.2-2' }}</td>
-          <td class="metric-emphasis">{{ row.inward.kg | number:'1.2-2' }}</td>
+          <td>{{ row.inward.bags | flexNumber }}</td>
+          <td class="metric-emphasis">{{ row.inward.kg | flexNumber }}</td>
           <td>{{ row.inward.value | pkCurrency }}</td>
-          <td>{{ row.outward.bags | number:'1.2-2' }}</td>
-          <td class="metric-emphasis">{{ row.outward.kg | number:'1.2-2' }}</td>
+          <td>{{ row.outward.bags | flexNumber }}</td>
+          <td class="metric-emphasis">{{ row.outward.kg | flexNumber }}</td>
           <td>{{ row.outward.value | pkCurrency }}</td>
-          <td>{{ row.closing.bags | number:'1.2-2' }}</td>
-          <td class="closing-metric" [class.closing-alert]="row.closing.kg <= 0">{{ row.closing.kg | number:'1.2-2' }}</td>
+          <td>{{ row.closing.bags | flexNumber }}</td>
+          <td class="closing-metric" [class.closing-alert]="row.closing.kg <= 0">{{ row.closing.kg | flexNumber }}</td>
           <td class="closing-value" [ngClass]="getStockHealthClass(row)">{{ row.closing.value | pkCurrency }}</td>
         </tr>
       </tbody>
       <tfoot>
         <tr>
           <td class="sticky-col sticky-col-primary total-label">Totals</td>
-          <td>{{ report.totals.opening.bags | number:'1.2-2' }}</td>
-          <td>{{ report.totals.opening.kg | number:'1.2-2' }}</td>
+          <td>{{ report.totals.opening.bags | flexNumber }}</td>
+          <td>{{ report.totals.opening.kg | flexNumber }}</td>
           <td>{{ report.totals.opening.value | pkCurrency }}</td>
-          <td>{{ report.totals.inward.bags | number:'1.2-2' }}</td>
-          <td>{{ report.totals.inward.kg | number:'1.2-2' }}</td>
+          <td>{{ report.totals.inward.bags | flexNumber }}</td>
+          <td>{{ report.totals.inward.kg | flexNumber }}</td>
           <td>{{ report.totals.inward.value | pkCurrency }}</td>
-          <td>{{ report.totals.outward.bags | number:'1.2-2' }}</td>
-          <td>{{ report.totals.outward.kg | number:'1.2-2' }}</td>
+          <td>{{ report.totals.outward.bags | flexNumber }}</td>
+          <td>{{ report.totals.outward.kg | flexNumber }}</td>
           <td>{{ report.totals.outward.value | pkCurrency }}</td>
-          <td>{{ report.totals.closing.bags | number:'1.2-2' }}</td>
-          <td>{{ report.totals.closing.kg | number:'1.2-2' }}</td>
+          <td>{{ report.totals.closing.bags | flexNumber }}</td>
+          <td>{{ report.totals.closing.kg | flexNumber }}</td>
           <td>{{ report.totals.closing.value | pkCurrency }}</td>
         </tr>
       </tfoot>
@@ -145,7 +148,7 @@
       <div class="drilldown-stats">
         <div class="drilldown-stat">
           <span>Closing Kg</span>
-          <strong>{{ selectedProductRow.closing.kg | number:'1.2-2' }}</strong>
+          <strong>{{ selectedProductRow.closing.kg | flexNumber }}</strong>
         </div>
         <div class="drilldown-stat">
           <span>Closing Value</span>
@@ -185,8 +188,8 @@
           <td>{{ movement.credit > 0 ? (movement.credit | pkCurrency) : '-' }}</td>
           <td>{{ movement.qty ?? '-' }}</td>
           <td>{{ movement.rbp || '-' }}</td>
-          <td>{{ movement.rate !== null ? (movement.rate | number:'1.2-2') : '-' }}</td>
-          <td>{{ movement.weightKg | number:'1.2-2' }}</td>
+          <td>{{ movement.rate !== null ? (movement.rate | flexNumber) : '-' }}</td>
+          <td>{{ movement.weightKg | flexNumber }}</td>
           <td>{{ movement.value | pkCurrency }}</td>
           <td>
             <span class="direction-badge"

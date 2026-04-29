@@ -1,0 +1,358 @@
+import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { AccountService } from '../../services/account.service';
+import { AuthService } from '../../services/auth.service';
+import { PurchaseReturnService } from '../../services/purchase-return.service';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { Account } from '../../models/account.model';
+import { SelectOption } from '../../components/searchable-select/searchable-select.component';
+import { VehicleOption } from '../../models/company-settings.model';
+import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
+import { getPurchaseLineWeight, getPurchaseLineAmount, getPurchaseTotalBags, getPurchaseTotalWeight, getPurchaseTotalAmount } from '../../utils/delivery-calculations';
+
+@Component({
+  selector: 'app-purchase-return',
+  templateUrl: './purchase-return.component.html',
+  styleUrl: './purchase-return.component.css',
+  standalone: false
+})
+export class PurchaseReturnComponent implements OnInit {
+  purchaseReturnId: number | null = null;
+  isEditMode = false;
+  prNumber = '';
+  purchaseReturnDate = new Date();
+
+  get purchaseReturnDateIso(): string {
+    return toDateInputValue(this.purchaseReturnDate);
+  }
+
+  set purchaseReturnDateIso(val: string) {
+    if (!val) return;
+    this.purchaseReturnDate = parseLocalDate(val);
+  }
+  selectedVendorId: number | null = null;
+  vehicleNumber = '';
+  description = '';
+
+  products: Account[] = [];
+  vendors: Account[] = [];
+  vehicleOptions: VehicleOption[] = [];
+  lines: PurchaseReturnLine[] = [];
+  loading = true;
+  private latestRatesByProductId = new Map<number, number>();
+
+  vendorOptions: SelectOption[] = [];
+  productOptions: SelectOption[] = [];
+
+  constructor(
+    private accountService: AccountService,
+    private authService: AuthService,
+    private purchaseReturnService: PurchaseReturnService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
+  ) {}
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loading = true;
+    forkJoin({
+      products: this.accountService.getProducts(),
+      vendors: this.accountService.getVendors(),
+      vehicles: of([])
+    }).subscribe({
+      next: ({ products, vendors, vehicles }) => {
+        this.products = products;
+        this.productOptions = products.map(p => ({
+          value: p.id,
+          label: p.name,
+          sublabel: p.packing || ''
+        }));
+
+        this.vendors = vendors;
+        this.vendorOptions = vendors.map(v => ({
+          value: v.id,
+          label: v.name,
+          sublabel: v.city || ''
+        }));
+
+        this.purchaseReturnService.getLatestRates(this.products.map(p => p.id))
+          .pipe(finalize(() => this.loadPurchaseReturn()))
+          .subscribe({
+            next: rates => {
+              this.latestRatesByProductId = new Map(rates.map(r => [r.productId, r.rate]));
+            },
+            error: () => {
+              this.latestRatesByProductId.clear();
+            }
+          });
+      },
+      error: () => {
+        this.toast.error('Unable to load form data.');
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadPurchaseReturn(): void {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      this.purchaseReturnId = +idParam;
+      this.isEditMode = true;
+      this.purchaseReturnService.getById(this.purchaseReturnId).subscribe({
+        next: (pr: any) => {
+          this.prNumber = pr.prNumber;
+          this.purchaseReturnDate = parseLocalDate(pr.date);
+          this.selectedVendorId = pr.vendorId;
+          this.vehicleNumber = pr.vehicleNumber || '';
+          this.description = pr.description || '';
+          this.lines = pr.lines.map((l: any) => ({
+            id: l.id,
+            product: l.productId ? {
+              id: l.productId,
+              name: l.productName || '',
+              packing: l.packing || '',
+              packingWeightKg: l.packingWeightKg
+            } : null,
+            qty: l.qty,
+            totalWeightKg: l.totalWeightKg || 0,
+            rate: l.rate,
+            sortOrder: l.sortOrder
+          }));
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.toast.error('Unable to load purchase return.');
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.purchaseReturnService.getNextNumber().subscribe({
+        next: num => {
+          this.prNumber = num;
+          this.addLine();
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.toast.error('Unable to get next purchase return number.');
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardShortcut(event: KeyboardEvent): void {
+    if (event.altKey && event.key === 'n') {
+      event.preventDefault();
+      this.addLine();
+    }
+  }
+
+  addLine(): void {
+    this.lines.push({ product: null, qty: 0, totalWeightKg: 0, rate: 0 });
+  }
+
+  removeLine(index: number): void {
+    if (this.lines.length > 1) {
+      this.lines.splice(index, 1);
+    }
+  }
+
+  onProductChange(line: PurchaseReturnLine, productId: number): void {
+    const acct = this.products.find(p => p.id === productId);
+    if (acct) {
+      line.product = {
+        id: acct.id,
+        name: acct.name,
+        packing: acct.packing!,
+        packingWeightKg: acct.packingWeightKg!
+      };
+      if (!line.rate || line.rate <= 0) {
+        line.rate = this.latestRatesByProductId.get(acct.id) ?? 0;
+      }
+    } else {
+      line.product = null;
+    }
+  }
+
+  getLineTotalWeight(line: PurchaseReturnLine): number {
+    return line.totalWeightKg || 0;
+  }
+
+  getLineAmount(line: PurchaseReturnLine): number {
+    return getPurchaseLineAmount({ totalWeightKg: line.totalWeightKg, rate: line.rate });
+  }
+
+  get totalBags(): number {
+    return getPurchaseTotalBags(this.lines.map(l => ({ qty: l.qty })));
+  }
+
+  get totalWeight(): number {
+    return getPurchaseTotalWeight(this.lines.map(l => ({ totalWeightKg: l.totalWeightKg })));
+  }
+
+  get totalAmount(): number {
+    return getPurchaseTotalAmount(this.lines.map(l => ({ totalWeightKg: l.totalWeightKg, rate: l.rate })));
+  }
+
+  get formattedDate(): string {
+    return formatDateDisplay(this.purchaseReturnDate);
+  }
+
+  private buildRequest(): any {
+    return {
+      date: this.purchaseReturnDate,
+      vendorId: this.selectedVendorId!,
+      vehicleNumber: this.vehicleNumber || null,
+      description: this.description,
+      lines: this.lines
+        .filter(l => l.product)
+        .map((l, i) => ({
+          productId: l.product!.id,
+          qty: l.qty,
+          totalWeightKg: l.totalWeightKg,
+          rate: l.rate,
+          sortOrder: i
+        }))
+    };
+  }
+
+  get validLines(): any[] {
+    return this.lines.filter(l => l.product && l.qty > 0 && l.totalWeightKg > 0);
+  }
+
+  get canSave(): boolean {
+    return !!this.selectedVendorId && this.validLines.length > 0;
+  }
+
+  private validate(): boolean {
+    if (!this.selectedVendorId) {
+      this.toast.error('Please select a vendor.');
+      return false;
+    }
+    const linesWithProduct = this.lines.filter(l => l.product);
+    if (linesWithProduct.length === 0) {
+      this.toast.error('Please add at least one line item with a product.');
+      return false;
+    }
+    if (linesWithProduct.some(l => !l.qty || l.qty <= 0)) {
+      this.toast.error('All line items must have a quantity greater than zero.');
+      return false;
+    }
+    if (linesWithProduct.some(l => !l.totalWeightKg || l.totalWeightKg <= 0)) {
+      this.toast.error('All line items must have total kg greater than zero.');
+      return false;
+    }
+    return true;
+  }
+
+  async discard(): Promise<void> {
+    const confirmed = await this.confirmModal.confirm({
+      title: 'Discard Purchase Return',
+      message: 'Are you sure you want to discard this purchase return? All unsaved changes will be lost.',
+      confirmText: 'Discard',
+      cancelText: 'Cancel'
+    });
+    if (confirmed) this.resetForm();
+  }
+
+  save(): void {
+    if (!this.validate()) return;
+    const req = this.buildRequest();
+
+    if (this.isEditMode && this.purchaseReturnId) {
+      this.purchaseReturnService.update(this.purchaseReturnId, req).subscribe({
+        next: () => {
+          this.toast.success('Purchase return updated successfully.');
+          this.router.navigate(['/pending']);
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to save purchase return.');
+        }
+      });
+    } else {
+      this.purchaseReturnService.create(req).subscribe({
+        next: pr => {
+          this.toast.success(`${pr.prNumber} created successfully.`);
+          this.resetForm();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to create purchase return.');
+        }
+      });
+    }
+  }
+
+  saveAndPrint(): void {
+    if (!this.validate()) return;
+    const req = this.buildRequest();
+
+    if (this.isEditMode && this.purchaseReturnId) {
+      this.purchaseReturnService.update(this.purchaseReturnId, req).subscribe({
+        next: pr => {
+          this.toast.success('Purchase return updated successfully.');
+          this.purchaseReturnService.openPdfInNewTab(pr.id);
+          this.router.navigate(['/pending']);
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to save purchase return.');
+        }
+      });
+    } else {
+      this.purchaseReturnService.create(req).subscribe({
+        next: pr => {
+          this.toast.success(`${pr.prNumber} created successfully.`);
+          this.purchaseReturnService.openPdfInNewTab(pr.id);
+          this.resetForm();
+        },
+        error: err => {
+          this.toast.error(err?.error?.message || 'Unable to create purchase return.');
+        }
+      });
+    }
+  }
+
+  private resetForm(): void {
+    this.selectedVendorId = null;
+    this.vehicleNumber = '';
+    this.description = '';
+    this.purchaseReturnDate = new Date();
+    this.lines = [];
+    this.addLine();
+    this.purchaseReturnService.getNextNumber().subscribe({
+      next: num => {
+        this.prNumber = num;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.toast.error('Unable to get next purchase return number.');
+      }
+    });
+  }
+}
+
+interface PurchaseReturnLine {
+  id?: number;
+  product: { id: number; name: string; packing: string; packingWeightKg: number } | null;
+  qty: number;
+  totalWeightKg: number;
+  rate: number;
+  sortOrder?: number;
+}

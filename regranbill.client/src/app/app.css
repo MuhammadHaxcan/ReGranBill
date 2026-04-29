@@ -113,6 +113,60 @@
   border-radius: 0 2px 2px 0;
 }
 
+/* Nav Group Dropdowns */
+.nav-group {
+  margin-bottom: 2px;
+}
+
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.12s var(--ease);
+  font-family: inherit;
+  margin-top: 4px;
+}
+
+.nav-group-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.nav-group-title {
+  flex: 1;
+  text-align: left;
+}
+
+.nav-chevron {
+  opacity: 0.5;
+  transition: transform 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.nav-chevron.open {
+  transform: rotate(180deg);
+}
+
+.nav-group-items {
+  padding-left: 8px;
+  margin-bottom: 2px;
+}
+
+.nav-group-items .nav-item {
+  padding-left: 12px;
+}
+
 .nav-icon {
   flex-shrink: 0;
   opacity: 0.5;
@@ -265,6 +319,20 @@
     margin-left: 64px;
     width: calc(100% - 64px);
     padding: 16px;
+  }
+
+  .nav-group-toggle {
+    justify-content: center;
+    padding: 10px 8px;
+  }
+
+  .nav-group-title,
+  .nav-chevron {
+    display: none;
+  }
+
+  .nav-group-items {
+    display: none;
   }
 }
 

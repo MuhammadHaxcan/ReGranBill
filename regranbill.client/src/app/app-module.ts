@@ -30,8 +30,21 @@ import { CompanySettingsComponent } from './pages/company-settings/company-setti
 import { PrintMasterReportComponent } from './pages/print-master-report/print-master-report.component';
 import { PrintAccountClosingReportComponent } from './pages/print-account-closing-report/print-account-closing-report.component';
 import { PrintProductStockReportComponent } from './pages/print-product-stock-report/print-product-stock-report.component';
+import { SaleReturnComponent } from './pages/sale-return/sale-return.component';
+import { PendingSaleReturnsComponent } from './pages/pending-sale-returns/pending-sale-returns.component';
+import { AddSaleReturnRateComponent } from './pages/add-sale-return-rate/add-sale-return-rate.component';
+import { PrintSrComponent } from './pages/print-sr/print-sr.component';
+import { PurchaseReturnComponent } from './pages/purchase-return/purchase-return.component';
+import { PendingPurchaseReturnsComponent } from './pages/pending-purchase-returns/pending-purchase-returns.component';
+import { AddPurchaseReturnRateComponent } from './pages/add-purchase-return-rate/add-purchase-return-rate.component';
+import { PrintCustomerLedgerComponent } from './pages/print-customer-ledger/print-customer-ledger.component';
+import { PrintPrComponent } from './pages/print-pr/print-pr.component';
+import { PendingComponent } from './pages/pending/pending.component';
+import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
+import { FlexNumberPipe } from './pipes/flex-number.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { SelectOnFocusDirective } from './directives/select-on-focus.directive';
 
 @NgModule({
   declarations: [
@@ -61,8 +74,21 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     SoaComponent,
     MasterReportComponent,
     ProductStockReportComponent,
-    PkCurrencyPipe
-  ],
+    PkCurrencyPipe,
+    FlexNumberPipe,
+    SelectOnFocusDirective,
+    SaleReturnComponent,
+    PendingSaleReturnsComponent,
+    AddSaleReturnRateComponent,
+    PrintSrComponent,
+    PurchaseReturnComponent,
+    PendingPurchaseReturnsComponent,
+    AddPurchaseReturnRateComponent,
+    PrintPrComponent,
+    PrintCustomerLedgerComponent,
+    PendingComponent,
+    CustomerLedgerComponent,
+      ],
   imports: [
     BrowserModule,
     HttpClientModule,

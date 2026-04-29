@@ -1,0 +1,91 @@
+<!-- Header Card -->
+<section class="card invoice-header" *ngIf="!loading">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Pending Review</h1>
+      <p class="invoice-subtitle">Review and manage all vouchers awaiting rate entry</p>
+    </div>
+    <div class="header-right">
+      <div class="filter-toggle">
+        <button class="filter-btn" [class.active]="filterMode === 'pending'" (click)="setFilter('pending')">Pending</button>
+        <button class="filter-btn" [class.active]="filterMode === 'all'" (click)="setFilter('all')">All</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Table Card -->
+<section class="card tab-card" *ngIf="!loading">
+  <div class="table-wrapper">
+    <table class="grid-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-type">Type</th>
+          <th class="col-no">No</th>
+          <th class="col-date">Date</th>
+          <th class="col-party">Party</th>
+          <th class="col-products">Products</th>
+          <th class="col-bags">Bags</th>
+          <th class="col-weight">Weight</th>
+          <th class="col-amount">Amount</th>
+          <th class="col-status">Status</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of rows; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-type">
+            <span class="type-badge" [ngClass]="'type-' + row.type">
+              {{ getTypeLabel(row.type) }}
+            </span>
+          </td>
+          <td class="col-no"><span class="invoice-number-badge">{{ row.number }}</span></td>
+          <td class="col-date">{{ fmt(row.date) }}</td>
+          <td class="col-party"><div class="party-name">{{ row.partyName }}</div></td>
+          <td class="col-products text-center">{{ row.productCount }}</td>
+          <td class="col-bags text-center">{{ row.bags }}</td>
+          <td class="col-weight"><strong>{{ row.weight }}</strong> <span class="unit">kg</span></td>
+          <td class="col-amount">
+            <span *ngIf="row.amount !== null">{{ row.amount | flexNumber }}</span>
+            <span *ngIf="row.amount === null" class="no-rate">Pending</span>
+          </td>
+          <td class="col-status">
+            <span class="status-badge" [class.status-rated]="row.ratesAdded" [class.status-pending]="!row.ratesAdded">
+              {{ row.ratesAdded ? 'Rated' : 'Pending' }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <div class="action-buttons">
+              <button class="btn btn-icon btn-edit" (click)="edit(row)" title="Edit">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+              <button class="btn btn-icon btn-rate" (click)="addRate(row)" title="Add Rate">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 11V14H5L13 6L10 3L2 11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 2h6M11 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+              <button class="btn btn-icon btn-print" (click)="print(row)" title="Print">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="6" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M5 6V3h6v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+              <button *ngIf="!row.ratesAdded" class="btn btn-icon btn-delete" (click)="delete(row)" title="Delete">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4h9.34z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="rows.length === 0">
+          <td colspan="11" class="empty-cell">
+            <div class="empty-state">
+              <p class="empty-text">No{{ filterMode === 'pending' ? ' pending' : '' }} items found</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>

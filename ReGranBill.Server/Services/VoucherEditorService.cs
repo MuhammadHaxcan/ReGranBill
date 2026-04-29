@@ -28,7 +28,20 @@ public class VoucherEditorService : IVoucherEditorService
             .Include(v => v.Entries).ThenInclude(e => e.Account)
             .FirstOrDefaultAsync();
 
-        return voucher == null ? null : MapToDto(voucher);
+        if (voucher == null) return null;
+
+        var dto = MapToDto(voucher);
+
+        // Fetch linked cartage voucher number if any
+        var linkedCartage = await _db.JournalVoucherReferences
+            .Where(r => r.MainVoucherId == voucher.Id)
+            .Include(r => r.ReferenceVoucher)
+            .FirstOrDefaultAsync();
+
+        if (linkedCartage?.ReferenceVoucher != null)
+            dto.LinkedCartageVoucherNumber = linkedCartage.ReferenceVoucher.VoucherNumber;
+
+        return dto;
     }
 
     public async Task<VoucherLedgerDto?> UpdateAsync(UpdateVoucherLedgerRequest request)
@@ -73,14 +86,16 @@ public class VoucherEditorService : IVoucherEditorService
                 Debit = VoucherHelpers.Round2(line.Debit),
                 Credit = VoucherHelpers.Round2(line.Credit),
                 Qty = SupportsInventoryMeta(voucherType) && isInventoryLine ? line.Qty : null,
-                ActualWeightKg = voucherType == VoucherType.PurchaseVoucher && isInventoryLine && line.TotalWeightKg.HasValue
+                ActualWeightKg = (voucherType == VoucherType.PurchaseVoucher || voucherType == VoucherType.PurchaseReturnVoucher) && isInventoryLine && line.TotalWeightKg.HasValue
                     ? VoucherHelpers.Round2(line.TotalWeightKg.Value)
                     : null,
-                Rbp = voucherType == VoucherType.PurchaseVoucher && isInventoryLine
+                Rbp = (voucherType == VoucherType.PurchaseVoucher || voucherType == VoucherType.PurchaseReturnVoucher) && isInventoryLine
                     ? "Yes"
                     : (voucherType == VoucherType.SaleVoucher && isInventoryLine
                         ? VoucherHelpers.ToNullIfWhiteSpace(line.Rbp)
-                        : null),
+                        : (voucherType == VoucherType.SaleReturnVoucher && isInventoryLine
+                            ? VoucherHelpers.ToNullIfWhiteSpace(line.Rbp)
+                            : null)),
                 Rate = SupportsInventoryMeta(voucherType) && isInventoryLine && line.Rate.HasValue
                     ? VoucherHelpers.Round2(line.Rate.Value)
                     : null,
@@ -98,7 +113,17 @@ public class VoucherEditorService : IVoucherEditorService
             .Include(v => v.Entries).ThenInclude(e => e.Account)
             .FirstAsync();
 
-        return MapToDto(savedVoucher);
+        var dto = MapToDto(savedVoucher);
+
+        var linkedCartage = await _db.JournalVoucherReferences
+            .Where(r => r.MainVoucherId == savedVoucher.Id)
+            .Include(r => r.ReferenceVoucher)
+            .FirstOrDefaultAsync();
+
+        if (linkedCartage?.ReferenceVoucher != null)
+            dto.LinkedCartageVoucherNumber = linkedCartage.ReferenceVoucher.VoucherNumber;
+
+        return dto;
     }
 
     private async Task ValidateLinkedVoucherConsistencyAsync(
@@ -183,6 +208,12 @@ public class VoucherEditorService : IVoucherEditorService
                 break;
             case VoucherType.CartageVoucher:
                 ValidateCartageVoucher(request.Entries, accountsById);
+                break;
+            case VoucherType.SaleReturnVoucher:
+                ValidateSaleReturnVoucher(request.Entries, accountsById);
+                break;
+            case VoucherType.PurchaseReturnVoucher:
+                ValidatePurchaseReturnVoucher(request.Entries, accountsById);
                 break;
         }
 
@@ -379,12 +410,164 @@ public class VoucherEditorService : IVoucherEditorService
             throw new RequestValidationException("Cartage voucher requires customer debit and transporter credit lines.");
     }
 
+    private static void ValidateSaleReturnVoucher(
+        List<UpdateVoucherLedgerEntryRequest> entries,
+        IReadOnlyDictionary<int, Account> accountsById)
+    {
+        var productLines = entries
+            .Where(e => IsInventoryAccount(accountsById[e.AccountId]))
+            .ToList();
+
+        if (!productLines.Any())
+            throw new RequestValidationException("Sale return voucher must contain inventory lines.");
+
+        var expectedTotal = 0m;
+
+        foreach (var line in productLines)
+        {
+            if (line.Credit > 0)
+                throw new RequestValidationException("Inventory lines in sale return voucher must be debit entries.");
+
+            if (!line.Qty.HasValue || line.Qty <= 0)
+                throw new RequestValidationException("Inventory lines in sale return voucher require quantity.");
+
+            if (!string.Equals(line.Rbp, "Yes", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(line.Rbp, "No", StringComparison.OrdinalIgnoreCase))
+                throw new RequestValidationException("Inventory lines in sale return voucher require RBP as Yes/No.");
+
+            if (!line.Rate.HasValue || line.Rate < 0)
+                throw new RequestValidationException("Inventory lines in sale return voucher require a valid rate.");
+
+            var productAccount = accountsById[line.AccountId];
+            var productDetail = productAccount.ProductDetail;
+            if (productDetail == null)
+                throw new RequestValidationException($"{productAccount.Name} is missing inventory packing details.");
+
+            var expectedAmount = CalculateSaleLineAmount(line, productDetail.PackingWeightKg);
+            var actualAmount = VoucherHelpers.Round2(line.Debit);
+            if (actualAmount != expectedAmount)
+                throw new RequestValidationException(
+                    $"{productAccount.Name} amount must be {expectedAmount:0.00} based on qty, RBP, packing weight, and rate.");
+
+            expectedTotal += expectedAmount;
+        }
+
+        var creditLines = entries.Where(e => e.Credit > 0).ToList();
+        if (creditLines.Count != 1)
+            throw new RequestValidationException("Sale return voucher requires exactly one customer credit line.");
+
+        var customerLine = creditLines[0];
+        var customerAccount = accountsById[customerLine.AccountId];
+        var isCustomerCredit = customerAccount.AccountType == AccountType.Party
+            && customerAccount.PartyDetail != null
+            && (customerAccount.PartyDetail.PartyRole == PartyRole.Customer
+                || customerAccount.PartyDetail.PartyRole == PartyRole.Both);
+
+        if (!isCustomerCredit)
+            throw new RequestValidationException("Sale return voucher requires the credit line to be a customer party account.");
+
+        var customerCredit = VoucherHelpers.Round2(customerLine.Credit);
+        var roundedExpectedTotal = VoucherHelpers.Round2(expectedTotal);
+        if (customerCredit != roundedExpectedTotal)
+            throw new RequestValidationException(
+                $"Customer credit must equal total product amount of {roundedExpectedTotal:0.00}.");
+
+        if (entries.Count != productLines.Count + 1)
+            throw new RequestValidationException("Sale return voucher allows only one customer credit line and inventory debit lines.");
+
+        if (!ReferenceEquals(entries[0], customerLine))
+            throw new RequestValidationException("Customer credit line must remain the first line in the sale return voucher.");
+
+        var nonProductDebits = entries
+            .Where(e => e.Debit > 0 && !IsInventoryAccount(accountsById[e.AccountId]))
+            .ToList();
+
+        if (nonProductDebits.Count > 0)
+            throw new RequestValidationException("Sale return voucher debit lines must be inventory accounts only.");
+    }
+
+    private static void ValidatePurchaseReturnVoucher(
+        List<UpdateVoucherLedgerEntryRequest> entries,
+        IReadOnlyDictionary<int, Account> accountsById)
+    {
+        var productLines = entries
+            .Where(e => IsInventoryAccount(accountsById[e.AccountId]))
+            .ToList();
+
+        if (!productLines.Any())
+            throw new RequestValidationException("Purchase return voucher must contain inventory lines.");
+
+        var expectedTotal = 0m;
+
+        foreach (var line in productLines)
+        {
+            if (line.Debit > 0)
+                throw new RequestValidationException("Inventory lines in purchase return voucher must be credit entries.");
+
+            if (!line.Qty.HasValue || line.Qty <= 0)
+                throw new RequestValidationException("Inventory lines in purchase return voucher require quantity.");
+
+            if (!string.Equals(line.Rbp, "Yes", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(line.Rbp, "No", StringComparison.OrdinalIgnoreCase))
+                throw new RequestValidationException("Inventory lines in purchase return voucher require RBP as Yes/No.");
+
+            if (!line.Rate.HasValue || line.Rate < 0)
+                throw new RequestValidationException("Inventory lines in purchase return voucher require a valid rate.");
+
+            var productAccount = accountsById[line.AccountId];
+            var productDetail = productAccount.ProductDetail;
+            if (productDetail == null)
+                throw new RequestValidationException($"{productAccount.Name} is missing inventory packing details.");
+
+            var expectedAmount = CalculatePurchaseLineAmount(line.TotalWeightKg ?? 0m, line.Rate ?? 0m);
+            var actualAmount = VoucherHelpers.Round2(line.Credit);
+            if (actualAmount != expectedAmount)
+                throw new RequestValidationException(
+                    $"{productAccount.Name} amount must be {expectedAmount:0.00} based on qty, RBP, packing weight, and rate.");
+
+            expectedTotal += expectedAmount;
+        }
+
+        var debitLines = entries.Where(e => e.Debit > 0).ToList();
+        if (debitLines.Count != 1)
+            throw new RequestValidationException("Purchase return voucher requires exactly one vendor debit line.");
+
+        var vendorLine = debitLines[0];
+        var vendorAccount = accountsById[vendorLine.AccountId];
+        var isVendorDebit = vendorAccount.AccountType == AccountType.Party
+            && vendorAccount.PartyDetail != null
+            && (vendorAccount.PartyDetail.PartyRole == PartyRole.Vendor
+                || vendorAccount.PartyDetail.PartyRole == PartyRole.Both);
+
+        if (!isVendorDebit)
+            throw new RequestValidationException("Purchase return voucher requires the debit line to be a vendor party account.");
+
+        var vendorDebit = VoucherHelpers.Round2(vendorLine.Debit);
+        var roundedExpectedTotal = VoucherHelpers.Round2(expectedTotal);
+        if (vendorDebit != roundedExpectedTotal)
+            throw new RequestValidationException(
+                $"Vendor debit must equal total product amount of {roundedExpectedTotal:0.00}.");
+
+        if (entries.Count != productLines.Count + 1)
+            throw new RequestValidationException("Purchase return voucher allows only one vendor debit line and inventory credit lines.");
+
+        if (!ReferenceEquals(entries[0], vendorLine))
+            throw new RequestValidationException("Vendor debit line must remain the first line in the purchase return voucher.");
+
+        var nonProductCredits = entries
+            .Where(e => e.Credit > 0 && !IsInventoryAccount(accountsById[e.AccountId]))
+            .ToList();
+
+        if (nonProductCredits.Count > 0)
+            throw new RequestValidationException("Purchase return voucher credit lines must be inventory accounts only.");
+    }
+
     private async Task SynchronizeLinkedCartageVoucherAsync(
         JournalVoucher voucher,
         VoucherType voucherType,
         IReadOnlyDictionary<int, Account> accountsById)
     {
-        if (voucherType != VoucherType.SaleVoucher)
+        if (voucherType != VoucherType.SaleVoucher && voucherType != VoucherType.SaleReturnVoucher && voucherType != VoucherType.PurchaseReturnVoucher)
             return;
 
         var cartageReference = await _db.JournalVoucherReferences
@@ -504,6 +687,12 @@ public class VoucherEditorService : IVoucherEditorService
             VoucherType.PurchaseVoucher => entries
                 .Where(e => IsInventoryAccount(accountsById[e.AccountId]))
                 .All(e => (e.Rate ?? 0) > 0),
+            VoucherType.SaleReturnVoucher => entries
+                .Where(e => IsInventoryAccount(accountsById[e.AccountId]))
+                .All(e => (e.Rate ?? 0) > 0),
+            VoucherType.PurchaseReturnVoucher => entries
+                .Where(e => IsInventoryAccount(accountsById[e.AccountId]))
+                .All(e => (e.Rate ?? 0) > 0),
             _ => existingValue
         };
     }
@@ -532,10 +721,10 @@ public class VoucherEditorService : IVoucherEditorService
         VoucherHelpers.IsInventoryAccount(account);
 
     private static bool SupportsVehicleNumber(VoucherType voucherType) =>
-        voucherType is VoucherType.SaleVoucher or VoucherType.PurchaseVoucher;
+        voucherType is VoucherType.SaleVoucher or VoucherType.PurchaseVoucher or VoucherType.PurchaseReturnVoucher;
 
     private static bool SupportsInventoryMeta(VoucherType voucherType) =>
-        voucherType is VoucherType.SaleVoucher or VoucherType.PurchaseVoucher;
+        voucherType is VoucherType.SaleVoucher or VoucherType.PurchaseVoucher or VoucherType.SaleReturnVoucher or VoucherType.PurchaseReturnVoucher;
 
     private static VoucherLedgerDto MapToDto(JournalVoucher voucher) => new()
     {
@@ -578,6 +767,8 @@ public class VoucherEditorService : IVoucherEditorService
         {
             VoucherType.SaleVoucher => BuildProductVoucherDescription(voucher, "Sale to"),
             VoucherType.PurchaseVoucher => BuildProductVoucherDescription(voucher, "Purchase by"),
+            VoucherType.SaleReturnVoucher => BuildProductVoucherDescription(voucher, "Return from"),
+            VoucherType.PurchaseReturnVoucher => BuildProductVoucherDescription(voucher, "Return to"),
             VoucherType.ReceiptVoucher => BuildPartyVoucherDescription(voucher, "Receipt from"),
             VoucherType.PaymentVoucher => BuildPartyVoucherDescription(voucher, "Payment to"),
             _ => null

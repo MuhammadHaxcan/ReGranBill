@@ -34,6 +34,14 @@
   gap: 6px;
 }
 
+.filter-field-wide {
+  min-width: 200px;
+}
+
+.filter-field-xwide {
+  min-width: 260px;
+}
+
 .filter-input {
   min-width: 170px;
   padding: 9px 12px;

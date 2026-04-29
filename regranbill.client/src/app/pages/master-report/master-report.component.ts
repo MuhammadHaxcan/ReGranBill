@@ -4,8 +4,9 @@ import { Router } from '@angular/router';
 import { MasterReportService } from '../../services/master-report.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
+import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { MasterReport, MasterReportAccountSummary, MasterReportEntry } from '../../models/master-report.model';
-import { Account } from '../../models/account.model';
+import { Account, PartyRole } from '../../models/account.model';
 import { forkJoin } from 'rxjs';
 
 interface Category {
@@ -51,6 +52,8 @@ export class MasterReportComponent implements OnInit {
   // Data
   categories: Category[] = [];
   accounts: Account[] = [];
+  categoryOptions: SelectOption[] = [];
+  accountOptions: SelectOption[] = [];
   report: MasterReport | null = null;
   loading = false;
   filtersLoaded = false;
@@ -76,6 +79,11 @@ export class MasterReportComponent implements OnInit {
       next: ({ accounts, categories }) => {
         this.accounts = accounts;
         this.categories = categories;
+        this.categoryOptions = [
+          { value: null as any, label: 'All Categories' },
+          ...categories.map(c => ({ value: c.id, label: c.name }))
+        ];
+        this.accountOptions = this.buildAccountOptions();
         this.filtersLoaded = true;
         this.cdr.detectChanges();
       },
@@ -161,6 +169,7 @@ export class MasterReportComponent implements OnInit {
 
   onCategoryChange(): void {
     this.selectedAccountId = null;
+    this.accountOptions = this.buildAccountOptions();
   }
 
   isColumnVisible(column: MasterReportColumnKey): boolean {
@@ -201,5 +210,35 @@ export class MasterReportComponent implements OnInit {
 
     const url = this.router.serializeUrl(this.router.createUrlTree(['/print-master-report'], { queryParams }));
     window.open(url, '_blank');
+  }
+
+  private buildAccountOptions(): SelectOption[] {
+    const filtered = this.selectedCategoryId
+      ? this.accounts.filter(a => a.categoryId === this.selectedCategoryId)
+      : this.accounts;
+    return [
+      { value: null as any, label: 'All Accounts' },
+      ...filtered.map(a => ({
+        value: a.id,
+        label: a.name,
+        sublabel: this.getAccountSublabel(a)
+      }))
+    ];
+  }
+
+  private getAccountSublabel(account: Account): string {
+    if (account.accountType === 'Party') {
+      switch (account.partyRole) {
+        case PartyRole.Customer: return 'Customer';
+        case PartyRole.Vendor: return 'Vendor';
+        case PartyRole.Transporter: return 'Transporter';
+        case PartyRole.Both: return 'Customer & Vendor';
+      }
+    }
+    if (account.accountType === 'Account') return account.bankName || 'Cash / Bank';
+    if (account.accountType === 'Product') return account.packing || 'Product';
+    if (account.accountType === 'RawMaterial') return account.packing || 'Raw Material';
+    if (account.accountType === 'Expense') return 'Expense';
+    return account.accountType;
   }
 }

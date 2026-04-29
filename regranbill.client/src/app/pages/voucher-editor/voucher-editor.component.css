@@ -84,6 +84,17 @@
   border: 1px solid var(--border);
 }
 
+.linked-cv-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: #0284c7;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+}
+
 .vehicle-input {
   font-weight: 600;
   letter-spacing: 0.5px;

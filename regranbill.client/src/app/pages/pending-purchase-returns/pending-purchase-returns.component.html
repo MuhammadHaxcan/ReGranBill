@@ -1,0 +1,113 @@
+<!-- Header Card -->
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Pending Purchase Returns</h1>
+      <p class="invoice-subtitle">Review and manage all purchase returns awaiting rate entry</p>
+    </div>
+    <div class="invoice-meta">
+      <div class="total-count">{{ purchaseReturns.length }}</div>
+      <div class="total-label">Total Returns</div>
+    </div>
+  </div>
+</section>
+
+<!-- Purchase Returns Grid -->
+<section class="card grid-card" *ngIf="!loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">All Purchase Returns</span>
+      <span class="line-count">{{ purchaseReturns.length }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-invoice-no">PR No</th>
+          <th class="col-date">Date</th>
+          <th class="col-vendor">Vendor</th>
+          <th class="col-products">Products</th>
+          <th class="col-bags">Bags</th>
+          <th class="col-weight">Weight</th>
+          <th class="col-amount">Amount</th>
+          <th class="col-status">Status</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pr of purchaseReturns; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-invoice-no">
+            <span class="invoice-number-badge">{{ pr.prNumber }}</span>
+          </td>
+          <td class="col-date">{{ getFormattedDate(pr.date) }}</td>
+          <td class="col-vendor">
+            <div class="vendor-name">{{ pr.vendorName || '-' }}</div>
+          </td>
+          <td class="col-products text-center">{{ getProductCount(pr) }}</td>
+          <td class="col-bags text-center">{{ getTotalBags(pr) }}</td>
+          <td class="col-weight">
+            <strong>{{ getTotalWeight(pr) }}</strong> <span class="unit">kg</span>
+          </td>
+          <td class="col-amount">
+            <span *ngIf="hasRates(pr)">{{ getTotalAmount(pr) | flexNumber }}</span>
+            <span *ngIf="!hasRates(pr)" class="no-rate">Pending</span>
+          </td>
+          <td class="col-status">
+            <span class="status-badge" [class.status-rated]="hasRates(pr)" [class.status-pending]="!hasRates(pr)">
+              {{ hasRates(pr) ? 'Rated' : 'Pending' }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <div class="action-buttons">
+              <button class="btn btn-icon btn-edit" (click)="editPurchaseReturn(pr)" title="Edit Purchase Return">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="btn btn-icon btn-rate" (click)="addRate(pr)" title="Add Rate">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 11V14H5L13 6L10 3L2 11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8 2h6M11 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="btn btn-icon btn-print" (click)="printPurchaseReturn(pr)" title="Print Purchase Return">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="3" y="6" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 6V3h6v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button *ngIf="!hasRates(pr)" class="btn btn-icon btn-delete" (click)="deletePurchaseReturn(pr)" title="Delete Purchase Return">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4h9.34z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="purchaseReturns.length === 0">
+    <div class="empty-icon">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="6" width="32" height="36" rx="4" stroke="#ccc" stroke-width="2"/>
+        <path d="M16 16h16M16 22h16M16 28h10" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="empty-text">No pending purchase returns found</p>
+    <p class="empty-subtext">All purchase returns will appear here once created</p>
+  </div>
+</section>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>

@@ -53,7 +53,7 @@
             <strong>{{ getTotalWeight(dc) }}</strong> <span class="unit">kg</span>
           </td>
           <td class="col-amount">
-            <span *ngIf="hasRates(dc)">{{ getTotalAmount(dc) | number:'1.2-2' }}</span>
+            <span *ngIf="hasRates(dc)">{{ getTotalAmount(dc) | flexNumber }}</span>
             <span *ngIf="!hasRates(dc)" class="no-rate">Pending</span>
           </td>
           <td class="col-status">

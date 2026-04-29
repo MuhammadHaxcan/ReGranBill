@@ -18,6 +18,12 @@ export class App implements OnInit, OnDestroy {
   private toastSub!: Subscription;
   private toastTimer: any;
 
+  // Sidebar dropdown groups
+  saleGroupOpen = true;
+  purchaseGroupOpen = true;
+  returnGroupOpen = true;
+  pendingGroupOpen = true;
+
   // Confirm modal
   modalVisible = false;
   modalData: ConfirmModal | null = null;
@@ -94,10 +100,13 @@ export class App implements OnInit, OnDestroy {
   get isPrintPage(): boolean {
     return this.router.url.startsWith('/print-dc') ||
       this.router.url.startsWith('/print-pv') ||
+      this.router.url.startsWith('/print-sr') ||
+      this.router.url.startsWith('/print-pr') ||
       this.router.url.startsWith('/print-soa') ||
       this.router.url.startsWith('/print-master-report') ||
       this.router.url.startsWith('/print-account-closing-report') ||
-      this.router.url.startsWith('/print-product-stock-report');
+      this.router.url.startsWith('/print-product-stock-report') ||
+      this.router.url.startsWith('/print-customer-ledger');
   }
 
   get isAdmin(): boolean {
@@ -116,5 +125,12 @@ export class App implements OnInit, OnDestroy {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  toggleGroup(group: 'sale' | 'purchase' | 'return' | 'pending'): void {
+    if (group === 'sale') this.saleGroupOpen = !this.saleGroupOpen;
+    if (group === 'purchase') this.purchaseGroupOpen = !this.purchaseGroupOpen;
+    if (group === 'return') this.returnGroupOpen = !this.returnGroupOpen;
+    if (group === 'pending') this.pendingGroupOpen = !this.pendingGroupOpen;
   }
 }

@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { formatDateDisplay } from '../../utils/date-utils';
+import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { Account } from '../../models/account.model';
 import { Category } from '../../models/category.model';
 import {
@@ -30,6 +31,8 @@ export class ProductStockReportComponent implements OnInit {
 
   categories: Category[] = [];
   products: Account[] = [];
+  categoryOptions: SelectOption[] = [];
+  productOptions: SelectOption[] = [];
   report: ProductStockReport | null = null;
   loading = false;
   filtersLoaded = false;
@@ -55,6 +58,11 @@ export class ProductStockReportComponent implements OnInit {
       next: ({ categories, products }) => {
         this.categories = categories;
         this.products = products;
+        this.categoryOptions = [
+          { value: null as any, label: 'All Categories' },
+          ...categories.map(c => ({ value: c.id, label: c.name }))
+        ];
+        this.productOptions = this.buildProductOptions();
         this.filtersLoaded = true;
         this.cdr.detectChanges();
         this.loadReport();
@@ -95,6 +103,7 @@ export class ProductStockReportComponent implements OnInit {
     if (this.selectedProductId && !this.filteredProducts.some(p => p.id === this.selectedProductId)) {
       this.selectedProductId = null;
     }
+    this.productOptions = this.buildProductOptions();
   }
 
   loadReport(): void {
@@ -165,5 +174,19 @@ export class ProductStockReportComponent implements OnInit {
       month: 'short',
       year: 'numeric'
     });
+  }
+
+  private buildProductOptions(): SelectOption[] {
+    const filtered = this.selectedCategoryId
+      ? this.products.filter(p => p.categoryId === this.selectedCategoryId)
+      : this.products;
+    return [
+      { value: null as any, label: 'All Products' },
+      ...filtered.map(p => ({
+        value: p.id,
+        label: p.name,
+        sublabel: p.packing || ''
+      }))
+    ];
   }
 }

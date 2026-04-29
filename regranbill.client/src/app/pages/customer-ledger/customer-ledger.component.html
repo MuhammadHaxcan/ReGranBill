@@ -1,0 +1,168 @@
+<!-- Header Card -->
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Customer / Vendor Ledger</h1>
+      <p class="invoice-subtitle">Full per-line-item ledger with running balance</p>
+    </div>
+  </div>
+</section>
+
+<!-- Tab Switcher -->
+<div class="tab-bar">
+  <button class="tab-btn" [class.active]="activeTab === 'customer'" (click)="switchTab('customer')">
+    Customer Ledger
+  </button>
+  <button class="tab-btn" [class.active]="activeTab === 'vendor'" (click)="switchTab('vendor')">
+    Vendor Ledger
+  </button>
+</div>
+
+<!-- Filter Card -->
+<section class="card filter-card">
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>{{ activeTab === 'customer' ? 'Customer' : 'Vendor' }}</label>
+      <app-searchable-select
+        [options]="accountOptions"
+        [(ngModel)]="selectedAccountId"
+        [placeholder]="'Select ' + (activeTab === 'customer' ? 'customer' : 'vendor') + '...'">
+      </app-searchable-select>
+    </div>
+    <div class="filter-field">
+      <label>From Date</label>
+      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+    </div>
+    <div class="filter-field">
+      <label>To Date</label>
+      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadLedger()" [disabled]="!selectedAccountId || !fromDate || !toDate">View</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+</section>
+
+<!-- Ledger Header Info -->
+<section class="card info-header" *ngIf="ledger">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">{{ ledger.accountName }}</h1>
+      <p class="invoice-subtitle">{{ ledger.partyType }}</p>
+    </div>
+    <div class="invoice-meta">
+      <div class="balance-group">
+        <div class="balance-item">
+          <span class="balance-label">Opening</span>
+          <span class="balance-value" [class.balance-positive]="ledger.openingBalance >= 0" [class.balance-negative]="ledger.openingBalance < 0">
+            {{ ledger.openingBalance | flexNumber }}
+          </span>
+        </div>
+        <div class="balance-item">
+          <span class="balance-label">Closing</span>
+          <span class="balance-value" [class.balance-positive]="ledger.closingBalance >= 0" [class.balance-negative]="ledger.closingBalance < 0">
+            {{ ledger.closingBalance | flexNumber }}
+          </span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-print" (click)="printLedger()">Print</button>
+    </div>
+  </div>
+</section>
+
+<!-- Entries Grid -->
+<section class="card grid-card" *ngIf="ledger && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Ledger Entries</span>
+      <span class="line-count">{{ ledger.entries.length }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table" *ngIf="ledger.entries.length > 0">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-date">Date</th>
+          <th class="col-voucher">Voucher #</th>
+          <th class="col-type">Type</th>
+          <th class="col-product">Product</th>
+          <th class="col-qty">Qty</th>
+          <th class="col-weight">Weight</th>
+          <th class="col-rate">Rate</th>
+          <th class="col-debit">Debit</th>
+          <th class="col-credit">Credit</th>
+          <th class="col-balance">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of ledger.entries; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
+          <td class="col-voucher">
+            <button
+              *ngIf="isPrintableVoucher(entry); else plainVoucherNumber"
+              type="button"
+              class="voucher-link-button"
+              (click)="openVoucherPrint(entry)">
+              <span class="invoice-number-badge invoice-number-badge-link">{{ entry.voucherNumber }}</span>
+            </button>
+            <ng-template #plainVoucherNumber>
+              <span class="invoice-number-badge">{{ entry.voucherNumber }}</span>
+            </ng-template>
+          </td>
+          <td class="col-type">
+            <span class="type-badge" [ngClass]="getVoucherTypeClass(entry.voucherType)">{{ entry.voucherType }}</span>
+          </td>
+          <td class="col-product">
+            <span *ngIf="entry.productName">{{ entry.productName }}</span>
+            <span *ngIf="entry.productName && entry.packing" class="product-packing"> ({{ entry.packing }})</span>
+            <span *ngIf="!entry.productName" class="text-muted">-</span>
+          </td>
+          <td class="col-qty">
+            <span *ngIf="entry.qty != null">{{ entry.qty | flexNumber }}</span>
+            <span *ngIf="entry.qty == null" class="text-muted">-</span>
+          </td>
+          <td class="col-weight">
+            <span *ngIf="entry.weight != null">{{ entry.weight | flexNumber }}</span>
+            <span *ngIf="entry.weight == null" class="text-muted">-</span>
+          </td>
+          <td class="col-rate">
+            <span *ngIf="entry.rate != null">{{ entry.rate | flexNumber }}</span>
+            <span *ngIf="entry.rate == null" class="text-muted">-</span>
+          </td>
+          <td class="col-debit">
+            <span *ngIf="entry.debit > 0">{{ entry.debit | flexNumber }}</span>
+            <span *ngIf="entry.debit === 0" class="text-muted">-</span>
+          </td>
+          <td class="col-credit">
+            <span *ngIf="entry.credit > 0">{{ entry.credit | flexNumber }}</span>
+            <span *ngIf="entry.credit === 0" class="text-muted">-</span>
+          </td>
+          <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
+            {{ entry.runningBalance | flexNumber }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="ledger.entries.length === 0">
+    <div class="empty-icon">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="6" width="32" height="36" rx="4" stroke="#ccc" stroke-width="2"/>
+        <path d="M16 16h16M16 22h16M16 28h10" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="empty-text">No entries found</p>
+    <p class="empty-subtext">No journal entries for this account in the selected period</p>
+  </div>
+</section>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>

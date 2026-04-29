@@ -101,6 +101,7 @@ export interface DeliveryChallanViewModel {
   customerName?: string | null;
   vehicleNumber?: string | null;
   description?: string | null;
+  voucherType: string;
   lines: DeliveryChallanLineViewModel[];
   cartage: DeliveryCartageViewModel | null;
   ratesAdded: boolean;

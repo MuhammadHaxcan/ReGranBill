@@ -11,6 +11,7 @@ public class VoucherLedgerDto
     public bool RatesAdded { get; set; }
     public decimal TotalDebit { get; set; }
     public decimal TotalCredit { get; set; }
+    public string? LinkedCartageVoucherNumber { get; set; }
     public List<VoucherLedgerEntryDto> Entries { get; set; } = new();
 }
 

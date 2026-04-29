@@ -373,7 +373,7 @@ export class PurchaseVoucherComponent implements OnInit {
       this.purchaseService.update(this.challanId, req).subscribe({
         next: () => {
           this.toast.success('Purchase voucher updated successfully.');
-          this.router.navigate(['/pending-purchases']);
+          this.router.navigate(['/pending']);
         },
         error: err => {
           this.toast.error(err?.error?.message || 'Unable to save purchase voucher.');
@@ -401,7 +401,7 @@ export class PurchaseVoucherComponent implements OnInit {
         next: dc => {
           this.toast.success('Purchase voucher updated successfully.');
           this.purchaseService.openPdfInNewTab(dc.id);
-          this.router.navigate(['/pending-purchases']);
+          this.router.navigate(['/pending']);
         },
         error: err => {
           this.toast.error(err?.error?.message || 'Unable to save purchase voucher.');

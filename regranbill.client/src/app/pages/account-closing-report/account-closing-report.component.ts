@@ -1,11 +1,11 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { Account } from '../../models/account.model';
 import { AccountClosingHistoryEntry, AccountClosingReport, AccountClosingSummaryRow } from '../../models/account-closing-report.model';
 import { AccountService } from '../../services/account.service';
 import { AccountClosingReportService } from '../../services/account-closing-report.service';
 import { ToastService } from '../../services/toast.service';
-import { formatDateDisplay } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-account-closing-report',
@@ -21,6 +21,7 @@ export class AccountClosingReportComponent implements OnInit {
   searchText = '';
 
   accounts: Account[] = [];
+  accountOptions: SelectOption[] = [];
   report: AccountClosingReport | null = null;
   selectedAccountHistory: AccountClosingHistoryEntry[] = [];
   loading = false;
@@ -37,7 +38,16 @@ export class AccountClosingReportComponent implements OnInit {
   ngOnInit(): void {
     this.accountService.getAll().subscribe({
       next: accounts => {
-        this.accounts = accounts.filter(account => account.accountType === 'Account');
+        const cashBankAccounts = accounts.filter(account => account.accountType === 'Account');
+        this.accounts = cashBankAccounts;
+        this.accountOptions = [
+          { value: null as any, label: 'All Accounts' },
+          ...cashBankAccounts.map(a => ({
+            value: a.id,
+            label: a.name,
+            sublabel: a.bankName || 'Cash / Bank'
+          }))
+        ];
         this.filtersLoaded = true;
         this.cdr.detectChanges();
       },

@@ -24,6 +24,17 @@ import { CompanySettingsComponent } from './pages/company-settings/company-setti
 import { PrintMasterReportComponent } from './pages/print-master-report/print-master-report.component';
 import { PrintAccountClosingReportComponent } from './pages/print-account-closing-report/print-account-closing-report.component';
 import { PrintProductStockReportComponent } from './pages/print-product-stock-report/print-product-stock-report.component';
+import { SaleReturnComponent } from './pages/sale-return/sale-return.component';
+import { PendingSaleReturnsComponent } from './pages/pending-sale-returns/pending-sale-returns.component';
+import { AddSaleReturnRateComponent } from './pages/add-sale-return-rate/add-sale-return-rate.component';
+import { PrintSrComponent } from './pages/print-sr/print-sr.component';
+import { PurchaseReturnComponent } from './pages/purchase-return/purchase-return.component';
+import { PendingPurchaseReturnsComponent } from './pages/pending-purchase-returns/pending-purchase-returns.component';
+import { AddPurchaseReturnRateComponent } from './pages/add-purchase-return-rate/add-purchase-return-rate.component';
+import { PrintPrComponent } from './pages/print-pr/print-pr.component';
+import { PrintCustomerLedgerComponent } from './pages/print-customer-ledger/print-customer-ledger.component';
+import { PendingComponent } from './pages/pending/pending.component';
+import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
@@ -35,6 +46,19 @@ const routes: Routes = [
   { path: 'print-master-report', component: PrintMasterReportComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'print-account-closing-report', component: PrintAccountClosingReportComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'print-product-stock-report', component: PrintProductStockReportComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'print-sr/:id', component: PrintSrComponent, canActivate: [AuthGuard] },
+  { path: 'sale-return', component: SaleReturnComponent, canActivate: [AuthGuard] },
+  { path: 'sale-return/:id', component: SaleReturnComponent, canActivate: [AuthGuard] },
+  { path: 'pending-sale-returns', component: PendingSaleReturnsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'add-sale-return-rate/:id', component: AddSaleReturnRateComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'print-pr/:id', component: PrintPrComponent, canActivate: [AuthGuard] },
+  { path: 'print-customer-ledger/:accountId', component: PrintCustomerLedgerComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'purchase-return', component: PurchaseReturnComponent, canActivate: [AuthGuard] },
+  { path: 'purchase-return/:id', component: PurchaseReturnComponent, canActivate: [AuthGuard] },
+  { path: 'pending-purchase-returns', component: PendingPurchaseReturnsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'add-purchase-return-rate/:id', component: AddPurchaseReturnRateComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'customer-ledger', component: CustomerLedgerComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'pending', component: PendingComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
   { path: 'journal-voucher', component: JournalVoucherComponent, canActivate: [AuthGuard] },

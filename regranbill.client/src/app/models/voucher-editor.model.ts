@@ -4,7 +4,9 @@ export type VoucherType =
   | 'JournalVoucher'
   | 'ReceiptVoucher'
   | 'PaymentVoucher'
-  | 'CartageVoucher';
+  | 'CartageVoucher'
+  | 'SaleReturnVoucher'
+  | 'PurchaseReturnVoucher';
 
 export interface VoucherEditorEntry {
   id: number;
@@ -31,6 +33,7 @@ export interface VoucherEditorVoucher {
   ratesAdded: boolean;
   totalDebit: number;
   totalCredit: number;
+  linkedCartageVoucherNumber?: string | null;
   entries: VoucherEditorEntry[];
 }
 

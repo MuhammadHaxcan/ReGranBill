@@ -8,4 +8,6 @@ public static class VoucherSequenceKeys
     public const string ReceiptVoucher = "RV";
     public const string PaymentVoucher = "PMV";
     public const string CartageVoucher = "CV";
+    public const string SaleReturn = "SR";
+    public const string PurchaseReturn = "PR";
 }

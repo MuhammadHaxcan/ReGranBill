@@ -57,6 +57,12 @@
   border: 1px solid #d8b4fe;
 }
 
+.type-sale-return {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
 .group-header-row td {
   border-bottom: none;
   padding: 0;

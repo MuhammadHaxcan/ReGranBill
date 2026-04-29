@@ -19,19 +19,22 @@
       <label>To</label>
       <input type="date" [(ngModel)]="toDate" class="filter-input" />
     </div>
-    <div class="filter-field">
+    <div class="filter-field filter-field-wide">
       <label>Category</label>
-      <select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()" class="filter-input">
-        <option [ngValue]="null">All Categories</option>
-        <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="categoryOptions"
+        [(ngModel)]="selectedCategoryId"
+        (ngModelChange)="onCategoryChange()"
+        placeholder="All Categories">
+      </app-searchable-select>
     </div>
-    <div class="filter-field">
+    <div class="filter-field filter-field-xwide">
       <label>Account</label>
-      <select [(ngModel)]="selectedAccountId" class="filter-input">
-        <option [ngValue]="null">All Accounts</option>
-        <option *ngFor="let a of filteredAccounts" [ngValue]="a.id">{{ a.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="accountOptions"
+        [(ngModel)]="selectedAccountId"
+        placeholder="All Accounts">
+      </app-searchable-select>
     </div>
     <div class="filter-actions">
       <button class="btn btn-primary" (click)="loadReport()">Apply</button>
@@ -117,7 +120,13 @@
             <a *ngIf="entry.voucherType === 'PurchaseVoucher'" [routerLink]="['/print-pv', entry.voucherId]" target="_blank" class="voucher-link">
               <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             </a>
-            <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            <a *ngIf="entry.voucherType === 'SaleReturnVoucher'" [routerLink]="['/print-sr', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <a *ngIf="entry.voucherType === 'PurchaseReturnVoucher'" [routerLink]="['/print-pr', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher' && entry.voucherType !== 'SaleReturnVoucher' && entry.voucherType !== 'PurchaseReturnVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             <div class="entry-id">Entry: {{ entry.entryId }}</div>
           </td>
           <td class="col-date" *ngIf="isColumnVisible('date')">{{ getFormattedDate(entry.date) }}</td>
@@ -128,7 +137,7 @@
             <span *ngIf="!entry.quantity" class="zero-amount">-</span>
           </td>
           <td class="col-rate" *ngIf="isColumnVisible('rate')">
-            <span *ngIf="entry.rate">{{ entry.rate | number:'1.2-2' }}</span>
+            <span *ngIf="entry.rate">{{ entry.rate | flexNumber }}</span>
             <span *ngIf="!entry.rate" class="zero-amount">-</span>
           </td>
           <td class="col-debit" *ngIf="isColumnVisible('debit')">

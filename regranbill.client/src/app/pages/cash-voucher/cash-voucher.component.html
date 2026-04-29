@@ -118,7 +118,7 @@
       <tfoot>
         <tr class="totals-row">
           <td colspan="3" class="totals-label">Total Amount</td>
-          <td class="totals-value">{{ totalAmount | number:'1.2-2' }}</td>
+          <td class="totals-value">{{ totalAmount | flexNumber }}</td>
           <td></td>
           <td></td>
         </tr>
@@ -133,7 +133,7 @@
     </div>
     <div class="summary-item">
       <span class="summary-label">Total Amount</span>
-      <span class="summary-value">{{ totalAmount | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ totalAmount | flexNumber }}</span>
     </div>
     <div class="summary-item" [class.summary-balanced]="canSave" [class.summary-unbalanced]="!canSave">
       <span class="summary-label">Status</span>

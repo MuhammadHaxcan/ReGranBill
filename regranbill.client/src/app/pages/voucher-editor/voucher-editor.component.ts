@@ -61,6 +61,7 @@ export class VoucherEditorComponent implements OnInit {
     { value: 'ReceiptVoucher', label: 'Receipt Voucher' },
     { value: 'PaymentVoucher', label: 'Payment Voucher' },
     { value: 'SaleVoucher', label: 'Sale Voucher' },
+    { value: 'SaleReturnVoucher', label: 'Sale Return Voucher' },
     { value: 'CartageVoucher', label: 'Cartage Voucher' },
     { value: 'PurchaseVoucher', label: 'Purchase Voucher' }
   ];

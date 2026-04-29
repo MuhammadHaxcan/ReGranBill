@@ -19,10 +19,11 @@
     </div>
     <div class="filter-field">
       <label>Account</label>
-      <select [(ngModel)]="selectedFilterAccountId" class="filter-input">
-        <option [ngValue]="null">All Accounts</option>
-        <option *ngFor="let account of accounts" [ngValue]="account.id">{{ account.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="accountOptions"
+        [(ngModel)]="selectedFilterAccountId"
+        placeholder="All Accounts">
+      </app-searchable-select>
     </div>
     <div class="filter-actions">
       <button class="btn btn-primary" (click)="loadReport()">Apply</button>
@@ -147,7 +148,13 @@
             <a *ngIf="entry.voucherType === 'PurchaseVoucher'" [routerLink]="['/print-pv', entry.voucherId]" target="_blank" class="voucher-link">
               <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             </a>
-            <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            <a *ngIf="entry.voucherType === 'SaleReturnVoucher'" [routerLink]="['/print-sr', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <a *ngIf="entry.voucherType === 'PurchaseReturnVoucher'" [routerLink]="['/print-pr', entry.voucherId]" target="_blank" class="voucher-link">
+              <span class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
+            </a>
+            <span *ngIf="entry.voucherType !== 'SaleVoucher' && entry.voucherType !== 'PurchaseVoucher' && entry.voucherType !== 'SaleReturnVoucher' && entry.voucherType !== 'PurchaseReturnVoucher'" class="voucher-badge" [ngClass]="'vtype-' + entry.voucherType.toLowerCase()">{{ entry.voucherNumber }}</span>
             <div class="entry-id">Entry: {{ entry.entryId }}</div>
           </td>
           <td class="col-date">{{ getFormattedDate(entry.date) }}</td>
@@ -157,7 +164,7 @@
             <span *ngIf="!entry.quantity" class="zero-amount">-</span>
           </td>
           <td class="col-rate">
-            <span *ngIf="entry.rate">{{ entry.rate | number:'1.2-2' }}</span>
+            <span *ngIf="entry.rate">{{ entry.rate | flexNumber }}</span>
             <span *ngIf="!entry.rate" class="zero-amount">-</span>
           </td>
           <td class="col-debit">

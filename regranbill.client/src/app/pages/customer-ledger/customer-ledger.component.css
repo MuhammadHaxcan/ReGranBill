@@ -1,0 +1,484 @@
+/* ===== Header Card ===== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  margin-bottom: 20px;
+}
+
+.invoice-header {
+  padding: 24px 28px;
+}
+
+.invoice-header .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.invoice-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.invoice-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 4px 0 0 0;
+}
+
+/* ===== Tab Bar ===== */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  width: fit-content;
+}
+
+.tab-btn {
+  padding: 8px 24px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.15s var(--ease);
+  font-family: inherit;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+}
+
+.tab-btn:not(.active):hover {
+  background: var(--slate-50);
+  color: var(--text-primary);
+}
+
+/* ===== Filter Card ===== */
+.filter-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--radius-lg);
+  padding: 20px 28px;
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filter-input {
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  min-width: 180px;
+  transition: border-color 0.2s var(--ease);
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 10px 22px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.2s var(--ease);
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--border-light);
+  border-color: var(--text-secondary);
+}
+
+/* ===== Info Header ===== */
+.info-header {
+  padding: 24px 28px;
+}
+
+.info-header .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.invoice-meta {
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.balance-group {
+  display: flex;
+  gap: 32px;
+}
+
+.balance-item {
+  text-align: center;
+}
+
+.balance-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.balance-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  display: block;
+}
+
+.balance-positive { color: var(--success); }
+.balance-negative { color: var(--danger); }
+
+.btn-print {
+  margin-top: 0;
+  padding: 8px 20px;
+}
+
+/* ===== Grid Card ===== */
+.grid-card {
+  padding: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 28px;
+  background: var(--slate-900);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  color: #fff;
+}
+
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-header-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.line-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ===== Table ===== */
+.table-wrapper {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grid-table th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 14px 12px 10px;
+  text-align: left;
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.grid-table td {
+  padding: 14px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13.5px;
+  transition: background 0.15s var(--ease);
+}
+
+.grid-table tbody tr:hover td {
+  background: var(--slate-50);
+}
+
+/* Column styles */
+.col-num {
+  width: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.col-date {
+  width: 100px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.col-voucher {
+  width: 130px;
+  min-width: 130px;
+}
+
+.invoice-number-badge {
+  display: inline-block;
+  min-width: 92px;
+  padding: 4px 12px;
+  background: var(--primary-light);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.voucher-link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.invoice-number-badge-link {
+  border: 1px solid var(--primary);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.voucher-link-button:hover .invoice-number-badge-link {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.18);
+}
+
+.col-type { width: 120px; }
+
+.type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--slate-100);
+  color: var(--text-secondary);
+}
+
+.type-salevoucher {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.type-purchasevoucher {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.type-purchasereturnvoucher {
+  background: #fce7f3;
+  color: #be185d;
+  border: 1px solid #f9a8d4;
+}
+
+.type-salereturnvoucher {
+  background: #ede9fe;
+  color: #7c3aed;
+  border: 1px solid #c4b5fd;
+}
+
+.type-receiptvoucher {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.type-paymentvoucher {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.type-cartagevoucher {
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.type-journalvoucher {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.col-product {
+  min-width: 160px;
+  color: var(--text-primary);
+}
+
+.product-packing {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.col-qty, .col-weight, .col-rate {
+  width: 80px;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.col-debit, .col-credit {
+  width: 100px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.col-balance {
+  width: 130px;
+  text-align: right;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.text-muted { color: var(--text-muted); }
+
+/* ===== Empty State ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 28px;
+}
+
+.empty-icon { margin-bottom: 16px; }
+
+.empty-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.empty-subtext {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ===== Loading State ===== */
+.loading-state {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-input { min-width: unset; }
+
+  .info-header .header-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .invoice-meta { text-align: left; }
+
+  .balance-group { gap: 20px; }
+}

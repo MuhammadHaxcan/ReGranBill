@@ -130,7 +130,7 @@
             />
           </td>
           <td class="col-amount" *ngIf="isAdmin">
-            {{ getLineAmount(line) | number:'1.2-2' }}
+            {{ getLineAmount(line) | flexNumber }}
           </td>
           <td class="col-actions">
             <button
@@ -158,7 +158,7 @@
     </div>
     <div class="summary-item summary-total" *ngIf="isAdmin">
       <span class="summary-label">Amount</span>
-      <span class="summary-value text-primary">{{ totalAmount | number:'1.2-2' }}</span>
+      <span class="summary-value text-primary">{{ totalAmount | flexNumber }}</span>
     </div>
   </div>
 </section>

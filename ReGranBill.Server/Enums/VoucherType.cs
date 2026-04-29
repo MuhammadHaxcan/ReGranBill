@@ -7,5 +7,7 @@ public enum VoucherType
     JournalVoucher,
     ReceiptVoucher,
     PaymentVoucher,
-    CartageVoucher
+    CartageVoucher,
+    SaleReturnVoucher,
+    PurchaseReturnVoucher
 }

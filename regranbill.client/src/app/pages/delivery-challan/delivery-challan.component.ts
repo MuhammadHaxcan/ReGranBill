@@ -357,7 +357,7 @@ export class DeliveryChallanComponent implements OnInit {
       this.dcService.update(this.challanId, req).subscribe({
         next: () => {
           this.toast.success('Challan updated successfully.');
-          this.router.navigate(['/pending-challans']);
+          this.router.navigate(['/pending']);
         },
         error: err => {
           this.toast.error(err?.error?.message || 'Unable to save delivery challan.');
@@ -385,7 +385,7 @@ export class DeliveryChallanComponent implements OnInit {
         next: dc => {
           this.toast.success('Challan updated successfully.');
           this.dcService.openPdfInNewTab(dc.id);
-          this.router.navigate(['/pending-challans']);
+          this.router.navigate(['/pending']);
         },
         error: err => {
           this.toast.error(err?.error?.message || 'Unable to save delivery challan.');

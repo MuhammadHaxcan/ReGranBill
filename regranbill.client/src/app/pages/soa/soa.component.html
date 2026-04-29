@@ -13,10 +13,11 @@
   <div class="filter-row">
     <div class="filter-field">
       <label>Customer / Vendor / Transporter</label>
-      <select [(ngModel)]="selectedAccountId" class="filter-input">
-        <option [ngValue]="null" disabled>Select Customer / Vendor / Transporter</option>
-        <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="accountOptions"
+        [(ngModel)]="selectedAccountId"
+        placeholder="Select Customer / Vendor / Transporter">
+      </app-searchable-select>
     </div>
     <div class="filter-field">
       <label>From Date</label>

@@ -27,10 +27,11 @@
     </div>
     <div class="filter-field">
       <label>Product</label>
-      <select [(ngModel)]="selectedProductId" class="filter-input">
-        <option [ngValue]="null">All Products</option>
-        <option *ngFor="let product of products" [ngValue]="product.id">{{ product.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="productOptions"
+        [(ngModel)]="selectedProductId"
+        placeholder="All Products">
+      </app-searchable-select>
     </div>
     <div class="filter-actions">
       <button class="btn btn-primary" (click)="loadReport()">Apply</button>

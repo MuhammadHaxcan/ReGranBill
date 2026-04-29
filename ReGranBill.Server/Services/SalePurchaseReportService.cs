@@ -33,7 +33,10 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                     .ThenInclude(a => a.PartyDetail)
             .Where(v =>
                 v.RatesAdded &&
-                (v.VoucherType == VoucherType.SaleVoucher || v.VoucherType == VoucherType.PurchaseVoucher));
+                (v.VoucherType == VoucherType.SaleVoucher
+                    || v.VoucherType == VoucherType.PurchaseVoucher
+                    || v.VoucherType == VoucherType.SaleReturnVoucher
+                    || v.VoucherType == VoucherType.PurchaseReturnVoucher));
 
         if (fromDate.HasValue)
         {
@@ -88,6 +91,8 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                 }
 
                 var isPurchaseLine = voucher.VoucherType == VoucherType.PurchaseVoucher;
+                var isSaleReturnLine = voucher.VoucherType == VoucherType.SaleReturnVoucher;
+                var isPurchaseReturnLine = voucher.VoucherType == VoucherType.PurchaseReturnVoucher;
                 var sampleEntry = entryGroup.First();
                 var packingWeight = sampleEntry.Account?.ProductDetail?.PackingWeightKg ?? 0m;
 
@@ -98,8 +103,9 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                 foreach (var entry in entryGroup)
                 {
                     var quantity = entry.Qty ?? 0;
-                    var isPacked = isPurchaseLine || string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase);
-                    var lineWeight = isPurchaseLine
+                    var isPacked = isPurchaseLine
+                        || (!isSaleReturnLine && string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase));
+                    var lineWeight = isPurchaseLine || isPurchaseReturnLine
                         ? entry.ActualWeightKg ?? 0m
                         : isPacked
                             ? packingWeight * quantity
@@ -135,8 +141,14 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                     PackingWeightKg = packingWeight,
                     TotalWeightKg = totalWeightKg,
                     DisplayQuantity = BuildDisplayQuantity(packedBags, totalWeightKg, looseWeightKg),
-                    FromName = voucher.VoucherType == VoucherType.SaleVoucher ? CompanyName : partyName,
-                    ToName = voucher.VoucherType == VoucherType.SaleVoucher ? partyName : CompanyName,
+                    FromName = voucher.VoucherType == VoucherType.SaleVoucher ? CompanyName
+                        : voucher.VoucherType == VoucherType.SaleReturnVoucher ? partyName
+                        : voucher.VoucherType == VoucherType.PurchaseReturnVoucher ? partyName
+                        : partyName,
+                    ToName = voucher.VoucherType == VoucherType.SaleVoucher ? partyName
+                        : voucher.VoucherType == VoucherType.SaleReturnVoucher ? CompanyName
+                        : voucher.VoucherType == VoucherType.PurchaseReturnVoucher ? CompanyName
+                        : CompanyName,
                     TransporterName = transporterName,
                     GroupLabel = groupLabel,
                     GroupSortDate = voucher.Date
@@ -166,6 +178,8 @@ public class SalePurchaseReportService : ISalePurchaseReportService
             TotalRows = rows.Count,
             TotalSaleRows = rows.Count(row => row.VoucherType == VoucherType.SaleVoucher.ToString()),
             TotalPurchaseRows = rows.Count(row => row.VoucherType == VoucherType.PurchaseVoucher.ToString()),
+            TotalSaleReturnRows = rows.Count(row => row.VoucherType == VoucherType.SaleReturnVoucher.ToString()),
+            TotalPurchaseReturnRows = rows.Count(row => row.VoucherType == VoucherType.PurchaseReturnVoucher.ToString()),
             TotalPackedBags = rows.Sum(row => row.Qty),
             TotalWeightKg = Round2(rows.Sum(row => row.TotalWeightKg)),
             Rows = rows
@@ -189,7 +203,17 @@ public class SalePurchaseReportService : ISalePurchaseReportService
             return VoucherType.PurchaseVoucher;
         }
 
-        throw new RequestValidationException("Type must be All, Sale, or Purchase.");
+        if (string.Equals(type, "SaleReturn", StringComparison.OrdinalIgnoreCase))
+        {
+            return VoucherType.SaleReturnVoucher;
+        }
+
+        if (string.Equals(type, "PurchaseReturn", StringComparison.OrdinalIgnoreCase))
+        {
+            return VoucherType.PurchaseReturnVoucher;
+        }
+
+        throw new RequestValidationException("Type must be All, Sale, Purchase, SaleReturn, or PurchaseReturn.");
     }
 
     private static bool IsInventoryAccount(Account? account) =>

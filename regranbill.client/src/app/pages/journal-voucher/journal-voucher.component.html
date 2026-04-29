@@ -115,8 +115,8 @@
       <tfoot>
         <tr class="totals-row">
           <td colspan="3" class="totals-label">Totals</td>
-          <td class="totals-value">{{ totalDebit | number:'1.2-2' }}</td>
-          <td class="totals-value">{{ totalCredit | number:'1.2-2' }}</td>
+          <td class="totals-value">{{ totalDebit | flexNumber }}</td>
+          <td class="totals-value">{{ totalCredit | flexNumber }}</td>
           <td></td>
           <td></td>
         </tr>
@@ -127,15 +127,15 @@
   <div class="lines-summary">
     <div class="summary-item">
       <span class="summary-label">Total Debit</span>
-      <span class="summary-value">{{ totalDebit | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ totalDebit | flexNumber }}</span>
     </div>
     <div class="summary-item">
       <span class="summary-label">Total Credit</span>
-      <span class="summary-value">{{ totalCredit | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ totalCredit | flexNumber }}</span>
     </div>
     <div class="summary-item" [class.summary-danger]="difference !== 0">
       <span class="summary-label">Difference</span>
-      <span class="summary-value">{{ difference | number:'1.2-2' }}</span>
+      <span class="summary-value">{{ difference | flexNumber }}</span>
     </div>
     <div class="summary-item" [class.summary-balanced]="isBalanced" [class.summary-unbalanced]="!isBalanced">
       <span class="summary-label">Status</span>

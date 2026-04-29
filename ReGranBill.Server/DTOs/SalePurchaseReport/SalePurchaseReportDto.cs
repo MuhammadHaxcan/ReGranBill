@@ -5,6 +5,8 @@ public class SalePurchaseReportDto
     public int TotalRows { get; set; }
     public int TotalSaleRows { get; set; }
     public int TotalPurchaseRows { get; set; }
+    public int TotalSaleReturnRows { get; set; }
+    public int TotalPurchaseReturnRows { get; set; }
     public int TotalPackedBags { get; set; }
     public decimal TotalWeightKg { get; set; }
     public List<SalePurchaseReportRowDto> Rows { get; set; } = new();

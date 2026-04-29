@@ -3,7 +3,7 @@
   <div class="header-row">
     <div>
       <div class="breadcrumb">
-        <a class="breadcrumb-link" routerLink="/pending-purchases">Pending Purchases</a>
+        <a class="breadcrumb-link" routerLink="/pending">Pending Purchases</a>
         <span class="breadcrumb-sep">/</span>
         <span class="breadcrumb-current">Add Rate</span>
       </div>
@@ -86,7 +86,7 @@
             />
           </td>
           <td class="col-amount">
-            {{ getLineAmount(line) | number:'1.2-2' }}
+            {{ getLineAmount(line) | flexNumber }}
           </td>
         </tr>
       </tbody>
@@ -108,7 +108,7 @@
     </div>
     <div class="summary-item summary-total">
       <span class="summary-label">Amount</span>
-      <span class="summary-value text-primary">{{ totalAmount | number:'1.2-2' }}</span>
+      <span class="summary-value text-primary">{{ totalAmount | flexNumber }}</span>
     </div>
   </div>
 </section>
@@ -168,18 +168,18 @@
           <td class="col-qty text-center">{{ entry.qty || '-' }}</td>
           <td class="col-rbp text-center">{{ entry.rbp || '-' }}</td>
           <td class="col-debit">
-            <span *ngIf="entry.debit > 0" class="amount-debit">{{ entry.debit | number:'1.2-2' }}</span>
+            <span *ngIf="entry.debit > 0" class="amount-debit">{{ entry.debit | flexNumber }}</span>
           </td>
           <td class="col-credit">
-            <span *ngIf="entry.credit > 0" class="amount-credit">{{ entry.credit | number:'1.2-2' }}</span>
+            <span *ngIf="entry.credit > 0" class="amount-credit">{{ entry.credit | flexNumber }}</span>
           </td>
         </tr>
       </tbody>
       <tfoot>
         <tr class="jv-totals">
           <td colspan="5" class="text-right"><strong>Totals</strong></td>
-          <td class="col-debit"><strong>{{ jv.totalDebit | number:'1.2-2' }}</strong></td>
-          <td class="col-credit"><strong>{{ jv.totalCredit | number:'1.2-2' }}</strong></td>
+          <td class="col-debit"><strong>{{ jv.totalDebit | flexNumber }}</strong></td>
+          <td class="col-credit"><strong>{{ jv.totalCredit | flexNumber }}</strong></td>
         </tr>
       </tfoot>
     </table>

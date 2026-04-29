@@ -53,7 +53,7 @@
             <strong>{{ getTotalWeight(voucher) }}</strong> <span class="unit">kg</span>
           </td>
           <td class="col-amount">
-            <span *ngIf="hasRates(voucher)">{{ getTotalAmount(voucher) | number:'1.2-2' }}</span>
+            <span *ngIf="hasRates(voucher)">{{ getTotalAmount(voucher) | flexNumber }}</span>
             <span *ngIf="!hasRates(voucher)" class="no-rate">Pending</span>
           </td>
           <td class="col-status">

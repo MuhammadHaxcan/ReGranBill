@@ -1,4 +1,4 @@
-export type SalePurchaseReportType = 'All' | 'Sale' | 'Purchase';
+export type SalePurchaseReportType = 'All' | 'Sale' | 'Purchase' | 'SaleReturn' | 'PurchaseReturn';
 
 export interface SalePurchaseReportRow {
   voucherId: number;
@@ -26,6 +26,8 @@ export interface SalePurchaseReport {
   totalRows: number;
   totalSaleRows: number;
   totalPurchaseRows: number;
+  totalSaleReturnRows: number;
+  totalPurchaseReturnRows: number;
   totalPackedBags: number;
   totalWeightKg: number;
   rows: SalePurchaseReportRow[];
