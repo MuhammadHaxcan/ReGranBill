@@ -6,6 +6,7 @@ import { UserManagementService } from '../../services/user-management.service';
 import { UserRole } from '../../models/auth.model';
 import { ManagedUser } from '../../models/user-management.model';
 import { formatDateDisplay } from '../../utils/date-utils';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-user-management',
@@ -144,7 +145,7 @@ export class UserManagementComponent implements OnInit {
           this.loadUsers();
         },
         error: err => {
-          this.formError = err?.error?.message || 'Unable to create user.';
+          this.formError = getApiErrorMessage(err, 'Unable to create user.');
           this.cdr.detectChanges();
         }
       });
@@ -175,7 +176,7 @@ export class UserManagementComponent implements OnInit {
         this.loadUsers();
       },
       error: err => {
-        this.formError = err?.error?.message || 'Unable to update user.';
+        this.formError = getApiErrorMessage(err, 'Unable to update user.');
         this.cdr.detectChanges();
       }
     });
@@ -210,7 +211,7 @@ export class UserManagementComponent implements OnInit {
         this.loadUsers();
       },
       error: err => {
-        this.toast.error(err?.error?.message || 'Unable to update user status.');
+        this.toast.error(getApiErrorMessage(err, 'Unable to update user status.'));
       }
     });
   }

@@ -6,6 +6,7 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { PurchaseVoucherViewModel } from '../../models/purchase-voucher.model';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
 import { getPurchaseTotalAmount, getPurchaseTotalBags, getPurchaseTotalWeight, toNumber } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-pending-purchases',
@@ -96,7 +97,7 @@ export class PendingPurchasesComponent implements OnInit {
         this.loadChallans();
       },
       error: err => {
-        const msg = err?.error?.message || 'Unable to delete purchase voucher.';
+        const msg = getApiErrorMessage(err, 'Unable to delete purchase voucher.');
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });

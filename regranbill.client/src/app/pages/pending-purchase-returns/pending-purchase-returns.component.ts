@@ -5,6 +5,7 @@ import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
 import { getPurchaseTotalAmount, getPurchaseTotalBags, getPurchaseTotalWeight } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-pending-purchase-returns',
@@ -95,7 +96,7 @@ export class PendingPurchaseReturnsComponent implements OnInit {
         this.loadPurchaseReturns();
       },
       error: err => {
-        const msg = err?.error?.message || 'Unable to delete purchase return.';
+        const msg = getApiErrorMessage(err, 'Unable to delete purchase return.');
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });

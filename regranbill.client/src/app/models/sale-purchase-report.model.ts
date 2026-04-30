@@ -8,7 +8,6 @@ export interface SalePurchaseReportRow {
   productId: number;
   productName: string;
   packing: string | null;
-  unit: string | null;
   rbp: string;
   qty: number;
   looseWeightKg: number;

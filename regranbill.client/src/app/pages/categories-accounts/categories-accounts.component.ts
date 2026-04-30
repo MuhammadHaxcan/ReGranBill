@@ -6,6 +6,7 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Category } from '../../models/category.model';
 import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-categories-accounts',
@@ -39,7 +40,6 @@ export class CategoriesAccountsComponent implements OnInit {
   // Product fields
   acctPacking = '';
   acctPackingWeight: number | null = null;
-  acctUnit = 'kg';
 
   // Account (bank/cash) fields
   acctAccountNumber = '';
@@ -137,7 +137,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to update category.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to update category.'));
         }
       });
     } else {
@@ -149,7 +149,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create category.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to create category.'));
         }
       });
     }
@@ -170,7 +170,7 @@ export class CategoriesAccountsComponent implements OnInit {
         this.loadCategories();
       },
       error: err => {
-        const msg = err?.error?.message || 'Unable to delete category.';
+        const msg = getApiErrorMessage(err, 'Unable to delete category.');
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });
@@ -219,7 +219,6 @@ export class CategoriesAccountsComponent implements OnInit {
 
     this.acctPacking = acct.packing || '';
     this.acctPackingWeight = acct.packingWeightKg ?? null;
-    this.acctUnit = acct.unit || 'kg';
     this.acctAccountNumber = acct.accountNumber || '';
     this.acctBankName = acct.bankName || '';
     this.acctPartyRole = acct.partyRole || PartyRole.Customer;
@@ -243,7 +242,6 @@ export class CategoriesAccountsComponent implements OnInit {
     this.acctFormError = '';
     this.acctPacking = '';
     this.acctPackingWeight = null;
-    this.acctUnit = 'kg';
     this.acctAccountNumber = '';
     this.acctBankName = '';
     this.acctPartyRole = PartyRole.Customer;
@@ -256,7 +254,6 @@ export class CategoriesAccountsComponent implements OnInit {
   onAcctTypeChange(): void {
     this.acctPacking = '';
     this.acctPackingWeight = null;
-    this.acctUnit = 'kg';
     this.acctAccountNumber = '';
     this.acctBankName = '';
     this.acctPartyRole = PartyRole.Customer;
@@ -289,7 +286,6 @@ export class CategoriesAccountsComponent implements OnInit {
     if (this.acctType === 'Product' || this.acctType === 'RawMaterial') {
       data.packing = this.acctPacking;
       data.packingWeightKg = this.acctPackingWeight ?? 0;
-      data.unit = this.acctUnit;
     } else if (this.acctType === 'Account') {
       data.accountNumber = this.acctAccountNumber;
       data.bankName = this.acctBankName;
@@ -310,7 +306,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to update account.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to update account.'));
         }
       });
     } else {
@@ -322,7 +318,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create account.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to create account.'));
         }
       });
     }
@@ -343,7 +339,7 @@ export class CategoriesAccountsComponent implements OnInit {
         this.loadAccounts();
       },
       error: err => {
-        const msg = err?.error?.message || 'Unable to delete account.';
+        const msg = getApiErrorMessage(err, 'Unable to delete account.');
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });

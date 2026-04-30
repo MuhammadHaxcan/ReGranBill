@@ -15,6 +15,7 @@ import { SelectOption } from '../../components/searchable-select/searchable-sele
 import { VehicleOption } from '../../models/company-settings.model';
 import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 import { getDeliveryLineWeight, getDeliveryLineAmount, getDeliveryTotalBags, getDeliveryTotalWeight, getDeliveryTotalAmount, isPackedLine } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-sale-return',
@@ -58,6 +59,7 @@ export class SaleReturnComponent implements OnInit {
 
   // Category filter per line
   lineCategoryIds: (number | null)[] = [];
+  isReadOnlyRatedVoucher = false;
 
   constructor(
     private accountService: AccountService,
@@ -163,6 +165,7 @@ export class SaleReturnComponent implements OnInit {
             const product = this.products.find(p => p.id === l.product!.id);
             return product?.categoryId ?? null;
           });
+          this.isReadOnlyRatedVoucher = !!sr.ratesAdded;
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -296,10 +299,14 @@ export class SaleReturnComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !!this.selectedCustomerId && this.validLines.length > 0;
+    return !this.isReadOnlyRatedVoucher && !!this.selectedCustomerId && this.validLines.length > 0;
   }
 
   private validate(): boolean {
+    if (this.isReadOnlyRatedVoucher && !this.isAdmin) {
+      this.toast.error('Only admins can edit a rated sale return.');
+      return false;
+    }
     if (!this.selectedCustomerId) {
       this.toast.error('Please select a customer.');
       return false;
@@ -327,59 +334,46 @@ export class SaleReturnComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
-
-    if (this.isEditMode && this.saleReturnId) {
-      this.saleReturnService.update(this.saleReturnId, req).subscribe({
-        next: () => {
-          this.toast.success('Sale return updated successfully.');
-          this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save sale return.');
-        }
-      });
-    } else {
-      this.saleReturnService.create(req).subscribe({
-        next: sr => {
-          this.toast.success(`${sr.srNumber} created successfully.`);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create sale return.');
-        }
-      });
-    }
+    this.persistVoucher(false);
   }
 
   saveAndPrint(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
+    this.persistVoucher(true);
+  }
 
-    if (this.isEditMode && this.saleReturnId) {
-      this.saleReturnService.update(this.saleReturnId, req).subscribe({
-        next: sr => {
+  private persistVoucher(openPdf: boolean): void {
+    if (!this.validate()) return;
+
+    const req = this.buildRequest();
+    const isEdit = this.isEditMode && this.saleReturnId !== null;
+    const request$ = isEdit
+      ? this.saleReturnService.update(this.saleReturnId!, req)
+      : this.saleReturnService.create(req);
+    const fallbackMessage = isEdit
+      ? 'Unable to save sale return.'
+      : 'Unable to create sale return.';
+
+    request$.subscribe({
+      next: saleReturn => {
+        if (isEdit) {
           this.toast.success('Sale return updated successfully.');
-          this.saleReturnService.openPdfInNewTab(sr.id);
+          if (openPdf) {
+            this.saleReturnService.openPdfInNewTab(saleReturn.id);
+          }
           this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save sale return.');
+          return;
         }
-      });
-    } else {
-      this.saleReturnService.create(req).subscribe({
-        next: sr => {
-          this.toast.success(`${sr.srNumber} created successfully.`);
-          this.saleReturnService.openPdfInNewTab(sr.id);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create sale return.');
+
+        this.toast.success(`${saleReturn.srNumber} created successfully.`);
+        if (openPdf) {
+          this.saleReturnService.openPdfInNewTab(saleReturn.id);
         }
-      });
-    }
+        this.resetForm();
+      },
+      error: err => {
+        this.toast.error(getApiErrorMessage(err, fallbackMessage));
+      }
+    });
   }
 
   private resetForm(): void {
@@ -387,6 +381,7 @@ export class SaleReturnComponent implements OnInit {
     this.vehicleNumber = '';
     this.description = '';
     this.saleReturnDate = new Date();
+    this.isReadOnlyRatedVoucher = false;
     this.lines = [];
     this.addLine();
     this.saleReturnService.getNextNumber().subscribe({

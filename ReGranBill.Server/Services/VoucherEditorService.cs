@@ -143,19 +143,19 @@ public class VoucherEditorService : IVoucherEditorService
         if (saleVoucher == null)
             return;
 
-        var saleCustomerLine = saleVoucher.Entries.FirstOrDefault(entry => entry.Debit > 0);
-        if (saleCustomerLine == null)
+        var linkedPartyLine = saleVoucher.Entries.FirstOrDefault(entry => entry.SortOrder == 0);
+        if (linkedPartyLine == null)
             return;
 
         var cartageCustomerLines = request.Entries.Where(entry => entry.Debit > 0).ToList();
         if (cartageCustomerLines.Count != 1)
-            throw new RequestValidationException("Cartage voucher must contain exactly one customer debit line.");
+            throw new RequestValidationException("Cartage voucher must contain exactly one linked party debit line.");
 
-        if (cartageCustomerLines[0].AccountId != saleCustomerLine.AccountId)
-            throw new RequestValidationException("Cartage voucher customer must match the linked sale voucher customer.");
+        if (cartageCustomerLines[0].AccountId != linkedPartyLine.AccountId)
+            throw new RequestValidationException("Cartage voucher party must match the linked main voucher party.");
 
         if (VoucherHelpers.NormalizeToUtc(request.Date).Date != saleVoucher.Date.Date)
-            throw new RequestValidationException("Cartage voucher date must match the linked sale voucher date.");
+            throw new RequestValidationException("Cartage voucher date must match the linked main voucher date.");
     }
 
     private async Task<Dictionary<int, Account>> ValidateUpdateRequestAsync(VoucherType voucherType, UpdateVoucherLedgerRequest request)
@@ -567,7 +567,7 @@ public class VoucherEditorService : IVoucherEditorService
         VoucherType voucherType,
         IReadOnlyDictionary<int, Account> accountsById)
     {
-        if (voucherType != VoucherType.SaleVoucher && voucherType != VoucherType.SaleReturnVoucher && voucherType != VoucherType.PurchaseReturnVoucher)
+        if (voucherType != VoucherType.SaleVoucher && voucherType != VoucherType.PurchaseVoucher)
             return;
 
         var cartageReference = await _db.JournalVoucherReferences
@@ -579,18 +579,15 @@ public class VoucherEditorService : IVoucherEditorService
         if (cartageVoucher == null)
             return;
 
-        var customerLine = voucher.Entries.FirstOrDefault(entry =>
+        var linkedPartyLine = voucher.Entries.FirstOrDefault(entry =>
         {
-            if (entry.Debit <= 0) return false;
+            if (entry.SortOrder != 0) return false;
             if (!accountsById.TryGetValue(entry.AccountId, out var account)) return false;
 
-            return account.AccountType == AccountType.Party
-                && account.PartyDetail != null
-                && (account.PartyDetail.PartyRole == PartyRole.Customer
-                    || account.PartyDetail.PartyRole == PartyRole.Both);
+            return account.AccountType == AccountType.Party && account.PartyDetail != null;
         });
 
-        if (customerLine == null)
+        if (linkedPartyLine == null)
             return;
 
         cartageVoucher.Date = voucher.Date;
@@ -600,7 +597,7 @@ public class VoucherEditorService : IVoucherEditorService
         var cartageCustomerLine = cartageVoucher.Entries.FirstOrDefault(entry => entry.Debit > 0);
         if (cartageCustomerLine != null)
         {
-            cartageCustomerLine.AccountId = customerLine.AccountId;
+            cartageCustomerLine.AccountId = linkedPartyLine.AccountId;
             cartageCustomerLine.Description = $"Cartage charge - {voucher.VoucherNumber}";
             cartageCustomerLine.IsEdited = true;
         }

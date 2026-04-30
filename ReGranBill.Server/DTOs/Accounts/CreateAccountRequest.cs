@@ -9,7 +9,6 @@ public class CreateAccountRequest
     // Product-specific
     public string? Packing { get; set; }
     public decimal? PackingWeightKg { get; set; }
-    public string? Unit { get; set; }
 
     // Account/Bank-specific
     public string? AccountNumber { get; set; }

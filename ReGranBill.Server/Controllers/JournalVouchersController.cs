@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReGranBill.Server.DTOs.JournalVouchers;
@@ -42,7 +41,11 @@ public class JournalVouchersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateJournalVoucherRequest request)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!this.TryGetAuthenticatedUserId(out var userId))
+        {
+            return this.InvalidUserSession();
+        }
+
         var result = await _journalVoucherService.CreateAsync(request, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }

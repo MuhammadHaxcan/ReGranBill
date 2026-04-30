@@ -10,6 +10,7 @@ import {
   getDeliveryTotalWeight
 } from '../../utils/delivery-calculations';
 import { formatDateDdMmYyyy, parseLocalDate } from '../../utils/date-utils';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-pending-sale-returns',
@@ -100,7 +101,7 @@ export class PendingSaleReturnsComponent implements OnInit {
         this.loadSaleReturns();
       },
       error: err => {
-        const msg = err?.error?.message || 'Unable to delete sale return.';
+        const msg = getApiErrorMessage(err, 'Unable to delete sale return.');
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });

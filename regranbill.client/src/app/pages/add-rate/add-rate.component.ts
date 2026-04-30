@@ -16,6 +16,7 @@ import {
   getDeliveryTotalWeight
 } from '../../utils/delivery-calculations';
 import { parseLocalDate } from '../../utils/date-utils';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-add-rate',
@@ -115,7 +116,7 @@ export class AddRateComponent implements OnInit {
       this.router.navigate(['/pending']);
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save rates.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to save rates.'));
         }
       });
     }

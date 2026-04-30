@@ -18,9 +18,10 @@ public class AuthService : IAuthService
     public async Task<LoginAttemptResult> LoginAsync(LoginRequest request)
     {
         var normalizedUsername = (request.Username ?? string.Empty).Trim();
+        var normalizedLookup = NormalizeUsernameKey(normalizedUsername);
         var user = await _db.Users.FirstOrDefaultAsync(u =>
             u.IsActive &&
-            u.Username.ToLower() == normalizedUsername.ToLower());
+            u.Username.ToUpper() == normalizedLookup);
         if (user == null)
         {
             return new LoginAttemptResult
@@ -48,4 +49,7 @@ public class AuthService : IAuthService
             }
         };
     }
+
+    private static string NormalizeUsernameKey(string username) =>
+        username.ToUpperInvariant();
 }

@@ -15,6 +15,7 @@ import { SelectOption } from '../../components/searchable-select/searchable-sele
 import { VehicleOption } from '../../models/company-settings.model';
 import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 import { getDeliveryLineWeight, getDeliveryLineAmount, getDeliveryTotalBags, getDeliveryTotalWeight, getDeliveryTotalAmount, isPackedLine } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-delivery-challan',
@@ -67,6 +68,7 @@ export class DeliveryChallanComponent implements OnInit {
   showCartageForm = false;
   cartageTransporterId: number | null = null;
   cartageAmount: number = 0;
+  isReadOnlyRatedVoucher = false;
 
   constructor(
     private accountService: AccountService,
@@ -185,8 +187,9 @@ export class DeliveryChallanComponent implements OnInit {
               transporterId: dc.cartage.transporterId,
               transporterName: dc.cartage.transporterName || '',
               city: dc.cartage.city || '',
-              amount: dc.cartage.amount
-            } : null;
+                amount: dc.cartage.amount
+              } : null;
+            this.isReadOnlyRatedVoucher = !!dc.ratesAdded;
           }
           this.loading = false;
           this.cdr.detectChanges();
@@ -358,10 +361,14 @@ export class DeliveryChallanComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !!this.selectedCustomerId && this.validLines.length > 0;
+    return !this.isReadOnlyRatedVoucher && !!this.selectedCustomerId && this.validLines.length > 0;
   }
 
   private validate(): boolean {
+    if (this.isReadOnlyRatedVoucher && !this.isAdmin) {
+      this.toast.error('Only admins can edit a rated delivery challan.');
+      return false;
+    }
     if (!this.selectedCustomerId) {
       this.toast.error('Please select a customer.');
       return false;
@@ -389,59 +396,46 @@ export class DeliveryChallanComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
-
-    if (this.isEditMode && this.challanId) {
-      this.dcService.update(this.challanId, req).subscribe({
-        next: () => {
-          this.toast.success('Challan updated successfully.');
-          this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save delivery challan.');
-        }
-      });
-    } else {
-      this.dcService.create(req).subscribe({
-        next: dc => {
-          this.toast.success(`${dc.dcNumber} created successfully.`);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create delivery challan.');
-        }
-      });
-    }
+    this.persistVoucher(false);
   }
 
   saveAndPrint(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
+    this.persistVoucher(true);
+  }
 
-    if (this.isEditMode && this.challanId) {
-      this.dcService.update(this.challanId, req).subscribe({
-        next: dc => {
+  private persistVoucher(openPdf: boolean): void {
+    if (!this.validate()) return;
+
+    const req = this.buildRequest();
+    const isEdit = this.isEditMode && this.challanId !== null;
+    const request$ = isEdit
+      ? this.dcService.update(this.challanId!, req)
+      : this.dcService.create(req);
+    const fallbackMessage = isEdit
+      ? 'Unable to save delivery challan.'
+      : 'Unable to create delivery challan.';
+
+    request$.subscribe({
+      next: dc => {
+        if (isEdit) {
           this.toast.success('Challan updated successfully.');
-          this.dcService.openPdfInNewTab(dc.id);
+          if (openPdf) {
+            this.dcService.openPdfInNewTab(dc.id);
+          }
           this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save delivery challan.');
+          return;
         }
-      });
-    } else {
-      this.dcService.create(req).subscribe({
-        next: dc => {
-          this.toast.success(`${dc.dcNumber} created successfully.`);
+
+        this.toast.success(`${dc.dcNumber} created successfully.`);
+        if (openPdf) {
           this.dcService.openPdfInNewTab(dc.id);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create delivery challan.');
         }
-      });
-    }
+        this.resetForm();
+      },
+      error: err => {
+        this.toast.error(getApiErrorMessage(err, fallbackMessage));
+      }
+    });
   }
 
   private resetForm(): void {
@@ -450,6 +444,7 @@ export class DeliveryChallanComponent implements OnInit {
     this.description = '';
     this.dcDate = new Date();
     this.cartage = null;
+    this.isReadOnlyRatedVoucher = false;
     this.showCartageForm = false;
     this.lines = [];
     this.addLine();

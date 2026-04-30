@@ -74,8 +74,9 @@ public class UserManagementService : IUserManagementService
 
     private async Task EnsureUniqueUsernameAsync(string username, int? existingId = null)
     {
+        var normalizedLookup = NormalizeUsernameKey(username);
         var duplicateExists = await _db.Users.AnyAsync(u =>
-            u.Username == username && (!existingId.HasValue || u.Id != existingId.Value));
+            u.Username.ToUpper() == normalizedLookup && (!existingId.HasValue || u.Id != existingId.Value));
 
         if (duplicateExists)
         {
@@ -175,4 +176,7 @@ public class UserManagementService : IUserManagementService
         IsActive = user.IsActive,
         CreatedAt = user.CreatedAt
     };
+
+    private static string NormalizeUsernameKey(string username) =>
+        username.ToUpperInvariant();
 }

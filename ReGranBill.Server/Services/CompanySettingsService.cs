@@ -98,32 +98,24 @@ public class CompanySettingsService : ICompanySettingsService
     public async Task<List<VehicleOptionDto>> UpdateVehiclesAsync(UpdateVehicleOptionsRequest request)
     {
         var items = request.Vehicles ?? [];
+        var existingVehicles = await _db.VehicleOptions.ToListAsync();
+        var existingById = existingVehicles.ToDictionary(v => v.Id);
         var requestedIds = items
             .Where(item => item.Id > 0)
             .Select(item => item.Id)
             .ToHashSet();
-
-        var staleVehicles = await _db.VehicleOptions
-            .Where(vehicle => !requestedIds.Contains(vehicle.Id))
-            .ToListAsync();
-        if (staleVehicles.Count > 0)
-        {
-            _db.VehicleOptions.RemoveRange(staleVehicles);
-            await _db.SaveChangesAsync();
-        }
-
-        var existingById = await _db.VehicleOptions.ToDictionaryAsync(v => v.Id);
         var seenNormalized = new HashSet<string>(StringComparer.Ordinal);
+        var validatedItems = new List<(int Id, string Name, string VehicleNumber, string NormalizedVehicleNumber)>();
         var resultOrder = new List<VehicleOption>();
 
         for (var i = 0; i < items.Count; i++)
         {
             var item = items[i];
-            var name = item.Name.Trim();
+            var name = item.Name?.Trim();
             if (string.IsNullOrWhiteSpace(name))
                 throw new RequestValidationException("Vehicle name is required.");
 
-            var number = item.VehicleNumber.Trim();
+            var number = item.VehicleNumber?.Trim();
             if (string.IsNullOrWhiteSpace(number))
                 throw new RequestValidationException("Vehicle number is required.");
 
@@ -134,6 +126,20 @@ public class CompanySettingsService : ICompanySettingsService
             if (!seenNormalized.Add(normalized))
                 throw new RequestValidationException("Duplicate vehicle numbers are not allowed.");
 
+            validatedItems.Add((item.Id, name, number, normalized));
+        }
+
+        var staleVehicles = existingVehicles
+            .Where(vehicle => !requestedIds.Contains(vehicle.Id))
+            .ToList();
+        if (staleVehicles.Count > 0)
+        {
+            _db.VehicleOptions.RemoveRange(staleVehicles);
+        }
+
+        for (var i = 0; i < validatedItems.Count; i++)
+        {
+            var item = validatedItems[i];
             VehicleOption vehicle;
             if (item.Id > 0 && existingById.TryGetValue(item.Id, out var existing))
             {
@@ -145,9 +151,9 @@ public class CompanySettingsService : ICompanySettingsService
                 _db.VehicleOptions.Add(vehicle);
             }
 
-            vehicle.Name = name;
-            vehicle.VehicleNumber = number;
-            vehicle.NormalizedVehicleNumber = normalized;
+            vehicle.Name = item.Name;
+            vehicle.VehicleNumber = item.VehicleNumber;
+            vehicle.NormalizedVehicleNumber = item.NormalizedVehicleNumber;
             vehicle.SortOrder = i;
             vehicle.UpdatedAt = DateTime.UtcNow;
             resultOrder.Add(vehicle);

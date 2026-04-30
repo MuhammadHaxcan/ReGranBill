@@ -17,7 +17,7 @@ public class ProductStockReportService : IProductStockReportService
         ["InvalidLineSide"] = "Entry has invalid debit/credit sides for movement classification.",
         ["MissingQty"] = "Quantity is missing; bags and kg were treated as zero.",
         ["MissingPackingWeight"] = "Packing weight is missing; kg was treated as zero.",
-        ["MissingActualWeightKg"] = "Purchase line is missing total entered kg.",
+        ["MissingActualWeightKg"] = "Purchase or purchase return line is missing total entered kg.",
         ["MissingRateOrQtyForValueFallback"] = "Value fallback could not be derived due to missing qty/rate.",
         ["MissingPackingWeightForRbp"] = "RBP=Yes requires packing weight for value fallback.",
         ["NegativeQty"] = "Quantity is negative on a movement line."
@@ -107,8 +107,7 @@ public class ProductStockReportService : IProductStockReportService
                 anomalyCodes.Add("NegativeQty");
 
             var packingWeightKg = entry.PackingWeightKg ?? 0m;
-            var useActualPurchaseWeight = direction == InwardDirection
-                && string.Equals(entry.VoucherType, VoucherType.PurchaseVoucher.ToString(), StringComparison.OrdinalIgnoreCase);
+            var useActualPurchaseWeight = UsesActualWeight(entry.VoucherType);
 
             if (useActualPurchaseWeight && (!entry.ActualWeightKg.HasValue || entry.ActualWeightKg.Value <= 0m))
                 anomalyCodes.Add("MissingActualWeightKg");
@@ -244,7 +243,7 @@ public class ProductStockReportService : IProductStockReportService
         var qty = entry.Qty.Value;
         var rate = entry.Rate.Value;
 
-        if (string.Equals(entry.VoucherType, VoucherType.PurchaseVoucher.ToString(), StringComparison.OrdinalIgnoreCase))
+        if (UsesActualWeight(entry.VoucherType))
         {
             if (!entry.ActualWeightKg.HasValue || entry.ActualWeightKg.Value <= 0m)
             {
@@ -268,6 +267,10 @@ public class ProductStockReportService : IProductStockReportService
 
         return qty * rate;
     }
+
+    private static bool UsesActualWeight(string voucherType) =>
+        string.Equals(voucherType, VoucherType.PurchaseVoucher.ToString(), StringComparison.OrdinalIgnoreCase)
+        || string.Equals(voucherType, VoucherType.PurchaseReturnVoucher.ToString(), StringComparison.OrdinalIgnoreCase);
 
     private static bool IsRbpYes(string? rbp) =>
         string.Equals(rbp?.Trim(), "Yes", StringComparison.OrdinalIgnoreCase);

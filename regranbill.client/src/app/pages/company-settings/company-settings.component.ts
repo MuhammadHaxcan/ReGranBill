@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CompanySettings, VehicleOption } from '../../models/company-settings.model';
 import { CompanySettingsService } from '../../services/company-settings.service';
 import { ToastService } from '../../services/toast.service';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-company-settings',
@@ -86,7 +87,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
         this.loadLogoPreview();
       },
       error: err => {
-        this.toast.error(err?.error?.message || 'Unable to update company settings.');
+        this.toast.error(getApiErrorMessage(err, 'Unable to update company settings.'));
         this.saving = false;
         this.cdr.detectChanges();
       }
@@ -150,6 +151,17 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const seenVehicleNumbers = new Set<string>();
+    for (const vehicle of payload) {
+      const normalizedVehicleNumber = this.normalizeVehicleNumber(vehicle.vehicleNumber);
+      if (seenVehicleNumbers.has(normalizedVehicleNumber)) {
+        this.toast.error('Vehicle numbers must be unique.');
+        return;
+      }
+
+      seenVehicleNumbers.add(normalizedVehicleNumber);
+    }
+
     this.savingVehicles = true;
     this.companySettingsService.updateVehicles({ vehicles: payload }).subscribe({
       next: vehicles => {
@@ -161,7 +173,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: err => {
-        this.toast.error(err?.error?.message || 'Unable to update vehicle options.');
+        this.toast.error(getApiErrorMessage(err, 'Unable to update vehicle options.'));
         this.savingVehicles = false;
         this.cdr.detectChanges();
       }
@@ -205,5 +217,9 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
       ...vehicle,
       sortOrder: index
     }));
+  }
+
+  private normalizeVehicleNumber(vehicleNumber: string): string {
+    return vehicleNumber.trim().toUpperCase();
   }
 }

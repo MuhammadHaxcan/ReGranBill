@@ -28,6 +28,7 @@ import {
   getPurchaseTotalWeight,
   toNumber
 } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-purchase-voucher',
@@ -76,6 +77,7 @@ export class PurchaseVoucherComponent implements OnInit {
   showCartageForm = false;
   cartageTransporterId: number | null = null;
   cartageAmount: number = 0;
+  isReadOnlyRatedVoucher = false;
 
   constructor(
     private accountService: AccountService,
@@ -196,6 +198,7 @@ export class PurchaseVoucherComponent implements OnInit {
             city: voucher.cartage.city || '',
             amount: voucher.cartage.amount
           } : null;
+          this.isReadOnlyRatedVoucher = !!voucher.ratesAdded;
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -370,10 +373,14 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !!this.selectedVendorId && this.validLines.length > 0;
+    return !this.isReadOnlyRatedVoucher && !!this.selectedVendorId && this.validLines.length > 0;
   }
 
   private validate(): boolean {
+    if (this.isReadOnlyRatedVoucher && !this.isAdmin) {
+      this.toast.error('Only admins can edit a rated purchase voucher.');
+      return false;
+    }
     if (!this.selectedVendorId) {
       this.toast.error('Please select a vendor.');
       return false;
@@ -405,59 +412,46 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
-
-    if (this.isEditMode && this.challanId) {
-      this.purchaseService.update(this.challanId, req).subscribe({
-        next: () => {
-          this.toast.success('Purchase voucher updated successfully.');
-          this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save purchase voucher.');
-        }
-      });
-    } else {
-      this.purchaseService.create(req).subscribe({
-        next: dc => {
-          this.toast.success(`${dc.voucherNumber} created successfully.`);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create purchase voucher.');
-        }
-      });
-    }
+    this.persistVoucher(false);
   }
 
   saveAndPrint(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
+    this.persistVoucher(true);
+  }
 
-    if (this.isEditMode && this.challanId) {
-      this.purchaseService.update(this.challanId, req).subscribe({
-        next: dc => {
+  private persistVoucher(openPdf: boolean): void {
+    if (!this.validate()) return;
+
+    const req = this.buildRequest();
+    const isEdit = this.isEditMode && this.challanId !== null;
+    const request$ = isEdit
+      ? this.purchaseService.update(this.challanId!, req)
+      : this.purchaseService.create(req);
+    const fallbackMessage = isEdit
+      ? 'Unable to save purchase voucher.'
+      : 'Unable to create purchase voucher.';
+
+    request$.subscribe({
+      next: voucher => {
+        if (isEdit) {
           this.toast.success('Purchase voucher updated successfully.');
-          this.purchaseService.openPdfInNewTab(dc.id);
+          if (openPdf) {
+            this.purchaseService.openPdfInNewTab(voucher.id);
+          }
           this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save purchase voucher.');
+          return;
         }
-      });
-    } else {
-      this.purchaseService.create(req).subscribe({
-        next: dc => {
-          this.toast.success(`${dc.voucherNumber} created successfully.`);
-          this.purchaseService.openPdfInNewTab(dc.id);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create purchase voucher.');
+
+        this.toast.success(`${voucher.voucherNumber} created successfully.`);
+        if (openPdf) {
+          this.purchaseService.openPdfInNewTab(voucher.id);
         }
-      });
-    }
+        this.resetForm();
+      },
+      error: err => {
+        this.toast.error(getApiErrorMessage(err, fallbackMessage));
+      }
+    });
   }
 
   private resetForm(): void {
@@ -467,6 +461,7 @@ export class PurchaseVoucherComponent implements OnInit {
     this.voucherDate = new Date();
     this.cartage = null;
     this.showCartageForm = false;
+    this.isReadOnlyRatedVoucher = false;
     this.lines = [];
     this.addLine();
     this.purchaseService.getNextNumber().subscribe({

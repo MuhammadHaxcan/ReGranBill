@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReGranBill.Server.DTOs.CashVouchers;
@@ -49,7 +48,11 @@ public class CashVouchersController : ControllerBase
     [HttpPost("receipt")]
     public async Task<IActionResult> CreateReceipt([FromBody] CreateCashVoucherRequest request)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!this.TryGetAuthenticatedUserId(out var userId))
+        {
+            return this.InvalidUserSession();
+        }
+
         var result = await _cashVoucherService.CreateReceiptAsync(request, userId);
         return CreatedAtAction(nameof(GetReceiptById), new { id = result.Id }, result);
     }
@@ -57,7 +60,11 @@ public class CashVouchersController : ControllerBase
     [HttpPost("payment")]
     public async Task<IActionResult> CreatePayment([FromBody] CreateCashVoucherRequest request)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!this.TryGetAuthenticatedUserId(out var userId))
+        {
+            return this.InvalidUserSession();
+        }
+
         var result = await _cashVoucherService.CreatePaymentAsync(request, userId);
         return CreatedAtAction(nameof(GetPaymentById), new { id = result.Id }, result);
     }

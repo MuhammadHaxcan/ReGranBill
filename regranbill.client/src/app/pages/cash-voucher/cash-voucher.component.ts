@@ -9,6 +9,7 @@ import { AccountService } from '../../services/account.service';
 import { CashVoucherService } from '../../services/cash-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { round2 } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 interface EditableCashVoucherLine {
   id?: number;
@@ -160,31 +161,30 @@ export class CashVoucherComponent implements OnInit {
     const request = this.buildRequest();
     this.saving = true;
 
-    if (this.isEditMode && this.voucherId) {
-      this.cashVoucherService.update(this.mode, this.voucherId, request).subscribe({
-        next: voucher => {
+    const isEdit = this.isEditMode && this.voucherId !== null;
+    const request$ = isEdit
+      ? this.cashVoucherService.update(this.mode, this.voucherId!, request)
+      : this.cashVoucherService.create(this.mode, request);
+    const fallbackMessage = isEdit
+      ? `Unable to update ${this.pageTitle.toLowerCase()}.`
+      : `Unable to create ${this.pageTitle.toLowerCase()}.`;
+
+    request$.subscribe({
+      next: voucher => {
+        if (isEdit) {
           this.setVoucher(voucher);
           this.toast.success(`${voucher.voucherNumber} updated successfully.`);
           this.saving = false;
           this.cdr.detectChanges();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || `Unable to update ${this.pageTitle.toLowerCase()}.`);
-          this.saving = false;
-          this.cdr.detectChanges();
+          return;
         }
-      });
-      return;
-    }
 
-    this.cashVoucherService.create(this.mode, request).subscribe({
-      next: voucher => {
         this.toast.success(`${voucher.voucherNumber} created successfully.`);
         this.saving = false;
         this.resetForNextVoucher();
       },
       error: err => {
-        this.toast.error(err?.error?.message || `Unable to create ${this.pageTitle.toLowerCase()}.`);
+        this.toast.error(getApiErrorMessage(err, fallbackMessage));
         this.saving = false;
         this.cdr.detectChanges();
       }

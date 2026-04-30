@@ -18,6 +18,7 @@ import {
   getPurchaseTotalBags,
   getPurchaseTotalWeight
 } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 type FilterMode = 'pending' | 'all';
 
@@ -181,23 +182,16 @@ export class PendingComponent implements OnInit {
 
   // Status helpers
   private hasRatesDc(dc: DeliveryChallanViewModel): boolean {
-    const operatorCreated = (dc.createdByRole || '').toLowerCase() === 'operator';
-    if (operatorCreated) {
-      // Operator-created challans should stay in Pending until Admin confirms rates.
-      // Once rates are explicitly saved, backend sets ratesAdded=true and they become Rated.
-      return dc.ratesAdded;
-    }
-
-    return dc.ratesAdded || dc.lines.some((l: { rate?: number }) => l.rate && l.rate > 0);
+    return dc.ratesAdded;
   }
   private hasRatesSr(sr: SaleReturnViewModel): boolean {
-    return sr.ratesAdded || sr.lines.some((l: { rate?: number }) => l.rate && l.rate > 0);
+    return sr.ratesAdded;
   }
   private hasRatesPv(pv: PurchaseVoucherViewModel): boolean {
-    return pv.ratesAdded || pv.lines.some((l: { rate?: number }) => l.rate && l.rate > 0);
+    return pv.ratesAdded;
   }
   private hasRatesPr(pr: PurchaseReturnViewModel): boolean {
-    return pr.ratesAdded || pr.lines.some((l: { rate?: number }) => l.rate && l.rate > 0);
+    return pr.ratesAdded;
   }
 
   // Formatters
@@ -252,7 +246,7 @@ export class PendingComponent implements OnInit {
     const service = this.getService(row.type);
     service.delete(row.id).subscribe({
       next: () => { this.toast.success(`${row.number} deleted.`); this.loadAll(); },
-      error: (err: any) => { this.confirmModal.info({ title: 'Cannot Delete', message: err?.error?.message || 'Unable to delete.' }); }
+      error: (err: any) => { this.confirmModal.info({ title: 'Cannot Delete', message: getApiErrorMessage(err, 'Unable to delete.') }); }
     });
   }
 

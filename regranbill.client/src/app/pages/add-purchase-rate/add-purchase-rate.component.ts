@@ -20,6 +20,7 @@ import {
   getPurchaseTotalWeight,
   toNumber
 } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-add-purchase-rate',
@@ -126,7 +127,7 @@ export class AddPurchaseRateComponent implements OnInit {
       this.router.navigate(['/pending']);
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save rates.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to save rates.'));
         }
       });
     }

@@ -11,6 +11,7 @@ import {
   getPurchaseTotalAmount
 } from '../../utils/delivery-calculations';
 import { formatDateDdMmYyyy, parseLocalDate } from '../../utils/date-utils';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-add-purchase-return-rate',
@@ -104,7 +105,7 @@ export class AddPurchaseReturnRateComponent implements OnInit {
       this.router.navigate(['/pending']);
         },
         error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save rates.');
+          this.toast.error(getApiErrorMessage(err, 'Unable to save rates.'));
         }
       });
     }

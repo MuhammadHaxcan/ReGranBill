@@ -10,6 +10,7 @@ import {
   getDeliveryTotalWeight
 } from '../../utils/delivery-calculations';
 import { parseLocalDate } from '../../utils/date-utils';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-pending-challans',
@@ -104,7 +105,7 @@ export class PendingChallansComponent implements OnInit {
         this.loadChallans();
       },
       error: err => {
-        const msg = err?.error?.message || 'Unable to delete challan.';
+        const msg = getApiErrorMessage(err, 'Unable to delete challan.');
         this.confirmModal.info({ title: 'Cannot Delete', message: msg });
       }
     });

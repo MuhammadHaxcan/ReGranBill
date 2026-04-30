@@ -51,7 +51,7 @@ public class AccountService : IAccountService
         var accounts = await _db.Accounts
             .Include(a => a.PartyDetail)
             .Where(a => a.AccountType == AccountType.Party && a.PartyDetail != null &&
-                        a.PartyDetail.PartyRole == PartyRole.Transporter)
+                        (a.PartyDetail.PartyRole == PartyRole.Transporter || a.PartyDetail.PartyRole == PartyRole.Both))
             .OrderBy(a => a.Name)
             .ToListAsync();
         return accounts.Select(MapToDto).ToList();
@@ -172,8 +172,7 @@ public class AccountService : IAccountService
                 {
                     AccountId = accountId,
                     Packing = request.Packing ?? "",
-                    PackingWeightKg = request.PackingWeightKg ?? 0,
-                    Unit = request.Unit ?? "kg"
+                    PackingWeightKg = request.PackingWeightKg ?? 0
                 });
                 break;
             case AccountType.Account:
@@ -217,7 +216,6 @@ public class AccountService : IAccountService
         AccountType = a.AccountType.ToString(),
         Packing = a.ProductDetail?.Packing,
         PackingWeightKg = a.ProductDetail?.PackingWeightKg,
-        Unit = a.ProductDetail?.Unit,
         AccountNumber = a.BankDetail?.AccountNumber,
         BankName = a.BankDetail?.BankName,
         PartyRole = a.PartyDetail?.PartyRole.ToString(),

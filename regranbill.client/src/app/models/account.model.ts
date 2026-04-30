@@ -22,7 +22,6 @@ export interface Account {
   // Product-specific
   packing?: string;
   packingWeightKg?: number;
-  unit?: string;
 
   // Account-specific (bank / cash)
   accountNumber?: string;

@@ -1,7 +1,5 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { AuthService } from '../../services/auth.service';
+import { Component, OnInit } from '@angular/core';
+import { AuthenticatedPdfPageBase } from '../print-shared/authenticated-pdf-page.base';
 
 @Component({
   selector: 'app-print-master-report',
@@ -9,76 +7,17 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './print-master-report.component.css',
   standalone: false
 })
-export class PrintMasterReportComponent implements OnInit {
-  pdfUrl: SafeResourceUrl | null = null;
-  loading = true;
-  error = '';
-
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private sanitizer: DomSanitizer,
-    private authService: AuthService,
-    private cdr: ChangeDetectorRef
-  ) {}
-
+export class PrintMasterReportComponent extends AuthenticatedPdfPageBase implements OnInit {
   ngOnInit(): void {
-    const token = this.authService.currentUser?.token;
-    if (!token) {
-      this.authService.logout();
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const query = new URLSearchParams();
-    const from = this.route.snapshot.queryParamMap.get('from');
-    const to = this.route.snapshot.queryParamMap.get('to');
-    const categoryId = this.route.snapshot.queryParamMap.get('categoryId');
-    const accountId = this.route.snapshot.queryParamMap.get('accountId');
-    const columns = this.route.snapshot.queryParamMap.get('columns');
-
-    if (from) query.set('from', from);
-    if (to) query.set('to', to);
-    if (categoryId) query.set('categoryId', categoryId);
-    if (accountId) query.set('accountId', accountId);
-    if (columns) query.set('columns', columns);
-
-    const url = query.toString()
-      ? `/api/master-report/pdf?${query.toString()}`
-      : '/api/master-report/pdf';
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.responseType = 'blob';
-
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        const objectUrl = URL.createObjectURL(xhr.response);
-        this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
-        document.title = 'Print Master Report';
-        this.cdr.detectChanges();
-      } else if (xhr.status === 401 || xhr.status === 403) {
-        this.authService.logout();
-        this.router.navigate(['/login']);
-      } else {
-        this.error = `Failed to load master report PDF (${xhr.status})`;
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    };
-
-    xhr.onerror = () => {
-      this.error = 'Network error loading master report PDF';
-      this.loading = false;
-      this.cdr.detectChanges();
-    };
-
-    xhr.send();
-  }
-
-  onIframeLoad(): void {
-    this.loading = false;
-    this.cdr.detectChanges();
+    this.loadPdf(
+      this.buildUrl('/api/master-report/pdf', {
+        from: this.route.snapshot.queryParamMap.get('from'),
+        to: this.route.snapshot.queryParamMap.get('to'),
+        categoryId: this.route.snapshot.queryParamMap.get('categoryId'),
+        accountId: this.route.snapshot.queryParamMap.get('accountId'),
+        columns: this.route.snapshot.queryParamMap.get('columns')
+      }),
+      'Print Master Report'
+    );
   }
 }

@@ -14,6 +14,7 @@ import { SelectOption } from '../../components/searchable-select/searchable-sele
 import { VehicleOption } from '../../models/company-settings.model';
 import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 import { getPurchaseLineWeight, getPurchaseLineAmount, getPurchaseTotalBags, getPurchaseTotalWeight, getPurchaseTotalAmount } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 @Component({
   selector: 'app-purchase-return',
@@ -45,6 +46,7 @@ export class PurchaseReturnComponent implements OnInit {
   lines: PurchaseReturnLine[] = [];
   loading = true;
   private latestRatesByProductId = new Map<number, number>();
+  isReadOnlyRatedVoucher = false;
 
   vendorOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
@@ -158,6 +160,7 @@ export class PurchaseReturnComponent implements OnInit {
             const product = this.products.find(p => p.id === l.product!.id);
             return product?.categoryId ?? null;
           });
+          this.isReadOnlyRatedVoucher = !!pr.ratesAdded;
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -282,10 +285,14 @@ export class PurchaseReturnComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !!this.selectedVendorId && this.validLines.length > 0;
+    return !this.isReadOnlyRatedVoucher && !!this.selectedVendorId && this.validLines.length > 0;
   }
 
   private validate(): boolean {
+    if (this.isReadOnlyRatedVoucher && !this.isAdmin) {
+      this.toast.error('Only admins can edit a rated purchase return.');
+      return false;
+    }
     if (!this.selectedVendorId) {
       this.toast.error('Please select a vendor.');
       return false;
@@ -317,59 +324,46 @@ export class PurchaseReturnComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
-
-    if (this.isEditMode && this.purchaseReturnId) {
-      this.purchaseReturnService.update(this.purchaseReturnId, req).subscribe({
-        next: () => {
-          this.toast.success('Purchase return updated successfully.');
-          this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save purchase return.');
-        }
-      });
-    } else {
-      this.purchaseReturnService.create(req).subscribe({
-        next: pr => {
-          this.toast.success(`${pr.prNumber} created successfully.`);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create purchase return.');
-        }
-      });
-    }
+    this.persistVoucher(false);
   }
 
   saveAndPrint(): void {
-    if (!this.validate()) return;
-    const req = this.buildRequest();
+    this.persistVoucher(true);
+  }
 
-    if (this.isEditMode && this.purchaseReturnId) {
-      this.purchaseReturnService.update(this.purchaseReturnId, req).subscribe({
-        next: pr => {
+  private persistVoucher(openPdf: boolean): void {
+    if (!this.validate()) return;
+
+    const req = this.buildRequest();
+    const isEdit = this.isEditMode && this.purchaseReturnId !== null;
+    const request$ = isEdit
+      ? this.purchaseReturnService.update(this.purchaseReturnId!, req)
+      : this.purchaseReturnService.create(req);
+    const fallbackMessage = isEdit
+      ? 'Unable to save purchase return.'
+      : 'Unable to create purchase return.';
+
+    request$.subscribe({
+      next: purchaseReturn => {
+        if (isEdit) {
           this.toast.success('Purchase return updated successfully.');
-          this.purchaseReturnService.openPdfInNewTab(pr.id);
+          if (openPdf) {
+            this.purchaseReturnService.openPdfInNewTab(purchaseReturn.id);
+          }
           this.router.navigate(['/pending']);
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to save purchase return.');
+          return;
         }
-      });
-    } else {
-      this.purchaseReturnService.create(req).subscribe({
-        next: pr => {
-          this.toast.success(`${pr.prNumber} created successfully.`);
-          this.purchaseReturnService.openPdfInNewTab(pr.id);
-          this.resetForm();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to create purchase return.');
+
+        this.toast.success(`${purchaseReturn.prNumber} created successfully.`);
+        if (openPdf) {
+          this.purchaseReturnService.openPdfInNewTab(purchaseReturn.id);
         }
-      });
-    }
+        this.resetForm();
+      },
+      error: err => {
+        this.toast.error(getApiErrorMessage(err, fallbackMessage));
+      }
+    });
   }
 
   private resetForm(): void {
@@ -377,6 +371,7 @@ export class PurchaseReturnComponent implements OnInit {
     this.vehicleNumber = '';
     this.description = '';
     this.purchaseReturnDate = new Date();
+    this.isReadOnlyRatedVoucher = false;
     this.lines = [];
     this.addLine();
     this.purchaseReturnService.getNextNumber().subscribe({

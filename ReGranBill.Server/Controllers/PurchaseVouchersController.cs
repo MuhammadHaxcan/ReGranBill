@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -52,7 +51,11 @@ public class PurchaseVouchersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePurchaseVoucherRequest request)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!this.TryGetAuthenticatedUserId(out var userId))
+        {
+            return this.InvalidUserSession();
+        }
+
         var result = await _purchaseService.CreateAsync(request, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -60,8 +63,11 @@ public class PurchaseVouchersController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CreatePurchaseVoucherRequest request)
     {
+        var existing = await _purchaseService.GetByIdAsync(id);
+        if (existing == null) return NotFound();
+        if (existing.RatesAdded && !User.IsInRole("Admin")) return Forbid();
+
         var result = await _purchaseService.UpdateAsync(id, request);
-        if (result == null) return NotFound();
         return Ok(result);
     }
 

@@ -110,7 +110,7 @@
 }
 
 /* Product Lines */
-.product-lines {
+.card.product-lines {
   padding: 0;
   overflow: hidden;
 }

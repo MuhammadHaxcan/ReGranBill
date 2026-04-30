@@ -66,7 +66,6 @@ public class AppDbContext : DbContext
             e.ToTable("product_details");
             e.HasIndex(p => p.AccountId).IsUnique();
             e.Property(p => p.Packing).HasMaxLength(100);
-            e.Property(p => p.Unit).HasMaxLength(20).HasDefaultValue("kg");
             e.Property(p => p.PackingWeightKg).HasColumnType("decimal(10,2)");
             e.HasOne(p => p.Account).WithOne(a => a.ProductDetail).HasForeignKey<ProductDetail>(p => p.AccountId);
         });

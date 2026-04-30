@@ -120,20 +120,18 @@ public static class SeedData
 
             if (account.ProductDetail == null)
             {
-                db.ProductDetails.Add(new ProductDetail
+                    db.ProductDetails.Add(new ProductDetail
+                    {
+                        AccountId = account.Id,
+                        Packing = item.Packing,
+                        PackingWeightKg = item.WeightKg
+                    });
+                }
+                else
                 {
-                    AccountId = account.Id,
-                    Packing = item.Packing,
-                    PackingWeightKg = item.WeightKg,
-                    Unit = "kg"
-                });
-            }
-            else
-            {
-                account.ProductDetail.Packing = item.Packing;
-                account.ProductDetail.PackingWeightKg = item.WeightKg;
-                account.ProductDetail.Unit = "kg";
-            }
+                    account.ProductDetail.Packing = item.Packing;
+                    account.ProductDetail.PackingWeightKg = item.WeightKg;
+                }
 
             await db.SaveChangesAsync();
         }

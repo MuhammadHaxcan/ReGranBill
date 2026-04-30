@@ -1,8 +1,1 @@
-<div class="print-master-report-container" *ngIf="!error && pdfUrl">
-  <iframe [src]="pdfUrl" class="pdf-viewer" (load)="onIframeLoad()"></iframe>
-</div>
-<div class="print-master-report-loading" *ngIf="loading && !error">
-  <div class="spinner"></div>
-  <p>Loading PDF...</p>
-</div>
-<div class="print-master-report-error" *ngIf="error">{{ error }}</div>
+<app-pdf-viewer-shell [pdfUrl]="pdfUrl" [loading]="loading" [error]="error" (loaded)="onIframeLoad()"></app-pdf-viewer-shell>

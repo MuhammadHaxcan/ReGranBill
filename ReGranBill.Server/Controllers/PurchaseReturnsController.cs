@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
@@ -52,10 +51,9 @@ public class PurchaseReturnsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePurchaseReturnRequest request)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdClaim, out var userId))
+        if (!this.TryGetAuthenticatedUserId(out var userId))
         {
-            return Unauthorized(new { message = "Invalid user session." });
+            return this.InvalidUserSession();
         }
 
         var result = await _prService.CreateAsync(request, userId);
@@ -65,8 +63,11 @@ public class PurchaseReturnsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CreatePurchaseReturnRequest request)
     {
+        var existing = await _prService.GetByIdAsync(id);
+        if (existing == null) return NotFound();
+        if (existing.RatesAdded && !User.IsInRole("Admin")) return Forbid();
+
         var result = await _prService.UpdateAsync(id, request);
-        if (result == null) return NotFound();
         return Ok(result);
     }
 

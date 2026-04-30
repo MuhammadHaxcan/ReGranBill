@@ -1,0 +1,8 @@
+<div class="pdf-viewer-shell" *ngIf="!error && pdfUrl">
+  <iframe [src]="pdfUrl" class="pdf-viewer-frame" (load)="onIframeLoad()"></iframe>
+</div>
+<div class="pdf-viewer-state" *ngIf="loading && !error">
+  <div class="pdf-viewer-spinner"></div>
+  <p>Loading PDF...</p>
+</div>
+<div class="pdf-viewer-state pdf-viewer-error" *ngIf="error">{{ error }}</div>

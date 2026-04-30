@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.CustomerLedger;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Exceptions;
 using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Services;
@@ -31,7 +32,12 @@ public class CustomerLedgerService : ICustomerLedgerService
                 .Include(e => e.JournalVoucher)
                 .Where(e => e.AccountId == accountId)
                 .Where(e => e.JournalVoucher.Date < fromUtc.Value)
-                .Where(e => e.JournalVoucher.RatesAdded || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher)
+                .Where(e =>
+                    (e.JournalVoucher.RatesAdded || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher)
+                    && !(e.JournalVoucher.VoucherType == VoucherType.CartageVoucher
+                        && _db.JournalVoucherReferences.Any(r =>
+                            r.ReferenceVoucherId == e.VoucherId
+                            && !r.MainVoucher.RatesAdded)))
                 .ToListAsync();
 
             openingBalance = openingEntries.Sum(e => e.Debit - e.Credit);
@@ -198,10 +204,15 @@ public class CustomerLedgerService : ICustomerLedgerService
 
     public async Task<List<CustomerLedgerDto>> GetAllLedgersAsync(string partyType, DateOnly? fromDate, DateOnly? toDate)
     {
+        if (!Enum.TryParse<PartyRole>(partyType, true, out var requestedRole))
+        {
+            throw new RequestValidationException("Select a valid party type.");
+        }
+
         var accounts = await _db.Accounts
             .Include(a => a.PartyDetail)
             .Where(a => a.PartyDetail != null)
-            .Where(a => a.PartyDetail!.PartyRole.ToString() == partyType)
+            .Where(a => MatchesRequestedPartyRole(a.PartyDetail!.PartyRole, requestedRole))
             .ToListAsync();
 
         var ledgers = new List<CustomerLedgerDto>();
@@ -213,4 +224,14 @@ public class CustomerLedgerService : ICustomerLedgerService
         }
         return ledgers;
     }
+
+    private static bool MatchesRequestedPartyRole(PartyRole actualRole, PartyRole requestedRole) =>
+        requestedRole switch
+        {
+            PartyRole.Customer => actualRole is PartyRole.Customer or PartyRole.Both,
+            PartyRole.Vendor => actualRole is PartyRole.Vendor or PartyRole.Both,
+            PartyRole.Transporter => actualRole is PartyRole.Transporter or PartyRole.Both,
+            PartyRole.Both => actualRole == PartyRole.Both,
+            _ => false
+        };
 }

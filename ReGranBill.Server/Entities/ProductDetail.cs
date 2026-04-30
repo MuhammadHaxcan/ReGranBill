@@ -6,7 +6,6 @@ public class ProductDetail
     public int AccountId { get; set; }
     public string Packing { get; set; } = string.Empty;
     public decimal PackingWeightKg { get; set; }
-    public string Unit { get; set; } = "kg";
 
     public Account Account { get; set; } = null!;
 }

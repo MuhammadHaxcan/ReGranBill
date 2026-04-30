@@ -91,7 +91,6 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                 }
 
                 var isPurchaseLine = voucher.VoucherType == VoucherType.PurchaseVoucher;
-                var isSaleReturnLine = voucher.VoucherType == VoucherType.SaleReturnVoucher;
                 var isPurchaseReturnLine = voucher.VoucherType == VoucherType.PurchaseReturnVoucher;
                 var sampleEntry = entryGroup.First();
                 var packingWeight = sampleEntry.Account?.ProductDetail?.PackingWeightKg ?? 0m;
@@ -104,7 +103,7 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                 {
                     var quantity = entry.Qty ?? 0;
                     var isPacked = isPurchaseLine
-                        || (!isSaleReturnLine && string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase));
+                        || string.Equals(entry.Rbp, "Yes", StringComparison.OrdinalIgnoreCase);
                     var lineWeight = isPurchaseLine || isPurchaseReturnLine
                         ? entry.ActualWeightKg ?? 0m
                         : isPacked
@@ -134,7 +133,6 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                     ProductId = sampleEntry.AccountId,
                     ProductName = sampleEntry.Account?.Name ?? "-",
                     Packing = sampleEntry.Account?.ProductDetail?.Packing,
-                    Unit = sampleEntry.Account?.ProductDetail?.Unit,
                     Rbp = looseWeightKg > 0 && packedBags > 0 ? "Mixed" : (packedBags > 0 ? "Yes" : "No"),
                     Qty = packedBags,
                     LooseWeightKg = looseWeightKg,

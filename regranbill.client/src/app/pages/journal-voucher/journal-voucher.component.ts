@@ -10,6 +10,7 @@ import { CategoryService } from '../../services/category.service';
 import { JournalVoucherService } from '../../services/journal-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { round2 } from '../../utils/delivery-calculations';
+import { getApiErrorMessage } from '../../utils/api-error';
 
 interface EditableJournalLine {
   id?: number;
@@ -199,32 +200,31 @@ export class JournalVoucherComponent implements OnInit {
     const request = this.buildRequest();
     this.saving = true;
 
-    if (this.isEditMode && this.voucherId) {
-      this.journalVoucherService.update(this.voucherId, request).subscribe({
-        next: voucher => {
+    const isEdit = this.isEditMode && this.voucherId !== null;
+    const request$ = isEdit
+      ? this.journalVoucherService.update(this.voucherId!, request)
+      : this.journalVoucherService.create(request);
+    const fallbackMessage = isEdit
+      ? 'Unable to update journal voucher.'
+      : 'Unable to create journal voucher.';
+
+    request$.subscribe({
+      next: (voucher: any) => {
+        if (isEdit) {
           this.setVoucher(voucher);
           this.toast.success(`${voucher.voucherNumber} updated successfully.`);
           this.saving = false;
           this.cdr.detectChanges();
-        },
-        error: err => {
-          this.toast.error(err?.error?.message || 'Unable to update journal voucher.');
-          this.saving = false;
-          this.cdr.detectChanges();
+          return;
         }
-      });
-      return;
-    }
 
-    this.journalVoucherService.create(request).subscribe({
-      next: (voucher: any) => {
         this.saving = false;
         const num = voucher?.voucherNumber || this.voucherNumber;
         this.toast.success(`${num} created successfully.`);
         this.resetForNextVoucher();
       },
       error: err => {
-        this.toast.error(err?.error?.message || 'Unable to create journal voucher.');
+        this.toast.error(getApiErrorMessage(err, fallbackMessage));
         this.saving = false;
         this.cdr.detectChanges();
       }
