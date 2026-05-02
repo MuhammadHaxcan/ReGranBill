@@ -112,7 +112,7 @@ public class DeliveryChallanService : IDeliveryChallanService
     public async Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId)
     {
         var validation = await ValidateRequestAsync(request, PartyRole.Customer, "customer");
-        var dcDate = VoucherHelpers.NormalizeToUtc(request.Date);
+        var dcDate = request.Date;
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -206,7 +206,7 @@ public class DeliveryChallanService : IDeliveryChallanService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        saleJv.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        saleJv.Date = request.Date;
         saleJv.VehicleNumber = request.VehicleNumber;
         saleJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Sale to", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         saleJv.RatesAdded = request.Lines.All(l => l.Rate > 0);

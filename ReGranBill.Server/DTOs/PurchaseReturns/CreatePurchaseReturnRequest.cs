@@ -2,7 +2,7 @@ namespace ReGranBill.Server.DTOs.PurchaseReturns;
 
 public class CreatePurchaseReturnRequest
 {
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int VendorId { get; set; }
     public string? VehicleNumber { get; set; }
     public string? Description { get; set; }

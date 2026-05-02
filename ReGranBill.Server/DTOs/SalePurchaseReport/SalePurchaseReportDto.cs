@@ -17,7 +17,7 @@ public class SalePurchaseReportRowDto
     public int VoucherId { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
     public string? Packing { get; set; }
@@ -31,5 +31,5 @@ public class SalePurchaseReportRowDto
     public string ToName { get; set; } = string.Empty;
     public string? TransporterName { get; set; }
     public string GroupLabel { get; set; } = string.Empty;
-    public DateTime GroupSortDate { get; set; }
+    public DateOnly GroupSortDate { get; set; }
 }

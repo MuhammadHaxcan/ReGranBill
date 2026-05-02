@@ -9,8 +9,8 @@ public class StatementOfAccountDto
     public string? Phone { get; set; }
     public string? City { get; set; }
     public string? Address { get; set; }
-    public DateTime? FromDate { get; set; }
-    public DateTime? ToDate { get; set; }
+    public DateOnly? FromDate { get; set; }
+    public DateOnly? ToDate { get; set; }
     public decimal TotalDebit { get; set; }
     public decimal TotalCredit { get; set; }
     public decimal NetBalance { get; set; }
@@ -21,7 +21,7 @@ public class StatementEntryDto
 {
     public int EntryId { get; set; }
     public int VoucherId { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;
     public string? Description { get; set; }

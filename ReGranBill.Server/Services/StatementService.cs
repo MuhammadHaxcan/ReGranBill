@@ -14,9 +14,6 @@ public class StatementService : IStatementService
 
     public async Task<StatementOfAccountDto?> GetStatementAsync(int accountId, DateOnly? from, DateOnly? to)
     {
-        var fromDate = VoucherHelpers.ToUtcStartOfDay(from);
-        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(to?.AddDays(1));
-
         var account = await _db.Accounts
             .Include(a => a.PartyDetail)
             .FirstOrDefaultAsync(a => a.Id == accountId);
@@ -34,11 +31,11 @@ public class StatementService : IStatementService
                         r.ReferenceVoucherId == e.VoucherId
                         && !r.MainVoucher.RatesAdded)));
 
-        if (fromDate.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date >= fromDate.Value);
+        if (from.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date >= from.Value);
 
-        if (toExclusiveDate.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date < toExclusiveDate.Value);
+        if (to.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date <= to.Value);
 
         var entries = await query
             .OrderBy(e => e.JournalVoucher.Date)
@@ -76,8 +73,8 @@ public class StatementService : IStatementService
             Phone = account.PartyDetail?.Phone,
             City = account.PartyDetail?.City,
             Address = account.PartyDetail?.Address,
-            FromDate = VoucherHelpers.ToUtcStartOfDay(from),
-            ToDate = VoucherHelpers.ToUtcStartOfDay(to),
+            FromDate = from,
+            ToDate = to,
             TotalDebit = entryDtos.Sum(e => e.Debit),
             TotalCredit = entryDtos.Sum(e => e.Credit),
             NetBalance = runningBalance,

@@ -14,8 +14,6 @@ public class AccountClosingReportService : IAccountClosingReportService
 
     public async Task<AccountClosingReportDto> GetReportAsync(DateOnly? from, DateOnly? to, int? accountId, int? historyAccountId = null)
     {
-        var fromDate = VoucherHelpers.ToUtcStartOfDay(from);
-        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(to?.AddDays(1));
         var historyTargetId = historyAccountId ?? accountId;
 
         var accountQuery = _db.Accounts
@@ -37,8 +35,8 @@ public class AccountClosingReportService : IAccountClosingReportService
         {
             return new AccountClosingReportDto
             {
-                FromDate = fromDate,
-                ToDate = toExclusiveDate?.AddDays(-1),
+                FromDate = from,
+                ToDate = to,
                 SelectedAccountId = accountId,
                 HistoryAccountId = historyTargetId
             };
@@ -56,9 +54,9 @@ public class AccountClosingReportService : IAccountClosingReportService
                       reference.ReferenceVoucherId == entry.VoucherId &&
                       !reference.MainVoucher.RatesAdded)));
 
-        if (toExclusiveDate.HasValue)
+        if (to.HasValue)
         {
-            entryQuery = entryQuery.Where(entry => entry.JournalVoucher.Date < toExclusiveDate.Value);
+            entryQuery = entryQuery.Where(entry => entry.JournalVoucher.Date <= to.Value);
         }
 
         var entries = await entryQuery
@@ -72,14 +70,14 @@ public class AccountClosingReportService : IAccountClosingReportService
         foreach (var account in accounts)
         {
             var accountEntries = entries.Where(entry => entry.AccountId == account.Id).ToList();
-            var openingBalance = fromDate.HasValue
+            var openingBalance = from.HasValue
                 ? accountEntries
-                    .Where(entry => entry.JournalVoucher.Date < fromDate.Value)
+                    .Where(entry => entry.JournalVoucher.Date < from.Value)
                     .Sum(entry => entry.Debit - entry.Credit)
                 : 0m;
 
             var periodEntries = accountEntries
-                .Where(entry => !fromDate.HasValue || entry.JournalVoucher.Date >= fromDate.Value)
+                .Where(entry => !from.HasValue || entry.JournalVoucher.Date >= from.Value)
                 .ToList();
 
             var periodDebit = periodEntries.Sum(entry => entry.Debit);
@@ -109,7 +107,7 @@ public class AccountClosingReportService : IAccountClosingReportService
         {
             var selectedEntries = entries
                 .Where(entry => entry.AccountId == historyTargetId.Value)
-                .Where(entry => !fromDate.HasValue || entry.JournalVoucher.Date >= fromDate.Value)
+                .Where(entry => !from.HasValue || entry.JournalVoucher.Date >= from.Value)
                 .OrderBy(entry => entry.JournalVoucher.Date)
                 .ThenBy(entry => entry.JournalVoucher.Id)
                 .ThenBy(entry => entry.SortOrder)
@@ -142,8 +140,8 @@ public class AccountClosingReportService : IAccountClosingReportService
 
         return new AccountClosingReportDto
         {
-            FromDate = fromDate,
-            ToDate = toExclusiveDate?.AddDays(-1),
+            FromDate = from,
+            ToDate = to,
             SelectedAccountId = accountId,
             SelectedAccountName = selectedAccountName,
             HistoryAccountId = historyTargetId,

@@ -28,11 +28,11 @@
     </div>
     <div class="filter-field">
       <label>From Date</label>
-      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+      <input type="text" bsDatepicker [(ngModel)]="fromDate" class="filter-input" autocomplete="off" placeholder="DD-MM-YYYY" />
     </div>
     <div class="filter-field">
       <label>To Date</label>
-      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+      <input type="text" bsDatepicker [(ngModel)]="toDate" class="filter-input" autocomplete="off" placeholder="DD-MM-YYYY" />
     </div>
     <div class="filter-actions">
       <button class="btn btn-primary" (click)="loadLedger()" [disabled]="!selectedCategoryId || !selectedAccountId">View</button>
@@ -53,13 +53,13 @@
         <div class="balance-item">
           <span class="balance-label">Opening</span>
           <span class="balance-value" [class.balance-positive]="ledger.openingBalance >= 0" [class.balance-negative]="ledger.openingBalance < 0">
-            {{ ledger.hasOpeningBalance ? (ledger.openingBalance | flexNumber) : '' }}
+            {{ ledger.hasOpeningBalance ? (ledger.openingBalance | pkCurrency) : '' }}
           </span>
         </div>
         <div class="balance-item">
           <span class="balance-label">Closing</span>
           <span class="balance-value" [class.balance-positive]="ledger.closingBalance >= 0" [class.balance-negative]="ledger.closingBalance < 0">
-            {{ ledger.closingBalance | flexNumber }}
+            {{ ledger.closingBalance | pkCurrency }}
           </span>
         </div>
       </div>
@@ -131,15 +131,15 @@
             <span *ngIf="entry.rate == null" class="text-muted">-</span>
           </td>
           <td class="col-debit">
-            <span *ngIf="entry.debit > 0">{{ entry.debit | flexNumber }}</span>
+            <span *ngIf="entry.debit > 0">{{ entry.debit | pkCurrency }}</span>
             <span *ngIf="entry.debit === 0" class="text-muted">-</span>
           </td>
           <td class="col-credit">
-            <span *ngIf="entry.credit > 0">{{ entry.credit | flexNumber }}</span>
+            <span *ngIf="entry.credit > 0">{{ entry.credit | pkCurrency }}</span>
             <span *ngIf="entry.credit === 0" class="text-muted">-</span>
           </td>
           <td class="col-balance" [class.balance-positive]="entry.runningBalance >= 0" [class.balance-negative]="entry.runningBalance < 0">
-            {{ entry.runningBalance | flexNumber }}
+            {{ entry.runningBalance | pkCurrency }}
           </td>
         </tr>
       </tbody>

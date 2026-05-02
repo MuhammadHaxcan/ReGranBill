@@ -2,7 +2,7 @@ namespace ReGranBill.Server.DTOs.JournalVouchers;
 
 public class CreateJournalVoucherRequest
 {
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Description { get; set; }
     public List<CreateJournalVoucherLineRequest> Entries { get; set; } = new();
 }

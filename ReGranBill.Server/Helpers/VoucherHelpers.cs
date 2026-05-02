@@ -5,19 +5,6 @@ namespace ReGranBill.Server.Helpers;
 
 internal static class VoucherHelpers
 {
-    public static DateTime NormalizeToUtc(DateTime date) =>
-        date.Kind switch
-        {
-            DateTimeKind.Utc => date,
-            DateTimeKind.Local => date.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc)
-        };
-
-    public static DateTime? ToUtcStartOfDay(DateOnly? value) =>
-        value.HasValue
-            ? DateTime.SpecifyKind(value.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)
-            : null;
-
     public static bool IsInventoryAccount(Account? account) =>
         account?.AccountType is AccountType.Product or AccountType.RawMaterial;
 
@@ -66,7 +53,7 @@ internal static class VoucherHelpers
 
     public static JournalVoucher BuildCartageVoucher(
         string voucherNumber,
-        DateTime date,
+        DateOnly date,
         string relatedVoucherNumber,
         int userId,
         int partyId,

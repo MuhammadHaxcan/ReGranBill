@@ -369,6 +369,51 @@ a {
   font-weight: 700 !important;
 }
 
+/* ==================== Text Alignment Utilities ==================== */
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+/* ==================== ngx-bootstrap Datepicker Overrides ==================== */
+.bs-datepicker {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+}
+
+.bs-datepicker-head {
+  background: var(--primary) !important;
+}
+
+.bs-datepicker-body table td span.selected,
+.bs-datepicker-body table td.selected span,
+.bs-datepicker-body table td span[class*="select-"]:after,
+.bs-datepicker-body table td[class*="select-"] span:after {
+  background: var(--primary) !important;
+}
+
+.bs-datepicker-body table td.week span {
+  color: var(--primary);
+}
+
+.bs-datepicker-body table td span.is-highlighted:not(.disabled):not(.selected),
+.bs-datepicker-body table td:not(.disabled):not(.week) span:not(.disabled):not(.selected):hover {
+  background: var(--primary-light);
+  color: var(--text-primary);
+}
+
+.bs-datepicker-predefined-btns button.selected {
+  background: var(--primary);
+}
+
 /* ==================== Selection & Focus ==================== */
 ::selection {
   background: rgba(79, 70, 229, 0.15);

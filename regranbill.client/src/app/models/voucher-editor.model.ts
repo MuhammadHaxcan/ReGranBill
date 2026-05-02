@@ -40,7 +40,7 @@ export interface VoucherEditorVoucher {
 export interface UpdateVoucherEditorRequest {
   voucherType: VoucherType;
   voucherNumber: string;
-  date: Date;
+  date: string;
   description?: string | null;
   vehicleNumber?: string | null;
   entries: UpdateVoucherEditorEntryRequest[];

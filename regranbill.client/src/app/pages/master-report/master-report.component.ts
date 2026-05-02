@@ -8,6 +8,7 @@ import { SearchableSelectComponent, SelectOption } from '../../components/search
 import { MasterReport, MasterReportAccountSummary, MasterReportEntry } from '../../models/master-report.model';
 import { Account, PartyRole } from '../../models/account.model';
 import { forkJoin } from 'rxjs';
+import { toDateInputValue } from '../../utils/date-utils';
 
 interface Category {
   id: number;
@@ -41,8 +42,8 @@ export class MasterReportComponent implements OnInit {
   ];
 
   // Filters
-  fromDate = '';
-  toDate = '';
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
   selectedCategoryId: number | null = null;
   selectedAccountId: number | null = null;
   searchText = '';
@@ -140,8 +141,8 @@ export class MasterReportComponent implements OnInit {
   loadReport(): void {
     this.loading = true;
     this.reportService.getReport(
-      this.fromDate || undefined,
-      this.toDate || undefined,
+      toDateInputValue(this.fromDate) || undefined,
+      toDateInputValue(this.toDate) || undefined,
       this.selectedCategoryId ?? undefined,
       this.selectedAccountId ?? undefined
     ).subscribe({
@@ -159,8 +160,8 @@ export class MasterReportComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.fromDate = '';
-    this.toDate = '';
+    this.fromDate = null;
+    this.toDate = null;
     this.selectedCategoryId = null;
     this.selectedAccountId = null;
     this.searchText = '';
@@ -202,8 +203,10 @@ export class MasterReportComponent implements OnInit {
 
   openPrint(): void {
     const queryParams: Record<string, string> = {};
-    if (this.fromDate) queryParams['from'] = this.fromDate;
-    if (this.toDate) queryParams['to'] = this.toDate;
+    const fromDateStr = toDateInputValue(this.fromDate);
+    const toDateStr = toDateInputValue(this.toDate);
+    if (fromDateStr) queryParams['from'] = fromDateStr;
+    if (toDateStr) queryParams['to'] = toDateStr;
     if (this.selectedCategoryId !== null) queryParams['categoryId'] = this.selectedCategoryId.toString();
     if (this.selectedAccountId !== null) queryParams['accountId'] = this.selectedAccountId.toString();
     queryParams['columns'] = this.visibleColumnKeys.join(',');

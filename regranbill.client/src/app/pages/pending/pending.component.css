@@ -163,9 +163,9 @@
 }
 
 .type-dc { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
-.type-sr { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
-.type-pv { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
-.type-pr { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.type-sr { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.type-pv { background: #f3e8ff; color: #7c3aed; border: 1px solid #d8b4fe; }
+.type-pr { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
 /* Action Buttons */
 .action-buttons {

@@ -587,7 +587,7 @@ public class PdfService : IPdfService
 
     private byte[] GenerateVoucherPdf(
         string voucherNumber,
-        DateTime date,
+        DateOnly date,
         string? partyName,
         string? vehicleNumber,
         string? description,

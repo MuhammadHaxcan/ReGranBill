@@ -63,7 +63,7 @@ public class VoucherEditorService : IVoucherEditorService
         var accountsById = await ValidateUpdateRequestAsync(voucherType, request);
         await ValidateLinkedVoucherConsistencyAsync(voucher, voucherType, request);
 
-        voucher.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        voucher.Date = request.Date;
         voucher.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
         voucher.VehicleNumber = SupportsVehicleNumber(voucherType)
             ? VoucherHelpers.ToNullIfWhiteSpace(request.VehicleNumber)
@@ -154,7 +154,7 @@ public class VoucherEditorService : IVoucherEditorService
         if (cartageCustomerLines[0].AccountId != linkedPartyLine.AccountId)
             throw new RequestValidationException("Cartage voucher party must match the linked main voucher party.");
 
-        if (VoucherHelpers.NormalizeToUtc(request.Date).Date != saleVoucher.Date.Date)
+        if (request.Date != saleVoucher.Date)
             throw new RequestValidationException("Cartage voucher date must match the linked main voucher date.");
     }
 

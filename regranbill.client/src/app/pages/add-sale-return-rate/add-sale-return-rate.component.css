@@ -554,10 +554,6 @@
   color: var(--success);
 }
 
-.text-right {
-  text-align: right;
-}
-
 .jv-totals td {
   padding: 14px;
   border-top: 2px solid var(--border);

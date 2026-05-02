@@ -29,18 +29,16 @@ public class ProductStockReportService : IProductStockReportService
 
     public async Task<ProductStockReportDto> GetReportAsync(ProductStockReportQueryDto query)
     {
-        var normalizedFrom = query.From;
-        var normalizedTo = query.To;
-        var fromDate = VoucherHelpers.ToUtcStartOfDay(normalizedFrom);
-        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(normalizedTo?.AddDays(1));
+        var fromDate = query.From;
+        var toDate = query.To;
 
         var entryQuery = _db.JournalEntries
             .AsNoTracking()
             .Where(e => e.Account.AccountType == AccountType.Product || e.Account.AccountType == AccountType.RawMaterial)
             .Where(e => e.JournalVoucher.RatesAdded);
 
-        if (toExclusiveDate.HasValue)
-            entryQuery = entryQuery.Where(e => e.JournalVoucher.Date < toExclusiveDate.Value);
+        if (toDate.HasValue)
+            entryQuery = entryQuery.Where(e => e.JournalVoucher.Date <= toDate.Value);
 
         if (query.CategoryId.HasValue)
             entryQuery = entryQuery.Where(e => e.Account.CategoryId == query.CategoryId.Value);
@@ -208,8 +206,8 @@ public class ProductStockReportService : IProductStockReportService
 
         return new ProductStockReportDto
         {
-            From = normalizedFrom,
-            To = normalizedTo,
+            From = fromDate,
+            To = toDate,
             CategoryId = query.CategoryId,
             ProductId = query.ProductId,
             IncludeDetails = query.IncludeDetails,
@@ -386,7 +384,7 @@ public class ProductStockReportService : IProductStockReportService
         public int VoucherId { get; set; }
         public string VoucherNumber { get; set; } = string.Empty;
         public string VoucherType { get; set; } = string.Empty;
-        public DateTime Date { get; set; }
+        public DateOnly Date { get; set; }
         public int SortOrder { get; set; }
         public int ProductId { get; set; }
         public string ProductName { get; set; } = string.Empty;

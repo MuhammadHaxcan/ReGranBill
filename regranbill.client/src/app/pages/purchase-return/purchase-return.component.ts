@@ -28,14 +28,6 @@ export class PurchaseReturnComponent implements OnInit {
   prNumber = '';
   purchaseReturnDate = new Date();
 
-  get purchaseReturnDateIso(): string {
-    return toDateInputValue(this.purchaseReturnDate);
-  }
-
-  set purchaseReturnDateIso(val: string) {
-    if (!val) return;
-    this.purchaseReturnDate = parseLocalDate(val);
-  }
   selectedVendorId: number | null = null;
   vehicleNumber = '';
   description = '';
@@ -264,7 +256,7 @@ export class PurchaseReturnComponent implements OnInit {
 
   private buildRequest(): any {
     return {
-      date: this.purchaseReturnDate,
+      date: toDateInputValue(this.purchaseReturnDate),
       vendorId: this.selectedVendorId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,

@@ -400,8 +400,12 @@
   background: #7c3aed;
 }
 
-.vtype-saleReturnvoucher {
+.vtype-salereturnvoucher {
   background: #92400e;
+}
+
+.vtype-purchasereturnvoucher {
+  background: #dc2626;
 }
 
 .voucher-link {

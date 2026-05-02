@@ -2,8 +2,8 @@ namespace ReGranBill.Server.DTOs.MasterReport;
 
 public class MasterReportDto
 {
-    public DateTime? FromDate { get; set; }
-    public DateTime? ToDate { get; set; }
+    public DateOnly? FromDate { get; set; }
+    public DateOnly? ToDate { get; set; }
     public string? CategoryName { get; set; }
     public string? AccountName { get; set; }
     public int TotalEntries { get; set; }
@@ -20,7 +20,7 @@ public class MasterReportEntryDto
     public int VoucherId { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Description { get; set; }
     public string AccountName { get; set; } = string.Empty;
     public int? Quantity { get; set; }

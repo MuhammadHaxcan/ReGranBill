@@ -100,15 +100,6 @@ export class VoucherEditorComponent implements OnInit {
     private toast: ToastService
   ) {}
 
-  get voucherDateIso(): string {
-    return toDateInputValue(this.voucherDate);
-  }
-
-  set voucherDateIso(value: string) {
-    if (!value) return;
-    this.voucherDate = parseLocalDate(value);
-  }
-
   get hasLoadedVoucher(): boolean {
     return this.voucher !== null;
   }
@@ -437,7 +428,7 @@ export class VoucherEditorComponent implements OnInit {
     return {
       voucherType: voucher.voucherType,
       voucherNumber: voucher.voucherNumber,
-      date: this.voucherDate,
+      date: toDateInputValue(this.voucherDate),
       description: this.description.trim() || null,
       vehicleNumber: this.supportsVehicleNumber ? (this.vehicleNumber.trim() || null) : null,
       entries: this.lines.map((line, index) => ({

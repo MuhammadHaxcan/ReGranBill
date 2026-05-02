@@ -7,7 +7,7 @@ import { SearchableSelectComponent, SelectOption } from '../../components/search
 import { CustomerLedger, CustomerLedgerEntry } from '../../models/customer-ledger.model';
 import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { Category } from '../../models/category.model';
-import { formatDateDisplay } from '../../utils/date-utils';
+import { formatDateDisplay, toDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-customer-ledger',
@@ -21,8 +21,8 @@ export class CustomerLedgerComponent implements OnInit {
   accountOptions: SelectOption[] = [];
   selectedCategoryId: number | null = null;
   selectedAccountId: number | null = null;
-  fromDate = '';
-  toDate = '';
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
   ledger: CustomerLedger | null = null;
   loading = false;
 
@@ -102,8 +102,8 @@ export class CustomerLedgerComponent implements OnInit {
     this.loading = true;
     this.ledgerService.getLedger(
       this.selectedAccountId,
-      this.fromDate,
-      this.toDate
+      toDateInputValue(this.fromDate),
+      toDateInputValue(this.toDate)
     ).subscribe({
       next: data => {
         this.ledger = data;
@@ -123,8 +123,8 @@ export class CustomerLedgerComponent implements OnInit {
     this.selectedAccountId = null;
     this.accounts = [];
     this.accountOptions = [];
-    this.fromDate = '';
-    this.toDate = '';
+    this.fromDate = null;
+    this.toDate = null;
     this.ledger = null;
     this.cdr.detectChanges();
   }
@@ -153,11 +153,13 @@ export class CustomerLedgerComponent implements OnInit {
     if (!this.selectedAccountId) return;
     let target = `/print-customer-ledger/${this.selectedAccountId}`;
     const query = new URLSearchParams();
-    if (this.fromDate) {
-      query.set('fromDate', this.fromDate);
+    const fromDateStr = toDateInputValue(this.fromDate);
+    const toDateStr = toDateInputValue(this.toDate);
+    if (fromDateStr) {
+      query.set('fromDate', fromDateStr);
     }
-    if (this.toDate) {
-      query.set('toDate', this.toDate);
+    if (toDateStr) {
+      query.set('toDate', toDateStr);
     }
     const queryString = query.toString();
     if (queryString) {

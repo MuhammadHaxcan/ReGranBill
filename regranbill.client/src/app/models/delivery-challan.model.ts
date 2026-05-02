@@ -110,7 +110,7 @@ export interface DeliveryChallanViewModel {
 }
 
 export interface DeliveryChallanUpsertRequest {
-  date: Date;
+  date: string;
   customerId: number;
   vehicleNumber?: string | null;
   description: string;

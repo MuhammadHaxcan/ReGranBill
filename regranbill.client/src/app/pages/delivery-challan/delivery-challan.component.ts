@@ -13,7 +13,7 @@ import { Category } from '../../models/category.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { VehicleOption } from '../../models/company-settings.model';
-import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
+import { formatDateDisplay, toDateInputValue } from '../../utils/date-utils';
 import { getDeliveryLineWeight, getDeliveryLineAmount, getDeliveryTotalBags, getDeliveryTotalWeight, getDeliveryTotalAmount, isPackedLine } from '../../utils/delivery-calculations';
 import { getApiErrorMessage } from '../../utils/api-error';
 
@@ -31,14 +31,6 @@ export class DeliveryChallanComponent implements OnInit {
   selectedCustomerId: number | null = null;
   vehicleNumber = '';
 
-  get dcDateIso(): string {
-    return toDateInputValue(this.dcDate);
-  }
-
-  set dcDateIso(val: string) {
-    if (!val) return;
-    this.dcDate = parseLocalDate(val);
-  }
   description = '';
 
   products: Account[] = [];
@@ -336,7 +328,7 @@ export class DeliveryChallanComponent implements OnInit {
 
   private buildRequest() {
     return {
-      date: this.dcDate,
+      date: toDateInputValue(this.dcDate),
       customerId: this.selectedCustomerId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,

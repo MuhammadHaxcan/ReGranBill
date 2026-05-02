@@ -7,7 +7,7 @@ import { ToastService } from '../../services/toast.service';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { StatementEntry, StatementOfAccount } from '../../models/statement.model';
 import { Account, PartyRole } from '../../models/account.model';
-import { formatDateDisplay } from '../../utils/date-utils';
+import { formatDateDisplay, toDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-soa',
@@ -19,8 +19,8 @@ export class SoaComponent implements OnInit {
   customers: Account[] = [];
   accountOptions: SelectOption[] = [];
   selectedAccountId: number | null = null;
-  fromDate = '';
-  toDate = '';
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
   statement: StatementOfAccount | null = null;
   loading = false;
 
@@ -66,8 +66,8 @@ export class SoaComponent implements OnInit {
     this.loading = true;
     this.statementService.getStatement(
       this.selectedAccountId,
-      this.fromDate || undefined,
-      this.toDate || undefined
+      toDateInputValue(this.fromDate) || undefined,
+      toDateInputValue(this.toDate) || undefined
     ).subscribe({
       next: data => {
         this.statement = data;
@@ -83,8 +83,8 @@ export class SoaComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.fromDate = '';
-    this.toDate = '';
+    this.fromDate = null;
+    this.toDate = null;
     if (this.selectedAccountId) {
       this.loadStatement();
     }
@@ -117,8 +117,10 @@ export class SoaComponent implements OnInit {
     if (!this.selectedAccountId || !this.canPrintStatement) return;
 
     const params = new URLSearchParams();
-    if (this.fromDate) params.set('fromDate', this.fromDate);
-    if (this.toDate) params.set('toDate', this.toDate);
+    const fromDateStr = toDateInputValue(this.fromDate);
+    const toDateStr = toDateInputValue(this.toDate);
+    if (fromDateStr) params.set('fromDate', fromDateStr);
+    if (toDateStr) params.set('toDate', toDateStr);
 
     const query = params.toString();
     const target = query

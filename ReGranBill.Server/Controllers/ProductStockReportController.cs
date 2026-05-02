@@ -23,7 +23,7 @@ public class ProductStockReportController : ControllerBase
     public async Task<IActionResult> GetReport([FromQuery] ProductStockReportQueryDto query)
     {
         if (query.From.HasValue && query.To.HasValue && query.From.Value > query.To.Value)
-            return BadRequest(new { message = "From date cannot be greater than To date." });
+            return BadRequest(new { statusCode = StatusCodes.Status400BadRequest, message = "From date cannot be greater than To date." });
 
         var result = await _reportService.GetReportAsync(query);
         return Ok(result);
@@ -33,7 +33,7 @@ public class ProductStockReportController : ControllerBase
     public async Task<IActionResult> GetReportPdf([FromQuery] ProductStockReportQueryDto query, [FromQuery] int? selectedMovementProductId)
     {
         if (query.From.HasValue && query.To.HasValue && query.From.Value > query.To.Value)
-            return BadRequest(new { message = "From date cannot be greater than To date." });
+            return BadRequest(new { statusCode = StatusCodes.Status400BadRequest, message = "From date cannot be greater than To date." });
 
         var result = await _reportService.GetReportAsync(query);
         var pdfBytes = _pdfService.GenerateProductStockReportPdf(result, selectedMovementProductId);

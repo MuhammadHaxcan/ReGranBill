@@ -95,7 +95,7 @@ public class SaleReturnService : ISaleReturnService
     public async Task<SaleReturnDto> CreateAsync(CreateSaleReturnRequest request, int userId)
     {
         var validation = await ValidateRequestAsync(request);
-        var srDate = VoucherHelpers.NormalizeToUtc(request.Date);
+        var srDate = request.Date;
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -166,7 +166,7 @@ public class SaleReturnService : ISaleReturnService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        saleReturnJv.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        saleReturnJv.Date = request.Date;
         saleReturnJv.VehicleNumber = null;
         saleReturnJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Return from", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         saleReturnJv.RatesAdded = request.Lines.All(l => l.Rate > 0);

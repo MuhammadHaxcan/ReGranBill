@@ -11,6 +11,7 @@ import { JournalVoucherService } from '../../services/journal-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { round2 } from '../../utils/delivery-calculations';
 import { getApiErrorMessage } from '../../utils/api-error';
+import { toDateInputValue } from '../../utils/date-utils';
 
 interface EditableJournalLine {
   id?: number;
@@ -59,18 +60,6 @@ export class JournalVoucherComponent implements OnInit {
     private journalVoucherService: JournalVoucherService,
     private toast: ToastService
   ) {}
-
-  get voucherDateIso(): string {
-    const year = this.voucherDate.getFullYear();
-    const month = String(this.voucherDate.getMonth() + 1).padStart(2, '0');
-    const day = String(this.voucherDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  set voucherDateIso(value: string) {
-    if (!value) return;
-    this.voucherDate = new Date(value);
-  }
 
   get totalDebit(): number {
     return round2(this.lines.reduce((sum, line) => sum + (line.debit || 0), 0));
@@ -254,7 +243,7 @@ export class JournalVoucherComponent implements OnInit {
 
   private buildRequest(): CreateJournalVoucherRequest {
     return {
-      date: this.voucherDate,
+      date: toDateInputValue(this.voucherDate),
       description: this.description.trim() || null,
       entries: this.lines.map((line, index) => ({
         accountId: line.accountId!,

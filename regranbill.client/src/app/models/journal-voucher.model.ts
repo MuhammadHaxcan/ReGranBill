@@ -22,7 +22,7 @@ export interface JournalVoucher {
 }
 
 export interface CreateJournalVoucherRequest {
-  date: Date;
+  date: string;
   description?: string | null;
   entries: CreateJournalVoucherEntryRequest[];
 }

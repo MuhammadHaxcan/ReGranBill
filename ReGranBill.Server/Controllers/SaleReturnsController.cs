@@ -94,7 +94,7 @@ public class SaleReturnsController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _srService.SoftDeleteAsync(id);
-        if (error != null) return Conflict(new { message = error });
+        if (error != null) return Conflict(new { statusCode = StatusCodes.Status409Conflict, message = error });
         if (!success) return NotFound();
         return NoContent();
     }

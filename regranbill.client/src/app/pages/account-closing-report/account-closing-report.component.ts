@@ -6,6 +6,7 @@ import { AccountClosingHistoryEntry, AccountClosingReport, AccountClosingSummary
 import { AccountService } from '../../services/account.service';
 import { AccountClosingReportService } from '../../services/account-closing-report.service';
 import { ToastService } from '../../services/toast.service';
+import { toDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-account-closing-report',
@@ -14,8 +15,8 @@ import { ToastService } from '../../services/toast.service';
   standalone: false
 })
 export class AccountClosingReportComponent implements OnInit {
-  fromDate = '';
-  toDate = '';
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
   selectedFilterAccountId: number | null = null;
   selectedAccountId: number | null = null;
   searchText = '';
@@ -78,8 +79,8 @@ export class AccountClosingReportComponent implements OnInit {
     this.loading = true;
     const historyTargetId = this.selectedFilterAccountId ?? this.selectedAccountId ?? undefined;
     this.reportService.getReport(
-      this.fromDate || undefined,
-      this.toDate || undefined,
+      toDateInputValue(this.fromDate) || undefined,
+      toDateInputValue(this.toDate) || undefined,
       this.selectedFilterAccountId ?? undefined,
       historyTargetId
     ).subscribe({
@@ -106,8 +107,8 @@ export class AccountClosingReportComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.fromDate = '';
-    this.toDate = '';
+    this.fromDate = null;
+    this.toDate = null;
     this.selectedFilterAccountId = null;
     this.selectedAccountId = null;
     this.selectedAccountHistory = [];
@@ -119,8 +120,8 @@ export class AccountClosingReportComponent implements OnInit {
     this.selectedAccountId = row.accountId;
     this.loading = true;
     this.reportService.getReport(
-      this.fromDate || undefined,
-      this.toDate || undefined,
+      toDateInputValue(this.fromDate) || undefined,
+      toDateInputValue(this.toDate) || undefined,
       this.selectedFilterAccountId ?? undefined,
       row.accountId
     ).subscribe({
@@ -169,8 +170,10 @@ export class AccountClosingReportComponent implements OnInit {
 
   openPrint(): void {
     const queryParams: Record<string, string> = {};
-    if (this.fromDate) queryParams['from'] = this.fromDate;
-    if (this.toDate) queryParams['to'] = this.toDate;
+    const fromDateStr = toDateInputValue(this.fromDate);
+    const toDateStr = toDateInputValue(this.toDate);
+    if (fromDateStr) queryParams['from'] = fromDateStr;
+    if (toDateStr) queryParams['to'] = toDateStr;
     if (this.selectedFilterAccountId !== null) queryParams['accountId'] = this.selectedFilterAccountId.toString();
     if (this.selectedAccountId !== null) queryParams['historyAccountId'] = this.selectedAccountId.toString();
 

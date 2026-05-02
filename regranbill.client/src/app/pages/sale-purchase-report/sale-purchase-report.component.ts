@@ -5,6 +5,7 @@ import { SalePurchaseReport, SalePurchaseReportRow, SalePurchaseReportType } fro
 import { AccountService } from '../../services/account.service';
 import { SalePurchaseReportService } from '../../services/sale-purchase-report.service';
 import { ToastService } from '../../services/toast.service';
+import { toDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-sale-purchase-report',
@@ -13,8 +14,8 @@ import { ToastService } from '../../services/toast.service';
   standalone: false
 })
 export class SalePurchaseReportComponent implements OnInit {
-  fromDate = '';
-  toDate = '';
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
   selectedType: SalePurchaseReportType = 'All';
   selectedProductId: number | null = null;
   searchText = '';
@@ -78,8 +79,8 @@ export class SalePurchaseReportComponent implements OnInit {
   loadReport(): void {
     this.loading = true;
     this.reportService.getReport(
-      this.fromDate || undefined,
-      this.toDate || undefined,
+      toDateInputValue(this.fromDate) || undefined,
+      toDateInputValue(this.toDate) || undefined,
       this.selectedType,
       this.selectedProductId ?? undefined
     ).subscribe({
@@ -97,8 +98,8 @@ export class SalePurchaseReportComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.fromDate = '';
-    this.toDate = '';
+    this.fromDate = null;
+    this.toDate = null;
     this.selectedType = 'All';
     this.selectedProductId = null;
     this.searchText = '';

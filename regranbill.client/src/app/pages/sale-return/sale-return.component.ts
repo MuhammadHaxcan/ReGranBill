@@ -29,14 +29,6 @@ export class SaleReturnComponent implements OnInit {
   srNumber = '';
   saleReturnDate = new Date();
 
-  get saleReturnDateIso(): string {
-    return toDateInputValue(this.saleReturnDate);
-  }
-
-  set saleReturnDateIso(val: string) {
-    if (!val) return;
-    this.saleReturnDate = parseLocalDate(val);
-  }
   selectedCustomerId: number | null = null;
   vehicleNumber = '';
   description = '';
@@ -278,7 +270,7 @@ export class SaleReturnComponent implements OnInit {
 
   private buildRequest(): SaleReturnUpsertRequest {
     return {
-      date: this.saleReturnDate,
+      date: toDateInputValue(this.saleReturnDate),
       customerId: this.selectedCustomerId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,

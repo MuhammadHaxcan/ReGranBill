@@ -110,7 +110,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
     public async Task<PurchaseVoucherDto> CreateAsync(CreatePurchaseVoucherRequest request, int userId)
     {
         var validation = await ValidateRequestAsync(request);
-        var voucherDate = VoucherHelpers.NormalizeToUtc(request.Date);
+        var voucherDate = request.Date;
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -205,7 +205,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        purchaseJv.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        purchaseJv.Date = request.Date;
         purchaseJv.VehicleNumber = request.VehicleNumber;
         purchaseJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Purchase by", validation.VendorAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         purchaseJv.RatesAdded = request.Lines.All(l => l.Rate > 0);

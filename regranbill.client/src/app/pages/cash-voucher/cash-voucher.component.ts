@@ -10,6 +10,7 @@ import { CashVoucherService } from '../../services/cash-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { round2 } from '../../utils/delivery-calculations';
 import { getApiErrorMessage } from '../../utils/api-error';
+import { toDateInputValue } from '../../utils/date-utils';
 
 interface EditableCashVoucherLine {
   id?: number;
@@ -52,18 +53,6 @@ export class CashVoucherComponent implements OnInit {
     private cashVoucherService: CashVoucherService,
     private toast: ToastService
   ) {}
-
-  get voucherDateIso(): string {
-    const year = this.voucherDate.getFullYear();
-    const month = String(this.voucherDate.getMonth() + 1).padStart(2, '0');
-    const day = String(this.voucherDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  set voucherDateIso(value: string) {
-    if (!value) return;
-    this.voucherDate = new Date(value);
-  }
 
   get pageTitle(): string {
     return this.mode === 'receipt' ? 'Receipt Voucher' : 'Payment Voucher';
@@ -313,7 +302,7 @@ export class CashVoucherComponent implements OnInit {
 
   private buildRequest(): CreateCashVoucherRequest {
     return {
-      date: this.voucherDate,
+      date: toDateInputValue(this.voucherDate),
       partyAccountId: this.partyAccountId!,
       description: this.description.trim() || null,
       lines: this.lines.map((line, index) => ({

@@ -19,9 +19,12 @@
     <div class="form-group">
       <label class="form-label">Date</label>
       <input
-        type="date"
+        type="text"
         class="form-control"
-        [(ngModel)]="voucherDateIso"
+        bsDatepicker
+        [(ngModel)]="voucherDate"
+        autocomplete="off"
+        placeholder="DD-MM-YYYY"
       />
     </div>
     <div class="form-group">

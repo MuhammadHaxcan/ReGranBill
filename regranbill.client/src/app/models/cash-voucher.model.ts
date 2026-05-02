@@ -24,7 +24,7 @@ export interface CashVoucher {
 }
 
 export interface CreateCashVoucherRequest {
-  date: Date;
+  date: string;
   partyAccountId: number;
   description?: string | null;
   lines: CreateCashVoucherLineRequest[];

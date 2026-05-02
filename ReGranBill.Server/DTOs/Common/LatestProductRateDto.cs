@@ -5,5 +5,5 @@ public class LatestProductRateDto
     public int ProductId { get; set; }
     public decimal Rate { get; set; }
     public string SourceVoucherNumber { get; set; } = string.Empty;
-    public DateTime SourceDate { get; set; }
+    public DateOnly SourceDate { get; set; }
 }

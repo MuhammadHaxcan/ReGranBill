@@ -4,7 +4,7 @@ public class UpdateVoucherLedgerRequest
 {
     public string VoucherType { get; set; } = string.Empty;
     public string VoucherNumber { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Description { get; set; }
     public string? VehicleNumber { get; set; }
     public List<UpdateVoucherLedgerEntryRequest> Entries { get; set; } = new();

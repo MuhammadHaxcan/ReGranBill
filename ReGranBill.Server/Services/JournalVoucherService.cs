@@ -54,7 +54,7 @@ public class JournalVoucherService : IJournalVoucherService
         var voucher = new JournalVoucher
         {
             VoucherNumber = nextNumber,
-            Date = VoucherHelpers.NormalizeToUtc(request.Date),
+            Date = request.Date,
             VoucherType = VoucherType.JournalVoucher,
             Description = request.Description?.Trim(),
             RatesAdded = true,
@@ -92,7 +92,7 @@ public class JournalVoucherService : IJournalVoucherService
 
         await ValidateRequestAsync(request);
 
-        voucher.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        voucher.Date = request.Date;
         voucher.Description = request.Description?.Trim();
         voucher.RatesAdded = true;
         voucher.UpdatedAt = DateTime.UtcNow;

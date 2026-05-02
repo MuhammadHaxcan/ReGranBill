@@ -6,7 +6,7 @@ public class PurchaseReturnDto
 {
     public int Id { get; set; }
     public string PrNumber { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int VendorId { get; set; }
     public string? VendorName { get; set; }
     public string? VehicleNumber { get; set; }

@@ -94,7 +94,7 @@ public class PurchaseReturnsController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _prService.SoftDeleteAsync(id);
-        if (error != null) return Conflict(new { message = error });
+        if (error != null) return Conflict(new { statusCode = StatusCodes.Status409Conflict, message = error });
         if (!success) return NotFound();
         return NoContent();
     }

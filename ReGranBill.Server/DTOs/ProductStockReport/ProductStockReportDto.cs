@@ -58,7 +58,7 @@ public class ProductStockMovementDto
     public int VoucherId { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
     public string? Description { get; set; }

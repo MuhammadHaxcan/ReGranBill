@@ -6,7 +6,7 @@ public class SaleReturnDto
 {
     public int Id { get; set; }
     public string SrNumber { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int CustomerId { get; set; }
     public string? CustomerName { get; set; }
     public string? VehicleNumber { get; set; }

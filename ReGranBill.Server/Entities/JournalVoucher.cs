@@ -6,7 +6,7 @@ public class JournalVoucher
 {
     public int Id { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public VoucherType VoucherType { get; set; } = VoucherType.SaleVoucher;
     public string? VehicleNumber { get; set; }
     public string? Description { get; set; }

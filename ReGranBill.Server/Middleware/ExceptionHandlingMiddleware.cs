@@ -47,7 +47,7 @@ public class ExceptionHandlingMiddleware
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
 
-        var payload = JsonSerializer.Serialize(new { message });
+        var payload = JsonSerializer.Serialize(new { statusCode, message });
         await context.Response.WriteAsync(payload);
     }
 }

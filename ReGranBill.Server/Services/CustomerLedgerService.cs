@@ -21,17 +21,14 @@ public class CustomerLedgerService : ICustomerLedgerService
 
         if (account == null) return null;
 
-        var fromUtc = VoucherHelpers.ToUtcStartOfDay(fromDate);
-        var toExclusiveUtc = VoucherHelpers.ToUtcStartOfDay(toDate?.AddDays(1));
-
         decimal openingBalance = 0m;
-        if (fromUtc.HasValue)
+        if (fromDate.HasValue)
         {
             // Opening balance is only meaningful when a start date is selected.
             var openingEntries = await _db.JournalEntries
                 .Include(e => e.JournalVoucher)
                 .Where(e => e.AccountId == accountId)
-                .Where(e => e.JournalVoucher.Date < fromUtc.Value)
+                .Where(e => e.JournalVoucher.Date < fromDate.Value)
                 .Where(e =>
                     (e.JournalVoucher.RatesAdded || e.JournalVoucher.VoucherType == VoucherType.JournalVoucher)
                     && !(e.JournalVoucher.VoucherType == VoucherType.CartageVoucher
@@ -45,8 +42,8 @@ public class CustomerLedgerService : ICustomerLedgerService
 
         // Filter for date range
         var voucherQuery = _db.JournalVouchers
-            .Where(v => !fromUtc.HasValue || v.Date >= fromUtc.Value)
-            .Where(v => !toExclusiveUtc.HasValue || v.Date < toExclusiveUtc.Value)
+            .Where(v => !fromDate.HasValue || v.Date >= fromDate.Value)
+            .Where(v => !toDate.HasValue || v.Date <= toDate.Value)
             .Where(v => v.RatesAdded || v.VoucherType == VoucherType.JournalVoucher);
 
         // Get all vouchers that involve this account in the selected range.
@@ -161,7 +158,7 @@ public class CustomerLedgerService : ICustomerLedgerService
             AccountId = account.Id,
             AccountName = account.Name,
             PartyType = account.PartyDetail?.PartyRole.ToString() ?? "",
-            HasOpeningBalance = fromUtc.HasValue,
+            HasOpeningBalance = fromDate.HasValue,
             OpeningBalance = openingBalance,
             ClosingBalance = runningBalance,
             Entries = entryDtos

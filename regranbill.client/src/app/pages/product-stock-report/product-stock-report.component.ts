@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { formatDateDisplay } from '../../utils/date-utils';
+import { formatDateDisplay, toDateInputValue } from '../../utils/date-utils';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { Account } from '../../models/account.model';
 import { Category } from '../../models/category.model';
@@ -22,8 +22,8 @@ import { ToastService } from '../../services/toast.service';
   standalone: false
 })
 export class ProductStockReportComponent implements OnInit {
-  fromDate = '';
-  toDate = '';
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
   searchText = '';
   selectedCategoryId: number | null = null;
   selectedProductId: number | null = null;
@@ -110,8 +110,8 @@ export class ProductStockReportComponent implements OnInit {
     this.loading = true;
     this.selectedRowProductId = null;
     this.reportService.getReport({
-      from: this.fromDate || undefined,
-      to: this.toDate || undefined,
+      from: toDateInputValue(this.fromDate) || undefined,
+      to: toDateInputValue(this.toDate) || undefined,
       categoryId: this.selectedCategoryId ?? undefined,
       productId: this.selectedProductId ?? undefined,
       includeDetails: true
@@ -130,8 +130,8 @@ export class ProductStockReportComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.fromDate = '';
-    this.toDate = '';
+    this.fromDate = null;
+    this.toDate = null;
     this.searchText = '';
     this.selectedCategoryId = null;
     this.selectedProductId = null;
@@ -158,8 +158,10 @@ export class ProductStockReportComponent implements OnInit {
 
   openPrint(): void {
     const queryParams: Record<string, string> = {};
-    if (this.fromDate) queryParams['from'] = this.fromDate;
-    if (this.toDate) queryParams['to'] = this.toDate;
+    const fromDateStr = toDateInputValue(this.fromDate);
+    const toDateStr = toDateInputValue(this.toDate);
+    if (fromDateStr) queryParams['from'] = fromDateStr;
+    if (toDateStr) queryParams['to'] = toDateStr;
     if (this.selectedCategoryId !== null) queryParams['categoryId'] = this.selectedCategoryId.toString();
     if (this.selectedProductId !== null) queryParams['productId'] = this.selectedProductId.toString();
     if (this.selectedRowProductId !== null) queryParams['selectedMovementProductId'] = this.selectedRowProductId.toString();

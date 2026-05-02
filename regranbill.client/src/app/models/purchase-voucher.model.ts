@@ -86,7 +86,7 @@ export interface PurchaseVoucherCartageRequest {
 }
 
 export interface PurchaseVoucherUpsertRequest {
-  date: Date;
+  date: string;
   vendorId: number;
   vehicleNumber: string | null;
   description: string;

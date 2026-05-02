@@ -9,5 +9,5 @@ internal static class ControllerAuthExtensions
         int.TryParse(controller.User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
 
     public static IActionResult InvalidUserSession(this ControllerBase controller) =>
-        controller.Unauthorized(new { message = "Invalid user session." });
+        controller.Unauthorized(new { statusCode = StatusCodes.Status401Unauthorized, message = "Invalid user session." });
 }

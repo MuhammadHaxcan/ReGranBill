@@ -40,7 +40,7 @@ export interface SaleReturnLineRequest {
 }
 
 export interface SaleReturnUpsertRequest {
-  date: Date;
+  date: string;
   customerId: number;
   vehicleNumber?: string | null;
   description: string;

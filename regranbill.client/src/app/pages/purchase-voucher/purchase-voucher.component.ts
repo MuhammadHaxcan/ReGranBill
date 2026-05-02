@@ -44,14 +44,6 @@ export class PurchaseVoucherComponent implements OnInit {
   selectedVendorId: number | null = null;
   vehicleNumber = '';
 
-  get voucherDateIso(): string {
-    return toDateInputValue(this.voucherDate);
-  }
-
-  set voucherDateIso(val: string) {
-    if (!val) return;
-    this.voucherDate = parseLocalDate(val);
-  }
   description = '';
 
   products: Account[] = [];
@@ -348,7 +340,7 @@ export class PurchaseVoucherComponent implements OnInit {
 
   private buildRequest(): PurchaseVoucherUpsertRequest {
       return {
-      date: this.voucherDate,
+      date: toDateInputValue(this.voucherDate),
       vendorId: this.selectedVendorId!,
       vehicleNumber: this.vehicleNumber || null,
       description: this.description,

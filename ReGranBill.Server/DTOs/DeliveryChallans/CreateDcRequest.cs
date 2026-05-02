@@ -2,7 +2,7 @@ namespace ReGranBill.Server.DTOs.DeliveryChallans;
 
 public class CreateDcRequest
 {
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int CustomerId { get; set; }
     public string? VehicleNumber { get; set; }
     public string? Description { get; set; }

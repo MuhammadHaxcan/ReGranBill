@@ -326,33 +326,33 @@
 }
 
 .type-purchasevoucher {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #d8b4fe;
+}
+
+.type-salereturnvoucher {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
   border: 1px solid #fcd34d;
 }
 
 .type-purchasereturnvoucher {
-  background: #fce7f3;
-  color: #be185d;
-  border: 1px solid #f9a8d4;
-}
-
-.type-salereturnvoucher {
-  background: #ede9fe;
-  color: #7c3aed;
-  border: 1px solid #c4b5fd;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
 }
 
 .type-receiptvoucher {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #5eead4;
 }
 
 .type-paymentvoucher {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fda4af;
 }
 
 .type-cartagevoucher {

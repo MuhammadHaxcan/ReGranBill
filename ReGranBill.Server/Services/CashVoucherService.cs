@@ -89,7 +89,7 @@ public class CashVoucherService : ICashVoucherService
 
         await ValidateRequestAsync(voucherType, request);
 
-        voucher.Date = VoucherHelpers.NormalizeToUtc(request.Date);
+        voucher.Date = request.Date;
         voucher.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
         voucher.RatesAdded = true;
         voucher.UpdatedAt = DateTime.UtcNow;
@@ -186,7 +186,7 @@ public class CashVoucherService : ICashVoucherService
         var voucher = new JournalVoucher
         {
             VoucherNumber = voucherNumber,
-            Date = VoucherHelpers.NormalizeToUtc(request.Date),
+            Date = request.Date,
             VoucherType = voucherType,
             Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description),
             RatesAdded = true,

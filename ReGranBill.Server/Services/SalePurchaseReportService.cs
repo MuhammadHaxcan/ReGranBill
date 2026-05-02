@@ -19,8 +19,6 @@ public class SalePurchaseReportService : ISalePurchaseReportService
 
     public async Task<SalePurchaseReportDto> GetReportAsync(DateOnly? from, DateOnly? to, string? type, int? productId)
     {
-        var fromDate = VoucherHelpers.ToUtcStartOfDay(from);
-        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(to?.AddDays(1));
         var voucherFilter = ParseVoucherFilter(type);
 
         var voucherQuery = _db.JournalVouchers
@@ -38,14 +36,14 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                     || v.VoucherType == VoucherType.SaleReturnVoucher
                     || v.VoucherType == VoucherType.PurchaseReturnVoucher));
 
-        if (fromDate.HasValue)
+        if (from.HasValue)
         {
-            voucherQuery = voucherQuery.Where(v => v.Date >= fromDate.Value);
+            voucherQuery = voucherQuery.Where(v => v.Date >= from.Value);
         }
 
-        if (toExclusiveDate.HasValue)
+        if (to.HasValue)
         {
-            voucherQuery = voucherQuery.Where(v => v.Date < toExclusiveDate.Value);
+            voucherQuery = voucherQuery.Where(v => v.Date <= to.Value);
         }
 
         if (voucherFilter.HasValue)
@@ -139,14 +137,27 @@ public class SalePurchaseReportService : ISalePurchaseReportService
                     PackingWeightKg = packingWeight,
                     TotalWeightKg = totalWeightKg,
                     DisplayQuantity = BuildDisplayQuantity(packedBags, totalWeightKg, looseWeightKg),
-                    FromName = voucher.VoucherType == VoucherType.SaleVoucher ? CompanyName
-                        : voucher.VoucherType == VoucherType.SaleReturnVoucher ? partyName
-                        : voucher.VoucherType == VoucherType.PurchaseReturnVoucher ? partyName
-                        : partyName,
-                    ToName = voucher.VoucherType == VoucherType.SaleVoucher ? partyName
-                        : voucher.VoucherType == VoucherType.SaleReturnVoucher ? CompanyName
-                        : voucher.VoucherType == VoucherType.PurchaseReturnVoucher ? CompanyName
-                        : CompanyName,
+                    // Goods-flow direction:
+                    //   Sale            : KPI -> party (customer)
+                    //   Sale Return     : party (customer) -> KPI   (inverse of Sale)
+                    //   Purchase        : party (vendor)   -> KPI
+                    //   Purchase Return : KPI              -> party (vendor)  (inverse of Purchase)
+                    FromName = voucher.VoucherType switch
+                    {
+                        VoucherType.SaleVoucher           => CompanyName,
+                        VoucherType.SaleReturnVoucher     => partyName,
+                        VoucherType.PurchaseVoucher       => partyName,
+                        VoucherType.PurchaseReturnVoucher => CompanyName,
+                        _ => partyName
+                    },
+                    ToName = voucher.VoucherType switch
+                    {
+                        VoucherType.SaleVoucher           => partyName,
+                        VoucherType.SaleReturnVoucher     => CompanyName,
+                        VoucherType.PurchaseVoucher       => CompanyName,
+                        VoucherType.PurchaseReturnVoucher => partyName,
+                        _ => CompanyName
+                    },
                     TransporterName = transporterName,
                     GroupLabel = groupLabel,
                     GroupSortDate = voucher.Date

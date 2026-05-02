@@ -14,8 +14,6 @@ public class MasterReportService : IMasterReportService
 
     public async Task<MasterReportDto> GetReportAsync(DateOnly? from, DateOnly? to, int? categoryId, int? accountId)
     {
-        var fromDate = VoucherHelpers.ToUtcStartOfDay(from);
-        var toExclusiveDate = VoucherHelpers.ToUtcStartOfDay(to?.AddDays(1));
         var categoryName = categoryId.HasValue
             ? await _db.Categories.Where(c => c.Id == categoryId.Value).Select(c => c.Name).FirstOrDefaultAsync()
             : null;
@@ -34,11 +32,11 @@ public class MasterReportService : IMasterReportService
                         r.ReferenceVoucherId == e.VoucherId
                         && !r.MainVoucher.RatesAdded)));
 
-        if (fromDate.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date >= fromDate.Value);
+        if (from.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date >= from.Value);
 
-        if (toExclusiveDate.HasValue)
-            query = query.Where(e => e.JournalVoucher.Date < toExclusiveDate.Value);
+        if (to.HasValue)
+            query = query.Where(e => e.JournalVoucher.Date <= to.Value);
 
         if (categoryId.HasValue)
             query = query.Where(e => e.Account.CategoryId == categoryId.Value);
@@ -100,8 +98,8 @@ public class MasterReportService : IMasterReportService
 
         return new MasterReportDto
         {
-            FromDate = fromDate,
-            ToDate = VoucherHelpers.ToUtcStartOfDay(to),
+            FromDate = from,
+            ToDate = to,
             CategoryName = categoryName,
             AccountName = accountName,
             TotalEntries = entryDtos.Count,

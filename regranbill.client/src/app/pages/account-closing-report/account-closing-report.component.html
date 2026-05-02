@@ -11,11 +11,11 @@
   <div class="filter-row">
     <div class="filter-field">
       <label>Since</label>
-      <input type="date" [(ngModel)]="fromDate" class="filter-input" />
+      <input type="text" bsDatepicker [(ngModel)]="fromDate" class="filter-input" autocomplete="off" placeholder="DD-MM-YYYY" />
     </div>
     <div class="filter-field">
       <label>To</label>
-      <input type="date" [(ngModel)]="toDate" class="filter-input" />
+      <input type="text" bsDatepicker [(ngModel)]="toDate" class="filter-input" autocomplete="off" placeholder="DD-MM-YYYY" />
     </div>
     <div class="filter-field">
       <label>Account</label>

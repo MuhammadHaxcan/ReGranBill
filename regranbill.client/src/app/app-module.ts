@@ -1,7 +1,9 @@
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
+import { BsDatepickerModule, BsDatepickerConfig } from 'ngx-bootstrap/datepicker';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
@@ -93,13 +95,24 @@ import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewe
       ],
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
     HttpClientModule,
     FormsModule,
-    AppRoutingModule
+    AppRoutingModule,
+    BsDatepickerModule
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    {
+      provide: BsDatepickerConfig,
+      useFactory: () => Object.assign(new BsDatepickerConfig(), {
+        dateInputFormat: 'DD-MM-YYYY',
+        containerClass: 'theme-default',
+        adaptivePosition: true,
+        showWeekNumbers: false
+      })
+    }
   ],
   bootstrap: [App]
 })

@@ -2,8 +2,8 @@ namespace ReGranBill.Server.DTOs.AccountClosingReport;
 
 public class AccountClosingReportDto
 {
-    public DateTime? FromDate { get; set; }
-    public DateTime? ToDate { get; set; }
+    public DateOnly? FromDate { get; set; }
+    public DateOnly? ToDate { get; set; }
     public int? SelectedAccountId { get; set; }
     public string? SelectedAccountName { get; set; }
     public int? HistoryAccountId { get; set; }
@@ -33,7 +33,7 @@ public class AccountClosingHistoryEntryDto
     public int VoucherId { get; set; }
     public string VoucherNumber { get; set; } = string.Empty;
     public string VoucherType { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Description { get; set; }
     public int? Quantity { get; set; }
     public decimal? Rate { get; set; }

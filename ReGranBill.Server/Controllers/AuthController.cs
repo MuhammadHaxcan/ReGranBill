@@ -17,7 +17,7 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(request);
         if (result.Response == null)
-            return Unauthorized(new { message = result.ErrorMessage ?? "Login failed" });
+            return Unauthorized(new { statusCode = StatusCodes.Status401Unauthorized, message = result.ErrorMessage ?? "Login failed" });
         return Ok(result.Response);
     }
 }
