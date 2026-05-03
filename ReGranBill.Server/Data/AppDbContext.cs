@@ -9,6 +9,8 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<RolePage> RolePages => Set<RolePage>();
     public DbSet<CompanySettings> CompanySettings => Set<CompanySettings>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Account> Accounts => Set<Account>();
@@ -23,14 +25,32 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Role
+        modelBuilder.Entity<Role>(e =>
+        {
+            e.ToTable("roles");
+            e.HasIndex(r => r.Name).IsUnique();
+            e.Property(r => r.Name).HasMaxLength(50);
+            e.Property(r => r.IsSystem).HasDefaultValue(false);
+            e.Property(r => r.IsAdmin).HasDefaultValue(false);
+        });
+
+        // RolePage
+        modelBuilder.Entity<RolePage>(e =>
+        {
+            e.ToTable("role_pages");
+            e.HasKey(rp => new { rp.RoleId, rp.PageKey });
+            e.Property(rp => rp.PageKey).HasMaxLength(64);
+            e.HasOne(rp => rp.Role).WithMany(r => r.Pages).HasForeignKey(rp => rp.RoleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         // User
         modelBuilder.Entity<User>(e =>
         {
             e.ToTable("users");
             e.HasIndex(u => u.Username).IsUnique();
             e.Property(u => u.Username).HasMaxLength(100);
-            e.Property(u => u.Role).HasMaxLength(20)
-                .HasConversion(v => v.ToString(), v => Enum.Parse<UserRole>(v));
+            e.HasOne(u => u.Role).WithMany(r => r.Users).HasForeignKey(u => u.RoleId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<CompanySettings>(e =>

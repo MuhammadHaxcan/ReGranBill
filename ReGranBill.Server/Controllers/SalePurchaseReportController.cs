@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.Services;
 
 namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/sale-purchase-report")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("sale-purchase-report")]
 public class SalePurchaseReportController : ControllerBase
 {
     private readonly ISalePurchaseReportService _reportService;

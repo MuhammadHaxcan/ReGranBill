@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.DeliveryChallans;
 using ReGranBill.Server.Services;
 
@@ -9,6 +10,7 @@ namespace ReGranBill.Server.Controllers;
 [ApiController]
 [Route("api/delivery-challans")]
 [Authorize]
+[RequirePage("delivery-challan")]
 public class DeliveryChallansController : ControllerBase
 {
     private readonly IDeliveryChallanService _dcService;
@@ -65,7 +67,6 @@ public class DeliveryChallansController : ControllerBase
     {
         var existing = await _dcService.GetByIdAsync(id);
         if (existing == null) return NotFound();
-        if (existing.RatesAdded && !User.IsInRole("Admin")) return Forbid();
 
         var result = await _dcService.UpdateAsync(id, request);
         return Ok(result);
@@ -82,7 +83,7 @@ public class DeliveryChallansController : ControllerBase
     }
 
     [HttpPatch("{id}/rates")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("voucher-rates")]
     public async Task<IActionResult> UpdateRates(int id, [FromBody] UpdateDcRatesRequest request)
     {
         if (!await _dcService.UpdateRatesAsync(id, request)) return NotFound();
@@ -90,7 +91,6 @@ public class DeliveryChallansController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _dcService.SoftDeleteAsync(id);

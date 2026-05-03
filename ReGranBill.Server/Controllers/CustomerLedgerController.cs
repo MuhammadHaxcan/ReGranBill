@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.Services;
 
 namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/customer-ledger")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("customer-ledger")]
 public class CustomerLedgerController : ControllerBase
 {
     private readonly ICustomerLedgerService _ledgerService;

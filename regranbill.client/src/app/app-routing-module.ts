@@ -18,6 +18,7 @@ import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.co
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
 import { PrintSoaComponent } from './pages/print-soa/print-soa.component';
 import { UserManagementComponent } from './pages/user-management/user-management.component';
+import { RoleManagementComponent } from './pages/role-management/role-management.component';
 import { AccountClosingReportComponent } from './pages/account-closing-report/account-closing-report.component';
 import { SalePurchaseReportComponent } from './pages/sale-purchase-report/sale-purchase-report.component';
 import { CompanySettingsComponent } from './pages/company-settings/company-settings.component';
@@ -34,57 +35,83 @@ import { AddPurchaseReturnRateComponent } from './pages/add-purchase-return-rate
 import { PrintPrComponent } from './pages/print-pr/print-pr.component';
 import { PrintCustomerLedgerComponent } from './pages/print-customer-ledger/print-customer-ledger.component';
 import { PendingComponent } from './pages/pending/pending.component';
+import { RatedVouchersComponent } from './pages/rated-vouchers/rated-vouchers.component';
 import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
 import { AuthGuard } from './guards/auth.guard';
-import { AdminGuard } from './guards/admin.guard';
+import { PageAccessGuard } from './guards/page-access.guard';
+
+const guarded = [AuthGuard, PageAccessGuard];
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
-  { path: 'print-dc/:id', component: PrintDcComponent, canActivate: [AuthGuard] },
-  { path: 'print-pv/:id', component: PrintPvComponent, canActivate: [AuthGuard] },
-  { path: 'print-soa/:accountId', component: PrintSoaComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'print-master-report', component: PrintMasterReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'print-account-closing-report', component: PrintAccountClosingReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'print-product-stock-report', component: PrintProductStockReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'print-sr/:id', component: PrintSrComponent, canActivate: [AuthGuard] },
-  { path: 'sale-return', component: SaleReturnComponent, canActivate: [AuthGuard] },
-  { path: 'sale-return/:id', component: SaleReturnComponent, canActivate: [AuthGuard] },
-  { path: 'pending-sale-returns', component: PendingSaleReturnsComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'add-sale-return-rate/:id', component: AddSaleReturnRateComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'print-pr/:id', component: PrintPrComponent, canActivate: [AuthGuard] },
-  { path: 'print-customer-ledger/:accountId', component: PrintCustomerLedgerComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'purchase-return', component: PurchaseReturnComponent, canActivate: [AuthGuard] },
-  { path: 'purchase-return/:id', component: PurchaseReturnComponent, canActivate: [AuthGuard] },
-  { path: 'pending-purchase-returns', component: PendingPurchaseReturnsComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'add-purchase-return-rate/:id', component: AddPurchaseReturnRateComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'customer-ledger', component: CustomerLedgerComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'pending', component: PendingComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'delivery-challan', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
-  { path: 'delivery-challan/:id', component: DeliveryChallanComponent, canActivate: [AuthGuard] },
-  { path: 'journal-voucher', component: JournalVoucherComponent, canActivate: [AuthGuard] },
-  { path: 'journal-voucher/:id', component: JournalVoucherComponent, canActivate: [AuthGuard] },
-  { path: 'receipt-voucher', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'receipt' } },
-  { path: 'receipt-voucher/:id', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'receipt' } },
-  { path: 'payment-voucher', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'payment' } },
-  { path: 'payment-voucher/:id', component: CashVoucherComponent, canActivate: [AuthGuard], data: { mode: 'payment' } },
-  { path: 'voucher-editor', component: VoucherEditorComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'purchase-voucher', component: PurchaseVoucherComponent, canActivate: [AuthGuard] },
-  { path: 'purchase-voucher/:id', component: PurchaseVoucherComponent, canActivate: [AuthGuard] },
-  { path: 'pending-challans', component: PendingChallansComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'pending-purchases', component: PendingPurchasesComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'add-rate/:id', component: AddRateComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'add-purchase-rate/:id', component: AddPurchaseRateComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'soa/:accountId', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'soa', component: SoaComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'master-report', component: MasterReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'account-closing-report', component: AccountClosingReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'sale-purchase-report', component: SalePurchaseReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'product-stock-report', component: ProductStockReportComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'metadata', component: CategoriesAccountsComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'company-settings', component: CompanySettingsComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: 'users', component: UserManagementComponent, canActivate: [AuthGuard, AdminGuard] },
-  { path: '', redirectTo: 'delivery-challan', pathMatch: 'full' },
-  { path: '**', redirectTo: 'delivery-challan' }
+
+  // Delivery Challan + supporting routes
+  { path: 'delivery-challan',          component: DeliveryChallanComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
+  { path: 'delivery-challan/:id',      component: DeliveryChallanComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
+  { path: 'print-dc/:id',              component: PrintDcComponent,            canActivate: guarded, data: { pageKey: 'delivery-challan' } },
+  { path: 'add-rate/:id',              component: AddRateComponent,            canActivate: guarded, data: { pageKey: 'voucher-rates' } },
+  { path: 'pending-challans',          component: PendingChallansComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
+
+  // Purchase Voucher + supporting routes
+  { path: 'purchase-voucher',          component: PurchaseVoucherComponent,    canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
+  { path: 'purchase-voucher/:id',      component: PurchaseVoucherComponent,    canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
+  { path: 'print-pv/:id',              component: PrintPvComponent,            canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
+  { path: 'add-purchase-rate/:id',     component: AddPurchaseRateComponent,    canActivate: guarded, data: { pageKey: 'voucher-rates' } },
+  { path: 'pending-purchases',         component: PendingPurchasesComponent,   canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
+
+  // Sale Return + supporting routes
+  { path: 'sale-return',               component: SaleReturnComponent,         canActivate: guarded, data: { pageKey: 'sale-return' } },
+  { path: 'sale-return/:id',           component: SaleReturnComponent,         canActivate: guarded, data: { pageKey: 'sale-return' } },
+  { path: 'print-sr/:id',              component: PrintSrComponent,            canActivate: guarded, data: { pageKey: 'sale-return' } },
+  { path: 'add-sale-return-rate/:id',  component: AddSaleReturnRateComponent,  canActivate: guarded, data: { pageKey: 'voucher-rates' } },
+  { path: 'pending-sale-returns',      component: PendingSaleReturnsComponent, canActivate: guarded, data: { pageKey: 'sale-return' } },
+
+  // Purchase Return + supporting routes
+  { path: 'purchase-return',           component: PurchaseReturnComponent,         canActivate: guarded, data: { pageKey: 'purchase-return' } },
+  { path: 'purchase-return/:id',       component: PurchaseReturnComponent,         canActivate: guarded, data: { pageKey: 'purchase-return' } },
+  { path: 'print-pr/:id',              component: PrintPrComponent,                canActivate: guarded, data: { pageKey: 'purchase-return' } },
+  { path: 'add-purchase-return-rate/:id', component: AddPurchaseReturnRateComponent, canActivate: guarded, data: { pageKey: 'voucher-rates' } },
+  { path: 'pending-purchase-returns',  component: PendingPurchaseReturnsComponent, canActivate: guarded, data: { pageKey: 'purchase-return' } },
+
+  // Cash voucher (split into receipt vs payment by data.mode)
+  { path: 'receipt-voucher',           component: CashVoucherComponent, canActivate: guarded, data: { pageKey: 'receipt-voucher', mode: 'receipt' } },
+  { path: 'receipt-voucher/:id',       component: CashVoucherComponent, canActivate: guarded, data: { pageKey: 'receipt-voucher', mode: 'receipt' } },
+  { path: 'payment-voucher',           component: CashVoucherComponent, canActivate: guarded, data: { pageKey: 'payment-voucher', mode: 'payment' } },
+  { path: 'payment-voucher/:id',       component: CashVoucherComponent, canActivate: guarded, data: { pageKey: 'payment-voucher', mode: 'payment' } },
+
+  // Journal voucher
+  { path: 'journal-voucher',           component: JournalVoucherComponent,     canActivate: guarded, data: { pageKey: 'journal-voucher' } },
+  { path: 'journal-voucher/:id',       component: JournalVoucherComponent,     canActivate: guarded, data: { pageKey: 'journal-voucher' } },
+
+  // Review group
+  { path: 'pending',                   component: PendingComponent,            canActivate: guarded, data: { pageKey: 'pending' } },
+  { path: 'rated-vouchers',            component: RatedVouchersComponent,      canActivate: guarded, data: { pageKey: 'rated-vouchers' } },
+  { path: 'voucher-editor',            component: VoucherEditorComponent,      canActivate: guarded, data: { pageKey: 'voucher-editor' } },
+
+  // Reports
+  { path: 'soa',                       component: SoaComponent,                canActivate: guarded, data: { pageKey: 'soa' } },
+  { path: 'soa/:accountId',            component: SoaComponent,                canActivate: guarded, data: { pageKey: 'soa' } },
+  { path: 'print-soa/:accountId',      component: PrintSoaComponent,           canActivate: guarded, data: { pageKey: 'soa' } },
+  { path: 'customer-ledger',           component: CustomerLedgerComponent,     canActivate: guarded, data: { pageKey: 'customer-ledger' } },
+  { path: 'print-customer-ledger/:accountId', component: PrintCustomerLedgerComponent, canActivate: guarded, data: { pageKey: 'customer-ledger' } },
+  { path: 'master-report',             component: MasterReportComponent,       canActivate: guarded, data: { pageKey: 'master-report' } },
+  { path: 'print-master-report',       component: PrintMasterReportComponent,  canActivate: guarded, data: { pageKey: 'master-report' } },
+  { path: 'account-closing-report',    component: AccountClosingReportComponent, canActivate: guarded, data: { pageKey: 'account-closing-report' } },
+  { path: 'print-account-closing-report', component: PrintAccountClosingReportComponent, canActivate: guarded, data: { pageKey: 'account-closing-report' } },
+  { path: 'sale-purchase-report',      component: SalePurchaseReportComponent, canActivate: guarded, data: { pageKey: 'sale-purchase-report' } },
+  { path: 'product-stock-report',      component: ProductStockReportComponent, canActivate: guarded, data: { pageKey: 'product-stock-report' } },
+  { path: 'print-product-stock-report', component: PrintProductStockReportComponent, canActivate: guarded, data: { pageKey: 'product-stock-report' } },
+
+  // Masters
+  { path: 'metadata',                  component: CategoriesAccountsComponent, canActivate: guarded, data: { pageKey: 'metadata' } },
+
+  // Admin
+  { path: 'users',                     component: UserManagementComponent,     canActivate: guarded, data: { pageKey: 'users' } },
+  { path: 'roles',                     component: RoleManagementComponent,     canActivate: guarded, data: { pageKey: 'roles' } },
+  { path: 'company-settings',          component: CompanySettingsComponent,    canActivate: guarded, data: { pageKey: 'company-settings' } },
+
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '**', redirectTo: 'login' }
 ];
 
 @NgModule({

@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { AppUser, LoginRequest, LoginResponse, UserRole } from '../models/auth.model';
+import { AppUser, LoginRequest, LoginResponse } from '../models/auth.model';
+import { PAGES } from '../config/page-catalog';
 
 @Injectable({
   providedIn: 'root',
@@ -18,7 +19,10 @@ export class AuthService {
         const user: AppUser = {
           username: res.username,
           fullName: res.fullName,
-          role: res.role as UserRole,
+          roleId: res.roleId,
+          roleName: res.roleName,
+          isAdmin: res.isAdmin,
+          pages: res.pages ?? [],
           token: res.token,
         };
         localStorage.setItem('currentUser', JSON.stringify(user));
@@ -49,10 +53,29 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.currentUser?.role === UserRole.Admin;
+    return this.currentUser?.isAdmin === true;
   }
 
-  syncCurrentUser(update: Partial<Pick<AppUser, 'username' | 'fullName' | 'role'>>): void {
+  hasPage(key: string): boolean {
+    const user = this.currentUser;
+    if (!user) return false;
+    if (user.isAdmin) return true;
+    return user.pages.includes(key);
+  }
+
+  /** First sidebar route the user can navigate to. Used for default redirects. */
+  firstAccessibleRoute(): string | null {
+    const user = this.currentUser;
+    if (!user) return null;
+    for (const page of PAGES) {
+      if (user.isAdmin || user.pages.includes(page.key)) {
+        return page.route;
+      }
+    }
+    return null;
+  }
+
+  syncCurrentUser(update: Partial<Pick<AppUser, 'username' | 'fullName' | 'roleId' | 'roleName' | 'isAdmin' | 'pages'>>): void {
     const currentUser = this.currentUser;
     if (!currentUser) return;
 

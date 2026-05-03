@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.JournalVouchers;
 using ReGranBill.Server.Services;
 
@@ -7,7 +8,8 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/journal-vouchers")]
-[Authorize(Roles = "Admin,Operator")]
+[Authorize]
+[RequirePage("journal-voucher")]
 public class JournalVouchersController : ControllerBase
 {
     private readonly IJournalVoucherService _journalVoucherService;

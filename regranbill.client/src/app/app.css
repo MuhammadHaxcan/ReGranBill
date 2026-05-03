@@ -342,7 +342,6 @@
   top: 24px;
   right: 28px;
   z-index: 9999;
-  animation: toastSlideIn 0.3s var(--ease);
 }
 
 .toast {
@@ -357,6 +356,14 @@
   min-width: 280px;
   max-width: 440px;
   border: 1.5px solid transparent;
+  transform-origin: top right;
+}
+
+/* Replays each time a new toast replaces the visible one (the host element is
+   remounted via *ngFor trackBy). Combines a slide-in with a quick scale + brightness
+   pulse so the user notices the swap rather than thinking the message just changed. */
+.toast-swap {
+  animation: toastSwap 0.45s var(--ease);
 }
 
 .toast-success {
@@ -403,14 +410,21 @@
   opacity: 1;
 }
 
-@keyframes toastSlideIn {
-  from {
+@keyframes toastSwap {
+  0% {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(24px) scale(0.96);
+    filter: brightness(1.15);
   }
-  to {
+  60% {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) scale(1.02);
+    filter: brightness(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: brightness(1);
   }
 }
 

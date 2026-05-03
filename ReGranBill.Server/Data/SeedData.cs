@@ -22,6 +22,8 @@ public static class SeedData
 
     private static async Task EnsureUsersAsync(AppDbContext db)
     {
+        var adminRole = await EnsureAdminRoleAsync(db);
+
         if (!await db.Users.AnyAsync(u => u.Username == "admin"))
         {
             db.Users.Add(new User
@@ -29,22 +31,29 @@ public static class SeedData
                 Username = "admin",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
                 FullName = "Administrator",
-                Role = UserRole.Admin
-            });
-        }
-
-        if (!await db.Users.AnyAsync(u => u.Username == "operator"))
-        {
-            db.Users.Add(new User
-            {
-                Username = "operator",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Operator123!"),
-                FullName = "Operator User",
-                Role = UserRole.Operator
+                RoleId = adminRole.Id
             });
         }
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task<Role> EnsureAdminRoleAsync(AppDbContext db)
+    {
+        var admin = await db.Roles.FirstOrDefaultAsync(r => r.IsAdmin);
+        if (admin != null) return admin;
+
+        admin = new Role
+        {
+            Name = "Admin",
+            IsSystem = true,
+            IsAdmin = true,
+            CreatedAt = DateOnly.FromDateTime(DateTime.UtcNow),
+            UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow)
+        };
+        db.Roles.Add(admin);
+        await db.SaveChangesAsync();
+        return admin;
     }
 
     private static async Task<Dictionary<string, Category>> EnsureCategoriesAsync(AppDbContext db)

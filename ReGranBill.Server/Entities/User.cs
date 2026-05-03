@@ -1,5 +1,3 @@
-using ReGranBill.Server.Enums;
-
 namespace ReGranBill.Server.Entities;
 
 public class User
@@ -8,7 +6,9 @@ public class User
     public string Username { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
-    public UserRole Role { get; set; } = UserRole.Operator;
+    public int RoleId { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public Role Role { get; set; } = null!;
 }

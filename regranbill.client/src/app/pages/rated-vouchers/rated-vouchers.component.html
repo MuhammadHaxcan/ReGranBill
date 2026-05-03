@@ -1,0 +1,74 @@
+<!-- Header Card -->
+<section class="card invoice-header" *ngIf="!loading">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Rated Vouchers</h1>
+      <p class="invoice-subtitle">All vouchers with rates applied</p>
+    </div>
+    <div class="invoice-meta">
+      <div class="total-count">{{ rows.length }}</div>
+      <div class="total-label">Total</div>
+    </div>
+  </div>
+</section>
+
+<!-- Table Card -->
+<section class="card tab-card" *ngIf="!loading">
+  <div class="table-wrapper">
+    <table class="grid-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-type">Type</th>
+          <th class="col-no">No</th>
+          <th class="col-date">Date</th>
+          <th class="col-party">Party</th>
+          <th class="col-products">Products</th>
+          <th class="col-bags">Bags</th>
+          <th class="col-weight">Weight</th>
+          <th *ngIf="canSeeRates" class="col-amount">Amount</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of rows; let i = index">
+          <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-type">
+            <span class="type-badge" [ngClass]="'type-' + row.type">
+              {{ getTypeLabel(row.type) }}
+            </span>
+          </td>
+          <td class="col-no"><span class="invoice-number-badge">{{ row.number }}</span></td>
+          <td class="col-date">{{ fmt(row.date) }}</td>
+          <td class="col-party"><div class="party-name">{{ row.partyName }}</div></td>
+          <td class="col-products text-center">{{ row.productCount }}</td>
+          <td class="col-bags text-center">{{ row.bags }}</td>
+          <td class="col-weight"><strong>{{ row.weight }}</strong> <span class="unit">kg</span></td>
+          <td *ngIf="canSeeRates" class="col-amount">{{ row.amount | flexNumber }}</td>
+          <td class="col-actions">
+            <div class="action-buttons">
+              <button class="btn btn-icon btn-edit" (click)="view(row)" title="View Voucher">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3C4.5 3 1.5 8 1.5 8s3 5 6.5 5 6.5-5 6.5-5-3-5-6.5-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button class="btn btn-icon btn-print" (click)="print(row)" title="Print">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="6" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M5 6V3h6v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="rows.length === 0">
+          <td [attr.colspan]="canSeeRates ? 10 : 9" class="empty-cell">
+            <div class="empty-state">
+              <p class="empty-text">No rated vouchers found</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <p>Loading...</p>
+</div>

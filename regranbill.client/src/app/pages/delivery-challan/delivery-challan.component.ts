@@ -75,8 +75,8 @@ export class DeliveryChallanComponent implements OnInit {
     private confirmModal: ConfirmModalService
   ) {}
 
-  get isAdmin(): boolean {
-    return this.authService.isAdmin();
+  get canSeeRates(): boolean {
+    return this.authService.hasPage('voucher-rates');
   }
 
   ngOnInit(): void {
@@ -253,7 +253,7 @@ export class DeliveryChallanComponent implements OnInit {
         packingWeightKg: acct.packingWeightKg!
       };
 
-      if (!line.rate || line.rate <= 0) {
+      if (this.canSeeRates && (!line.rate || line.rate <= 0)) {
         line.rate = this.latestRatesByProductId.get(acct.id) ?? 0;
       }
     } else {
@@ -357,10 +357,6 @@ export class DeliveryChallanComponent implements OnInit {
   }
 
   private validate(): boolean {
-    if (this.isReadOnlyRatedVoucher && !this.isAdmin) {
-      this.toast.error('Only admins can edit a rated delivery challan.');
-      return false;
-    }
     if (!this.selectedCustomerId) {
       this.toast.error('Please select a customer.');
       return false;

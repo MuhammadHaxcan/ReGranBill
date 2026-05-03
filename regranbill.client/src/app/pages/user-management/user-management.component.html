@@ -45,9 +45,7 @@
             <div class="user-sub">{{ user.username }}</div>
           </td>
           <td>
-            <span class="role-badge" [class.role-admin]="user.role === 'Admin'" [class.role-operator]="user.role === 'Operator'">
-              {{ user.role }}
-            </span>
+            <span class="role-badge">{{ user.roleName }}</span>
           </td>
           <td>
             <span class="status-badge" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive">
@@ -105,15 +103,10 @@
 
       <div class="modal-field">
         <label class="field-label">Role</label>
-        <div class="role-selector">
-          <button
-            *ngFor="let item of roles"
-            class="role-btn"
-            [class.role-btn-active]="role === item"
-            (click)="role = item">
-            {{ item }}
-          </button>
-        </div>
+        <select class="form-control" [(ngModel)]="roleId">
+          <option [ngValue]="null" disabled>Select a role...</option>
+          <option *ngFor="let item of roles" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
       </div>
 
       <div class="modal-field" *ngIf="editingUserId !== null">

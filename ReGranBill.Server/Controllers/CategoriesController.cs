@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.Categories;
 using ReGranBill.Server.Services;
 
@@ -14,15 +15,15 @@ public class CategoriesController : ControllerBase
 
     public CategoriesController(ICategoryService categoryService) => _categoryService = categoryService;
 
+    // GetAll is reference data — every voucher page lists categories. No page gate.
     [HttpGet]
-    [Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await _categoryService.GetAllAsync());
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
     {
         var result = await _categoryService.CreateAsync(request);
@@ -30,7 +31,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateCategoryRequest request)
     {
         var result = await _categoryService.UpdateAsync(id, request);
@@ -39,7 +40,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _categoryService.DeleteAsync(id);

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.SaleReturns;
 using ReGranBill.Server.Services;
 
@@ -9,6 +10,7 @@ namespace ReGranBill.Server.Controllers;
 [ApiController]
 [Route("api/sale-returns")]
 [Authorize]
+[RequirePage("sale-return")]
 public class SaleReturnsController : ControllerBase
 {
     private readonly ISaleReturnService _srService;
@@ -65,7 +67,6 @@ public class SaleReturnsController : ControllerBase
     {
         var existing = await _srService.GetByIdAsync(id);
         if (existing == null) return NotFound();
-        if (existing.RatesAdded && !User.IsInRole("Admin")) return Forbid();
 
         var result = await _srService.UpdateAsync(id, request);
         return Ok(result);
@@ -82,7 +83,7 @@ public class SaleReturnsController : ControllerBase
     }
 
     [HttpPatch("{id}/rates")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("voucher-rates")]
     public async Task<IActionResult> UpdateRates(int id, [FromBody] UpdateSaleReturnRatesRequest request)
     {
         if (!await _srService.UpdateRatesAsync(id, request)) return NotFound();
@@ -90,7 +91,6 @@ public class SaleReturnsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _srService.SoftDeleteAsync(id);

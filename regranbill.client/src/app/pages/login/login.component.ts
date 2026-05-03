@@ -22,7 +22,7 @@ export class LoginComponent {
     private cdr: ChangeDetectorRef
   ) {
     if (this.authService.isLoggedIn) {
-      this.router.navigate(['/delivery-challan']);
+      this.router.navigate([this.authService.firstAccessibleRoute() ?? '/login']);
     }
   }
 
@@ -42,7 +42,7 @@ export class LoginComponent {
       next: () => {
         this.loading = false;
         this.cdr.detectChanges();
-        this.router.navigate(['/delivery-challan']);
+        this.router.navigate([this.authService.firstAccessibleRoute() ?? '/login']);
       },
       error: (err: HttpErrorResponse) => {
         this.handleLoginError(err);

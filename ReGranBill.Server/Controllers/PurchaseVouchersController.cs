@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.PurchaseVouchers;
 using ReGranBill.Server.Services;
 
@@ -9,6 +10,7 @@ namespace ReGranBill.Server.Controllers;
 [ApiController]
 [Route("api/purchase-vouchers")]
 [Authorize]
+[RequirePage("purchase-voucher")]
 public class PurchaseVouchersController : ControllerBase
 {
     private readonly IPurchaseVoucherService _purchaseService;
@@ -65,7 +67,6 @@ public class PurchaseVouchersController : ControllerBase
     {
         var existing = await _purchaseService.GetByIdAsync(id);
         if (existing == null) return NotFound();
-        if (existing.RatesAdded && !User.IsInRole("Admin")) return Forbid();
 
         var result = await _purchaseService.UpdateAsync(id, request);
         return Ok(result);
@@ -82,7 +83,7 @@ public class PurchaseVouchersController : ControllerBase
     }
 
     [HttpPatch("{id}/rates")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("voucher-rates")]
     public async Task<IActionResult> UpdateRates(int id, [FromBody] UpdatePurchaseVoucherRatesRequest request)
     {
         if (!await _purchaseService.UpdateRatesAsync(id, request)) return NotFound();
@@ -90,7 +91,6 @@ public class PurchaseVouchersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _purchaseService.SoftDeleteAsync(id);

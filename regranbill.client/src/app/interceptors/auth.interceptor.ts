@@ -9,10 +9,15 @@ import {
 import { Router } from '@angular/router';
 import { Observable, catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { ToastService } from '../services/toast.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private toast: ToastService
+  ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const user = this.authService.currentUser;
@@ -25,10 +30,17 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
         const isAuthCall = req.url.includes('/api/auth/login');
-        if (!isAuthCall && (error.status === 401 || error.status === 403)) {
-          this.authService.logout();
-          if (this.router.url !== '/login') {
-            this.router.navigate(['/login']);
+        if (!isAuthCall) {
+          if (error.status === 401) {
+            // Token invalid / expired — sign out and bounce to login.
+            this.authService.logout();
+            if (this.router.url !== '/login') {
+              this.router.navigate(['/login']);
+            }
+          } else if (error.status === 403) {
+            // Authenticated but lacks the required page permission. Don't log out;
+            // just surface a friendly toast so the user knows why the action failed.
+            this.toast.error("You don't have permission to do that. Ask an admin to grant access.");
           }
         }
         return throwError(() => error);

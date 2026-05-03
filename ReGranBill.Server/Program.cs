@@ -76,6 +76,7 @@ builder.Services.AddScoped<IProductStockReportService, ProductStockReportService
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IVoucherNumberService, VoucherNumberService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

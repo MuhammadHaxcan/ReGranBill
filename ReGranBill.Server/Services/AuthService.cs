@@ -19,9 +19,12 @@ public class AuthService : IAuthService
     {
         var normalizedUsername = (request.Username ?? string.Empty).Trim();
         var normalizedLookup = NormalizeUsernameKey(normalizedUsername);
-        var user = await _db.Users.FirstOrDefaultAsync(u =>
-            u.IsActive &&
-            u.Username.ToUpper() == normalizedLookup);
+        var user = await _db.Users
+            .Include(u => u.Role)
+                .ThenInclude(r => r.Pages)
+            .FirstOrDefaultAsync(u =>
+                u.IsActive &&
+                u.Username.ToUpper() == normalizedLookup);
         if (user == null)
         {
             return new LoginAttemptResult
@@ -38,14 +41,19 @@ public class AuthService : IAuthService
             };
         }
 
+        var pages = user.Role.Pages.Select(p => p.PageKey).ToList();
+
         return new LoginAttemptResult
         {
             Response = new LoginResponse
             {
-                Token = _tokenService.GenerateToken(user),
+                Token = _tokenService.GenerateToken(user, user.Role, pages),
                 Username = user.Username,
                 FullName = user.FullName,
-                Role = user.Role.ToString()
+                RoleId = user.Role.Id,
+                RoleName = user.Role.Name,
+                IsAdmin = user.Role.IsAdmin,
+                Pages = pages
             }
         };
     }

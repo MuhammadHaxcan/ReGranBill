@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.VoucherEditor;
 using ReGranBill.Server.Services;
 
@@ -7,7 +8,8 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/voucher-editor")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("voucher-editor")]
 public class VoucherEditorController : ControllerBase
 {
     private readonly IVoucherEditorService _voucherEditorService;

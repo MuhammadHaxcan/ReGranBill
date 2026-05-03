@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.CashVouchers;
 using ReGranBill.Server.Services;
 
@@ -7,7 +8,7 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/cash-vouchers")]
-[Authorize(Roles = "Admin,Operator")]
+[Authorize]
 public class CashVouchersController : ControllerBase
 {
     private readonly ICashVoucherService _cashVoucherService;
@@ -16,6 +17,7 @@ public class CashVouchersController : ControllerBase
         _cashVoucherService = cashVoucherService;
 
     [HttpGet("receipt/next-number")]
+    [RequirePage("receipt-voucher")]
     public async Task<IActionResult> GetNextReceiptNumber()
     {
         var voucherNumber = await _cashVoucherService.GetNextReceiptNumberAsync();
@@ -23,6 +25,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpGet("payment/next-number")]
+    [RequirePage("payment-voucher")]
     public async Task<IActionResult> GetNextPaymentNumber()
     {
         var voucherNumber = await _cashVoucherService.GetNextPaymentNumberAsync();
@@ -30,6 +33,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpGet("receipt/{id}")]
+    [RequirePage("receipt-voucher")]
     public async Task<IActionResult> GetReceiptById(int id)
     {
         var voucher = await _cashVoucherService.GetReceiptByIdAsync(id);
@@ -38,6 +42,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpGet("payment/{id}")]
+    [RequirePage("payment-voucher")]
     public async Task<IActionResult> GetPaymentById(int id)
     {
         var voucher = await _cashVoucherService.GetPaymentByIdAsync(id);
@@ -46,6 +51,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpPost("receipt")]
+    [RequirePage("receipt-voucher")]
     public async Task<IActionResult> CreateReceipt([FromBody] CreateCashVoucherRequest request)
     {
         if (!this.TryGetAuthenticatedUserId(out var userId))
@@ -58,6 +64,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpPost("payment")]
+    [RequirePage("payment-voucher")]
     public async Task<IActionResult> CreatePayment([FromBody] CreateCashVoucherRequest request)
     {
         if (!this.TryGetAuthenticatedUserId(out var userId))
@@ -70,6 +77,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpPut("receipt/{id}")]
+    [RequirePage("receipt-voucher")]
     public async Task<IActionResult> UpdateReceipt(int id, [FromBody] CreateCashVoucherRequest request)
     {
         var result = await _cashVoucherService.UpdateReceiptAsync(id, request);
@@ -78,6 +86,7 @@ public class CashVouchersController : ControllerBase
     }
 
     [HttpPut("payment/{id}")]
+    [RequirePage("payment-voucher")]
     public async Task<IActionResult> UpdatePayment(int id, [FromBody] CreateCashVoucherRequest request)
     {
         var result = await _cashVoucherService.UpdatePaymentAsync(id, request);

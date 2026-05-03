@@ -26,6 +26,7 @@ import { VoucherEditorComponent } from './pages/voucher-editor/voucher-editor.co
 import { PrintPvComponent } from './pages/print-pv/print-pv.component';
 import { PrintSoaComponent } from './pages/print-soa/print-soa.component';
 import { UserManagementComponent } from './pages/user-management/user-management.component';
+import { RoleManagementComponent } from './pages/role-management/role-management.component';
 import { AccountClosingReportComponent } from './pages/account-closing-report/account-closing-report.component';
 import { SalePurchaseReportComponent } from './pages/sale-purchase-report/sale-purchase-report.component';
 import { CompanySettingsComponent } from './pages/company-settings/company-settings.component';
@@ -42,6 +43,7 @@ import { AddPurchaseReturnRateComponent } from './pages/add-purchase-return-rate
 import { PrintCustomerLedgerComponent } from './pages/print-customer-ledger/print-customer-ledger.component';
 import { PrintPrComponent } from './pages/print-pr/print-pr.component';
 import { PendingComponent } from './pages/pending/pending.component';
+import { RatedVouchersComponent } from './pages/rated-vouchers/rated-vouchers.component';
 import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 import { FlexNumberPipe } from './pipes/flex-number.pipe';
@@ -70,6 +72,7 @@ import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewe
     PrintAccountClosingReportComponent,
     PrintProductStockReportComponent,
     UserManagementComponent,
+    RoleManagementComponent,
     AccountClosingReportComponent,
     SalePurchaseReportComponent,
     CompanySettingsComponent,
@@ -91,6 +94,7 @@ import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewe
     PrintPrComponent,
     PrintCustomerLedgerComponent,
     PendingComponent,
+    RatedVouchersComponent,
     CustomerLedgerComponent,
       ],
   imports: [

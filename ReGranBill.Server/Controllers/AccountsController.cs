@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.Accounts;
 using ReGranBill.Server.Services;
 
@@ -14,13 +15,15 @@ public class AccountsController : ControllerBase
 
     public AccountsController(IAccountService accountService) => _accountService = accountService;
 
+    // GetAll lists every account — only the Categories & Accounts page needs this.
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await _accountService.GetAllAsync());
     }
 
+    // Filtered reads are reference data used by every voucher / report page. No page gate.
     [HttpGet("customers")]
     public async Task<IActionResult> GetCustomers()
     {
@@ -58,7 +61,7 @@ public class AccountsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> Create([FromBody] CreateAccountRequest request)
     {
         var result = await _accountService.CreateAsync(request);
@@ -66,7 +69,7 @@ public class AccountsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateAccountRequest request)
     {
         var result = await _accountService.UpdateAsync(id, request);
@@ -75,7 +78,7 @@ public class AccountsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("metadata")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, error) = await _accountService.DeleteAsync(id);

@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
 import { DeliveryChallanViewModel } from '../../models/delivery-challan.model';
 import { SaleReturnService } from '../../services/sale-return.service';
@@ -11,16 +12,12 @@ import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
 import {
-  getDeliveryTotalAmount,
   getDeliveryTotalBags,
   getDeliveryTotalWeight,
-  getPurchaseTotalAmount,
   getPurchaseTotalBags,
   getPurchaseTotalWeight
 } from '../../utils/delivery-calculations';
 import { getApiErrorMessage } from '../../utils/api-error';
-
-type FilterMode = 'pending' | 'all';
 
 interface PendingRow {
   type: 'dc' | 'sr' | 'pv' | 'pr';
@@ -31,8 +28,6 @@ interface PendingRow {
   productCount: number;
   bags: number;
   weight: number;
-  amount: number | null;
-  ratesAdded: boolean;
 }
 
 @Component({
@@ -42,7 +37,6 @@ interface PendingRow {
   standalone: false
 })
 export class PendingComponent implements OnInit {
-  filterMode: FilterMode = 'pending';
   rows: PendingRow[] = [];
   loading = true;
 
@@ -54,8 +48,13 @@ export class PendingComponent implements OnInit {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
-    private confirmModal: ConfirmModalService
+    private confirmModal: ConfirmModalService,
+    public authService: AuthService
   ) {}
+
+  get canSeeRates(): boolean {
+    return this.authService.hasPage('voucher-rates');
+  }
 
   ngOnInit(): void {
     this.loadAll();
@@ -67,10 +66,7 @@ export class PendingComponent implements OnInit {
 
     this.dcService.getAll().subscribe({
       next: data => {
-        const filtered = this.filterMode === 'pending'
-          ? data.filter(dc => !this.hasRatesDc(dc))
-          : data;
-        this.rows.push(...filtered.map(dc => this.toRowDc(dc)));
+        this.rows.push(...data.filter(dc => !this.hasRatesDc(dc)).map(dc => this.toRowDc(dc)));
         this.cdr.detectChanges();
       },
       error: () => { this.toast.error('Unable to load challans.'); this.cdr.detectChanges(); }
@@ -78,10 +74,7 @@ export class PendingComponent implements OnInit {
 
     this.srService.getAll().subscribe({
       next: data => {
-        const filtered = this.filterMode === 'pending'
-          ? data.filter(sr => !this.hasRatesSr(sr))
-          : data;
-        this.rows.push(...filtered.map(sr => this.toRowSr(sr)));
+        this.rows.push(...data.filter(sr => !this.hasRatesSr(sr)).map(sr => this.toRowSr(sr)));
         this.cdr.detectChanges();
       },
       error: () => { this.toast.error('Unable to load sale returns.'); this.cdr.detectChanges(); }
@@ -89,10 +82,7 @@ export class PendingComponent implements OnInit {
 
     this.pvService.getAll().subscribe({
       next: data => {
-        const filtered = this.filterMode === 'pending'
-          ? data.filter(pv => !this.hasRatesPv(pv))
-          : data;
-        this.rows.push(...filtered.map(pv => this.toRowPv(pv)));
+        this.rows.push(...data.filter(pv => !this.hasRatesPv(pv)).map(pv => this.toRowPv(pv)));
         this.cdr.detectChanges();
       },
       error: () => { this.toast.error('Unable to load purchases.'); this.cdr.detectChanges(); }
@@ -100,10 +90,7 @@ export class PendingComponent implements OnInit {
 
     this.prService.getAll().subscribe({
       next: data => {
-        const filtered = this.filterMode === 'pending'
-          ? data.filter(pr => !this.hasRatesPr(pr))
-          : data;
-        this.rows.push(...filtered.map(pr => this.toRowPr(pr)));
+        this.rows.push(...data.filter(pr => !this.hasRatesPr(pr)).map(pr => this.toRowPr(pr)));
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -115,68 +102,39 @@ export class PendingComponent implements OnInit {
     });
   }
 
-  setFilter(mode: FilterMode): void {
-    this.filterMode = mode;
-    this.loadAll();
-  }
-
   private toRowDc(dc: DeliveryChallanViewModel): PendingRow {
     return {
-      type: 'dc',
-      id: dc.id,
-      number: dc.dcNumber,
-      date: dc.date,
-      partyName: dc.customerName || '-',
-      productCount: dc.lines.length,
+      type: 'dc', id: dc.id, number: dc.dcNumber, date: dc.date,
+      partyName: dc.customerName || '-', productCount: dc.lines.length,
       bags: getDeliveryTotalBags(dc.lines as any),
-      weight: getDeliveryTotalWeight(dc.lines as any),
-      amount: this.hasRatesDc(dc) ? getDeliveryTotalAmount(dc.lines as any) : null,
-      ratesAdded: this.hasRatesDc(dc)
+      weight: getDeliveryTotalWeight(dc.lines as any)
     };
   }
 
   private toRowSr(sr: SaleReturnViewModel): PendingRow {
     return {
-      type: 'sr',
-      id: sr.id,
-      number: sr.srNumber,
-      date: sr.date,
-      partyName: sr.customerName || '-',
-      productCount: sr.lines.length,
+      type: 'sr', id: sr.id, number: sr.srNumber, date: sr.date,
+      partyName: sr.customerName || '-', productCount: sr.lines.length,
       bags: getDeliveryTotalBags(sr.lines as any),
-      weight: getDeliveryTotalWeight(sr.lines as any),
-      amount: this.hasRatesSr(sr) ? getDeliveryTotalAmount(sr.lines as any) : null,
-      ratesAdded: this.hasRatesSr(sr)
+      weight: getDeliveryTotalWeight(sr.lines as any)
     };
   }
 
   private toRowPv(pv: PurchaseVoucherViewModel): PendingRow {
     return {
-      type: 'pv',
-      id: pv.id,
-      number: pv.voucherNumber,
-      date: pv.date,
-      partyName: pv.vendorName || '-',
-      productCount: pv.lines.length,
+      type: 'pv', id: pv.id, number: pv.voucherNumber, date: pv.date,
+      partyName: pv.vendorName || '-', productCount: pv.lines.length,
       bags: getPurchaseTotalBags(pv.lines as any),
-      weight: getPurchaseTotalWeight(pv.lines as any),
-      amount: this.hasRatesPv(pv) ? getPurchaseTotalAmount(pv.lines as any) : null,
-      ratesAdded: this.hasRatesPv(pv)
+      weight: getPurchaseTotalWeight(pv.lines as any)
     };
   }
 
   private toRowPr(pr: PurchaseReturnViewModel): PendingRow {
     return {
-      type: 'pr',
-      id: pr.id,
-      number: pr.prNumber,
-      date: pr.date,
-      partyName: pr.vendorName || '-',
-      productCount: pr.lines.length,
+      type: 'pr', id: pr.id, number: pr.prNumber, date: pr.date,
+      partyName: pr.vendorName || '-', productCount: pr.lines.length,
       bags: getPurchaseTotalBags(pr.lines as any),
-      weight: getPurchaseTotalWeight(pr.lines as any),
-      amount: this.hasRatesPr(pr) ? getPurchaseTotalAmount(pr.lines as any) : null,
-      ratesAdded: this.hasRatesPr(pr)
+      weight: getPurchaseTotalWeight(pr.lines as any)
     };
   }
 

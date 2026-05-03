@@ -3,8 +3,9 @@ import { AuthService } from '../../services/auth.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { ToastService } from '../../services/toast.service';
 import { UserManagementService } from '../../services/user-management.service';
-import { UserRole } from '../../models/auth.model';
+import { RoleService } from '../../services/role.service';
 import { ManagedUser } from '../../models/user-management.model';
+import { Role } from '../../models/role.model';
 import { formatDateDisplay } from '../../utils/date-utils';
 import { getApiErrorMessage } from '../../utils/api-error';
 
@@ -16,6 +17,7 @@ import { getApiErrorMessage } from '../../utils/api-error';
 })
 export class UserManagementComponent implements OnInit {
   users: ManagedUser[] = [];
+  roles: Role[] = [];
   searchText = '';
   loading = false;
   showModal = false;
@@ -25,13 +27,12 @@ export class UserManagementComponent implements OnInit {
   username = '';
   fullName = '';
   password = '';
-  role: UserRole = UserRole.Operator;
+  roleId: number | null = null;
   isActive = true;
-
-  readonly roles = [UserRole.Admin, UserRole.Operator];
 
   constructor(
     private userManagementService: UserManagementService,
+    private roleService: RoleService,
     private authService: AuthService,
     private toast: ToastService,
     private confirmModal: ConfirmModalService,
@@ -39,6 +40,7 @@ export class UserManagementComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadRoles();
     this.loadUsers();
   }
 
@@ -55,8 +57,21 @@ export class UserManagementComponent implements OnInit {
     return this.users.filter(user =>
       user.username.toLowerCase().includes(term) ||
       user.fullName.toLowerCase().includes(term) ||
-      user.role.toLowerCase().includes(term)
+      user.roleName.toLowerCase().includes(term)
     );
+  }
+
+  loadRoles(): void {
+    this.roleService.getAll().subscribe({
+      next: roles => {
+        this.roles = roles;
+        if (this.roleId === null && roles.length > 0) {
+          this.roleId = roles[0].id;
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => this.toast.error('Unable to load roles.')
+    });
   }
 
   loadUsers(): void {
@@ -86,7 +101,7 @@ export class UserManagementComponent implements OnInit {
     this.username = user.username;
     this.fullName = user.fullName;
     this.password = '';
-    this.role = user.role;
+    this.roleId = user.roleId;
     this.isActive = user.isActive;
     this.formError = '';
     this.showModal = true;
@@ -101,7 +116,7 @@ export class UserManagementComponent implements OnInit {
     this.username = '';
     this.fullName = '';
     this.password = '';
-    this.role = UserRole.Operator;
+    this.roleId = this.roles[0]?.id ?? null;
     this.isActive = true;
     this.formError = '';
   }
@@ -120,6 +135,11 @@ export class UserManagementComponent implements OnInit {
       return;
     }
 
+    if (this.roleId == null) {
+      this.formError = 'Select a role.';
+      return;
+    }
+
     if (this.editingUserId === null && !this.password.trim()) {
       this.formError = 'Password is required.';
       return;
@@ -131,13 +151,14 @@ export class UserManagementComponent implements OnInit {
     }
 
     this.formError = '';
+    const roleId = this.roleId;
 
     if (this.editingUserId === null) {
       this.userManagementService.create({
         username,
         fullName,
         password: this.password.trim(),
-        role: this.role
+        roleId
       }).subscribe({
         next: () => {
           this.toast.success('User created.');
@@ -159,15 +180,16 @@ export class UserManagementComponent implements OnInit {
       username,
       fullName,
       password: this.password.trim() || undefined,
-      role: this.role,
+      roleId,
       isActive: this.isActive
     }).subscribe({
-      next: () => {
+      next: updated => {
         if (currentUsername && currentUsername === this.authService.currentUser?.username) {
           this.authService.syncCurrentUser({
-            username,
-            fullName,
-            role: this.role
+            username: updated.username,
+            fullName: updated.fullName,
+            roleId: updated.roleId,
+            roleName: updated.roleName
           });
         }
 
@@ -195,7 +217,7 @@ export class UserManagementComponent implements OnInit {
     this.userManagementService.update(user.id, {
       username: user.username,
       fullName: user.fullName,
-      role: user.role,
+      roleId: user.roleId,
       isActive: !user.isActive
     }).subscribe({
       next: updated => {
@@ -203,7 +225,8 @@ export class UserManagementComponent implements OnInit {
           this.authService.syncCurrentUser({
             username: updated.username,
             fullName: updated.fullName,
-            role: updated.role
+            roleId: updated.roleId,
+            roleName: updated.roleName
           });
         }
 
@@ -217,10 +240,6 @@ export class UserManagementComponent implements OnInit {
   }
 
   formatDate(value: string): string {
-    return new Date(value).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatDateDisplay(value);
   }
 }

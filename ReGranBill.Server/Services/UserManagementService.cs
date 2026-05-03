@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.Users;
 using ReGranBill.Server.Entities;
-using ReGranBill.Server.Enums;
 using ReGranBill.Server.Exceptions;
 
 namespace ReGranBill.Server.Services;
@@ -16,6 +15,7 @@ public class UserManagementService : IUserManagementService
     public async Task<List<UserDto>> GetAllAsync()
     {
         var users = await _db.Users
+            .Include(u => u.Role)
             .OrderBy(u => u.Username)
             .ToListAsync();
 
@@ -27,7 +27,7 @@ public class UserManagementService : IUserManagementService
         var username = ValidateUsername(request.Username);
         var fullName = ValidateFullName(request.FullName);
         var password = ValidatePassword(request.Password, required: true);
-        var role = ParseRole(request.Role);
+        var role = await ResolveRoleAsync(request.RoleId);
 
         await EnsureUniqueUsernameAsync(username);
 
@@ -36,30 +36,35 @@ public class UserManagementService : IUserManagementService
             Username = username,
             FullName = fullName,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password!),
-            Role = role,
+            RoleId = role.Id,
             IsActive = true
         };
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+
+        await _db.Entry(user).Reference(u => u.Role).LoadAsync();
         return MapToDto(user);
     }
 
     public async Task<UserDto?> UpdateAsync(int id, UpdateUserRequest request, int actingUserId)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        var user = await _db.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return null;
 
         var username = ValidateUsername(request.Username);
         var fullName = ValidateFullName(request.FullName);
-        var role = ParseRole(request.Role);
+        var role = await ResolveRoleAsync(request.RoleId);
         var password = ValidatePassword(request.Password, required: false);
 
         await EnsureUniqueUsernameAsync(username, id);
-        await EnsureAdminSafeguardsAsync(user, role, request.IsActive, actingUserId);
+        await EnsureAdminSafeguardsAsync(user, role.Id, request.IsActive, actingUserId);
 
         user.Username = username;
         user.FullName = fullName;
+        user.RoleId = role.Id;
         user.Role = role;
         user.IsActive = request.IsActive;
 
@@ -84,18 +89,27 @@ public class UserManagementService : IUserManagementService
         }
     }
 
-    private async Task EnsureAdminSafeguardsAsync(User user, UserRole updatedRole, bool updatedIsActive, int actingUserId)
+    private async Task EnsureAdminSafeguardsAsync(User user, int updatedRoleId, bool updatedIsActive, int actingUserId)
     {
-        var removesAdminAccess = user.Role == UserRole.Admin && user.IsActive &&
-            (updatedRole != UserRole.Admin || !updatedIsActive);
+        var currentlyAdmin = user.Role?.IsAdmin ?? false;
+        if (!currentlyAdmin || !user.IsActive)
+        {
+            return;
+        }
 
+        var stillAdmin = await _db.Roles
+            .Where(r => r.Id == updatedRoleId)
+            .Select(r => r.IsAdmin)
+            .FirstOrDefaultAsync();
+
+        var removesAdminAccess = !stillAdmin || !updatedIsActive;
         if (!removesAdminAccess)
         {
             return;
         }
 
         var otherActiveAdmins = await _db.Users.CountAsync(u =>
-            u.Id != user.Id && u.IsActive && u.Role == UserRole.Admin);
+            u.Id != user.Id && u.IsActive && u.Role.IsAdmin);
 
         if (otherActiveAdmins == 0)
         {
@@ -106,6 +120,22 @@ public class UserManagementService : IUserManagementService
         {
             throw new RequestValidationException("You cannot deactivate your own user account.");
         }
+    }
+
+    private async Task<Role> ResolveRoleAsync(int roleId)
+    {
+        if (roleId <= 0)
+        {
+            throw new RequestValidationException("Select a valid role.");
+        }
+
+        var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role == null)
+        {
+            throw new RequestValidationException("The selected role does not exist.");
+        }
+
+        return role;
     }
 
     private static string ValidateUsername(string? username)
@@ -157,22 +187,13 @@ public class UserManagementService : IUserManagementService
         return trimmed;
     }
 
-    private static UserRole ParseRole(string? role)
-    {
-        if (!Enum.TryParse(role, true, out UserRole parsed))
-        {
-            throw new RequestValidationException("Select a valid user role.");
-        }
-
-        return parsed;
-    }
-
     private static UserDto MapToDto(User user) => new()
     {
         Id = user.Id,
         Username = user.Username,
         FullName = user.FullName,
-        Role = user.Role.ToString(),
+        RoleId = user.RoleId,
+        RoleName = user.Role?.Name ?? string.Empty,
         IsActive = user.IsActive,
         CreatedAt = user.CreatedAt
     };

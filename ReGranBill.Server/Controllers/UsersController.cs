@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.Users;
 using ReGranBill.Server.Exceptions;
 using ReGranBill.Server.Services;
@@ -9,7 +10,8 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("users")]
 public class UsersController : ControllerBase
 {
     private readonly IUserManagementService _userManagementService;

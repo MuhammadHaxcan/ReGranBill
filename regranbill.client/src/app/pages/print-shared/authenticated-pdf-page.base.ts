@@ -59,17 +59,28 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
         return;
       }
 
-      if (xhr.status === 401 || xhr.status === 403) {
+      if (xhr.status === 401) {
+        // Token invalid / expired — sign out and send to login.
         this.authService.logout();
         this.router.navigate(['/login']);
         return;
       }
 
-      this.setError(`Failed to load PDF (${xhr.status})`);
+      if (xhr.status === 403) {
+        this.setError("You don't have permission to view this document. Ask an admin to grant access.");
+        return;
+      }
+
+      if (xhr.status === 404) {
+        this.setError('Document not found.');
+        return;
+      }
+
+      this.setError(`Unable to load the document (HTTP ${xhr.status}). Please try again.`);
     };
 
     xhr.onerror = () => {
-      this.setError('Network error loading PDF');
+      this.setError('Network error while loading the document. Check your connection and try again.');
     };
 
     xhr.send();

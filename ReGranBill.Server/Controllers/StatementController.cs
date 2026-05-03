@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.Services;
 
 namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/statements")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("soa")]
 public class StatementController : ControllerBase
 {
     private readonly IStatementService _statementService;

@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
@@ -23,8 +24,13 @@ export class PendingPurchasesComponent implements OnInit {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
-    private confirmModal: ConfirmModalService
+    private confirmModal: ConfirmModalService,
+    public authService: AuthService
   ) {}
+
+  get canSeeRates(): boolean {
+    return this.authService.hasPage('voucher-rates');
+  }
 
   ngOnInit(): void {
     this.loadChallans();

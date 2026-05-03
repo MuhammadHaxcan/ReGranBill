@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.CompanySettings;
 using ReGranBill.Server.Services;
 
@@ -16,17 +17,16 @@ public class CompanySettingsController : ControllerBase
         _companySettingsService = companySettingsService;
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("company-settings")]
     public async Task<IActionResult> Get() => Ok(await _companySettingsService.GetAsync());
 
     [HttpPut]
     [RequestSizeLimit(5 * 1024 * 1024)]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("company-settings")]
     public async Task<IActionResult> Update([FromForm] UpdateCompanySettingsRequest request) =>
         Ok(await _companySettingsService.UpdateAsync(request));
 
     [HttpGet("logo")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetLogo()
     {
         var logo = await _companySettingsService.GetLogoAsync();
@@ -41,7 +41,7 @@ public class CompanySettingsController : ControllerBase
         Ok(await _companySettingsService.GetVehiclesAsync());
 
     [HttpPut("vehicles")]
-    [Authorize(Roles = "Admin")]
+    [RequirePage("company-settings")]
     public async Task<IActionResult> UpdateVehicles([FromBody] UpdateVehicleOptionsRequest request) =>
         Ok(await _companySettingsService.UpdateVehiclesAsync(request));
 }

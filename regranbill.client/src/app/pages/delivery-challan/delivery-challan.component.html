@@ -79,8 +79,8 @@
           <th class="col-rbp">RBP</th>
           <th class="col-qty">Qty</th>
           <th class="col-weight">Total Weight</th>
-          <th class="col-rate" *ngIf="isAdmin">Rate</th>
-          <th class="col-amount" *ngIf="isAdmin">Amount</th>
+          <th class="col-rate" *ngIf="canSeeRates">Rate</th>
+          <th class="col-amount" *ngIf="canSeeRates">Amount</th>
           <th class="col-actions"></th>
         </tr>
       </thead>
@@ -129,7 +129,7 @@
             <span *ngIf="isLoose(line)" class="loose-label">Loose</span>
             <strong>{{ getLineTotalWeight(line) }}</strong> <span class="unit">kg</span>
           </td>
-          <td class="col-rate" *ngIf="isAdmin">
+          <td class="col-rate" *ngIf="canSeeRates">
             <input
               type="number"
               class="form-control form-control-sm"
@@ -138,7 +138,7 @@
               step="0.5"
             />
           </td>
-          <td class="col-amount" *ngIf="isAdmin">
+          <td class="col-amount" *ngIf="canSeeRates">
             {{ getLineAmount(line) | flexNumber }}
           </td>
           <td class="col-actions">
@@ -165,7 +165,7 @@
       <span class="summary-label">Weight</span>
       <span class="summary-value">{{ totalWeight }} <span class="unit">kg</span></span>
     </div>
-    <div class="summary-item summary-total" *ngIf="isAdmin">
+    <div class="summary-item summary-total" *ngIf="canSeeRates">
       <span class="summary-label">Amount</span>
       <span class="summary-value text-primary">{{ totalAmount | flexNumber }}</span>
     </div>

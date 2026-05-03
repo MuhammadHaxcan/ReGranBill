@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.Services;
 
 namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/master-report")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("master-report")]
 public class MasterReportController : ControllerBase
 {
     private readonly IMasterReportService _reportService;

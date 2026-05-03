@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.ProductStockReport;
 using ReGranBill.Server.Services;
 
@@ -7,7 +8,8 @@ namespace ReGranBill.Server.Controllers;
 
 [ApiController]
 [Route("api/product-stock-report")]
-[Authorize(Roles = "Admin")]
+[Authorize]
+[RequirePage("product-stock-report")]
 public class ProductStockReportController : ControllerBase
 {
     private readonly IProductStockReportService _reportService;

@@ -79,8 +79,8 @@
           <th class="col-qty">Bags</th>
           <th class="col-weight">Total Kg</th>
           <th class="col-avg">Avg Kg/Bag</th>
-          <th class="col-rate" *ngIf="isAdmin">Rate</th>
-          <th class="col-amount" *ngIf="isAdmin">Amount</th>
+          <th class="col-rate" *ngIf="canSeeRates">Rate</th>
+          <th class="col-amount" *ngIf="canSeeRates">Amount</th>
           <th class="col-actions"></th>
         </tr>
       </thead>
@@ -129,7 +129,7 @@
           <td class="col-avg">
             <strong>{{ getLineAverageWeight(line) }}</strong> <span class="unit">kg</span>
           </td>
-          <td class="col-rate" *ngIf="isAdmin">
+          <td class="col-rate" *ngIf="canSeeRates">
             <input
               type="number"
               class="form-control form-control-sm"
@@ -138,7 +138,7 @@
               step="0.5"
             />
           </td>
-          <td class="col-amount" *ngIf="isAdmin">
+          <td class="col-amount" *ngIf="canSeeRates">
             {{ getLineAmount(line) | flexNumber }}
           </td>
           <td class="col-actions">
@@ -169,7 +169,7 @@
       <span class="summary-label">Avg Kg/Bag</span>
       <span class="summary-value">{{ avgWeightPerBag }} <span class="unit">kg</span></span>
     </div>
-    <div class="summary-item summary-total" *ngIf="isAdmin">
+    <div class="summary-item summary-total" *ngIf="canSeeRates">
       <span class="summary-label">Amount</span>
       <span class="summary-value text-primary">{{ totalAmount | flexNumber }}</span>
     </div>

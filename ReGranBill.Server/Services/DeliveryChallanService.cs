@@ -24,7 +24,7 @@ public class DeliveryChallanService : IDeliveryChallanService
     {
         var saleJvs = await _db.JournalVouchers
             .Where(j => j.VoucherType == VoucherType.SaleVoucher)
-            .Include(j => j.Creator)
+            .Include(j => j.Creator).ThenInclude(u => u.Role)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .OrderByDescending(j => j.CreatedAt)
@@ -46,7 +46,7 @@ public class DeliveryChallanService : IDeliveryChallanService
     {
         var saleJv = await _db.JournalVouchers
             .Where(j => j.Id == id && j.VoucherType == VoucherType.SaleVoucher)
-            .Include(j => j.Creator)
+            .Include(j => j.Creator).ThenInclude(u => u.Role)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .FirstOrDefaultAsync();
@@ -530,7 +530,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             VehicleNumber = saleJv.VehicleNumber,
             Description = saleJv.Description,
             VoucherType = saleJv.VoucherType.ToString(),
-            CreatedByRole = saleJv.Creator?.Role.ToString(),
+            CreatedByRole = saleJv.Creator?.Role?.Name,
             RatesAdded = saleJv.RatesAdded,
             Lines = productEntries.Select(e => new DcLineDto
             {

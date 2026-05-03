@@ -4,6 +4,13 @@ import { filter, Subscription } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { Toast, ToastService } from './services/toast.service';
 import { ConfirmModal, ConfirmModalService } from './services/confirm-modal.service';
+import { PAGE_GROUPS, PAGES, PageDefinition, PageGroup } from './config/page-catalog';
+
+interface SidebarGroup {
+  group: PageGroup;
+  label: string;
+  pages: PageDefinition[];
+}
 
 @Component({
   selector: 'app-root',
@@ -15,15 +22,14 @@ export class App implements OnInit, OnDestroy {
   toastVisible = false;
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'success';
+  /** Bumps each time a new toast replaces the visible one. Used as an *ngFor key
+   *  to retrigger the entry animation so a swap feels like a new pop, not a relabel. */
+  toastSeq = 0;
   private toastSub!: Subscription;
   private routeSub!: Subscription;
-  private toastTimer: any;
 
-  // Sidebar dropdown groups
-  saleGroupOpen = true;
-  purchaseGroupOpen = true;
-  returnGroupOpen = true;
-  pendingGroupOpen = true;
+  // Each group is open by default; user can collapse via the chevron.
+  private collapsedGroups = new Set<PageGroup>();
 
   // Confirm modal
   modalVisible = false;
@@ -62,25 +68,25 @@ export class App implements OnInit, OnDestroy {
     this.toastSub?.unsubscribe();
     this.routeSub?.unsubscribe();
     this.modalSub?.unsubscribe();
-    clearTimeout(this.toastTimer);
   }
 
   private showToast(toast: Toast): void {
-    clearTimeout(this.toastTimer);
+    // Sticky toasts: stay visible until the user closes them or a newer toast arrives.
+    // The seq bump retriggers the CSS swap animation so a replacement feels like a new pop.
     this.toastMessage = toast.message;
     this.toastType = toast.type;
     this.toastVisible = true;
-    this.toastTimer = setTimeout(() => {
-      this.toastVisible = false;
-    }, 4000);
+    this.toastSeq++;
   }
 
   dismissToast(): void {
-    clearTimeout(this.toastTimer);
     this.toastVisible = false;
   }
 
-  // Modal methods
+  /** trackBy that uses the seq as identity, so each new toast remounts the element
+   *  and the CSS swap animation replays. */
+  trackToastSeq = (_: number, seq: number): number => seq;
+
   onModalConfirm(): void {
     if (this.modalData?.onConfirm) {
       this.modalData.onConfirm();
@@ -115,10 +121,6 @@ export class App implements OnInit, OnDestroy {
       this.router.url.startsWith('/print-customer-ledger');
   }
 
-  get isAdmin(): boolean {
-    return this.authService.isAdmin();
-  }
-
   get userInitial(): string {
     const name = this.authService.currentUser?.fullName || '';
     return name.charAt(0).toUpperCase();
@@ -128,16 +130,35 @@ export class App implements OnInit, OnDestroy {
     return this.authService.currentUser?.fullName || '';
   }
 
+  get userRoleLabel(): string {
+    return this.authService.currentUser?.roleName || '';
+  }
+
+  get visibleGroups(): SidebarGroup[] {
+    return PAGE_GROUPS
+      .map(g => ({
+        group: g.group,
+        label: g.label,
+        pages: PAGES.filter(p => p.group === g.group && !p.hidden && this.authService.hasPage(p.key))
+      }))
+      .filter(g => g.pages.length > 0);
+  }
+
+  isGroupOpen(group: PageGroup): boolean {
+    return !this.collapsedGroups.has(group);
+  }
+
+  toggleGroup(group: PageGroup): void {
+    if (this.collapsedGroups.has(group)) {
+      this.collapsedGroups.delete(group);
+    } else {
+      this.collapsedGroups.add(group);
+    }
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
-  }
-
-  toggleGroup(group: 'sale' | 'purchase' | 'return' | 'pending'): void {
-    if (group === 'sale') this.saleGroupOpen = !this.saleGroupOpen;
-    if (group === 'purchase') this.purchaseGroupOpen = !this.purchaseGroupOpen;
-    if (group === 'return') this.returnGroupOpen = !this.returnGroupOpen;
-    if (group === 'pending') this.pendingGroupOpen = !this.pendingGroupOpen;
   }
 
   private updatePageTitle(): void {
@@ -155,6 +176,7 @@ export class App implements OnInit, OnDestroy {
       { startsWith: '/payment-voucher', title: 'Payment Voucher' },
       { startsWith: '/voucher-editor', title: 'Voucher Editor' },
       { startsWith: '/pending', title: 'Pending Review' },
+      { startsWith: '/rated-vouchers', title: 'Rated Vouchers' },
       { startsWith: '/customer-ledger', title: 'Customer / Vendor Ledger' },
       { startsWith: '/soa', title: 'Statement of Account' },
       { startsWith: '/master-report', title: 'Master Report' },
@@ -164,6 +186,7 @@ export class App implements OnInit, OnDestroy {
       { startsWith: '/metadata', title: 'Metadata' },
       { startsWith: '/company-settings', title: 'Company Settings' },
       { startsWith: '/users', title: 'User Management' },
+      { startsWith: '/roles', title: 'Roles' },
       { startsWith: '/add-rate', title: 'Add Rate' },
       { startsWith: '/add-purchase-rate', title: 'Add Purchase Rate' },
       { startsWith: '/add-sale-return-rate', title: 'Add Sale Return Rate' },
