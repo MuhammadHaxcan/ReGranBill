@@ -50,6 +50,7 @@ import { FlexNumberPipe } from './pipes/flex-number.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { SelectOnFocusDirective } from './directives/select-on-focus.directive';
 import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewer-shell.component';
+import { AddAccountModalComponent } from './components/add-account-modal/add-account-modal.component';
 
 @NgModule({
   declarations: [
@@ -81,6 +82,7 @@ import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewe
     MasterReportComponent,
     ProductStockReportComponent,
     PdfViewerShellComponent,
+    AddAccountModalComponent,
     PkCurrencyPipe,
     FlexNumberPipe,
     SelectOnFocusDirective,

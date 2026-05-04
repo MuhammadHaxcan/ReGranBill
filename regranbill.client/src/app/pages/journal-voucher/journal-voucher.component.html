@@ -71,8 +71,10 @@
               [placeholder]="'Select account...'"
               [compact]="true"
               [disabled]="line.categoryId == null"
+              [allowAdd]="line.categoryId != null"
               [ngModel]="line.accountId"
               (ngModelChange)="onAccountChange(line, $event)"
+              (addClicked)="onAddAccountClicked(line, $event)"
             ></app-searchable-select>
           </td>
           <td class="col-desc">
@@ -167,4 +169,12 @@
 <div class="loading-state" *ngIf="loading">
   <p>Loading...</p>
 </div>
+
+<app-add-account-modal
+  [isVisible]="showAddAccountModal"
+  [prefillName]="addAccountPrefillName"
+  [defaultCategoryId]="addAccountDefaultCategoryId"
+  (accountCreated)="onNewAccountCreated($event)"
+  (modalClosed)="onAddAccountModalClosed()"
+></app-add-account-modal>
 

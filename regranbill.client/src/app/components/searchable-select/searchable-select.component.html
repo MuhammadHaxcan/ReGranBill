@@ -46,9 +46,25 @@
         <span class="ss-option-label">{{ opt.label }}</span>
         <span class="ss-option-sublabel" *ngIf="opt.sublabel">{{ opt.sublabel }}</span>
       </div>
-      <div class="ss-no-results" *ngIf="filteredOptions.length === 0">
+      <div class="ss-no-results" *ngIf="filteredOptions.length === 0 && !allowAdd">
         No results found
       </div>
+      <div class="ss-no-results" *ngIf="filteredOptions.length === 0 && allowAdd">
+        No results found
+      </div>
+    </div>
+    <div
+      class="ss-add-footer"
+      *ngIf="allowAdd"
+      [class.ss-highlighted]="highlightIndex === filteredOptions.length"
+      (mousedown)="$event.preventDefault(); $event.stopPropagation(); triggerAdd()"
+      (mouseenter)="highlightIndex = filteredOptions.length"
+    >
+      <svg class="ss-add-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span *ngIf="searchTerm.trim()">Add "{{ searchTerm.trim() }}"</span>
+      <span *ngIf="!searchTerm.trim()">Add new account...</span>
     </div>
   </div>
 </div>

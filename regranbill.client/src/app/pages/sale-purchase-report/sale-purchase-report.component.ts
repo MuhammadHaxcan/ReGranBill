@@ -20,6 +20,12 @@ export class SalePurchaseReportComponent implements OnInit {
   selectedProductId: number | null = null;
   searchText = '';
 
+  readonly typeOptions: SelectOption[] = [
+    { value: 'All', label: 'All' },
+    { value: 'Sale', label: 'Sale' },
+    { value: 'Purchase', label: 'Purchase' }
+  ];
+
   products: Account[] = [];
   productOptions: SelectOption[] = [];
   report: SalePurchaseReport | null = null;
@@ -95,6 +101,10 @@ export class SalePurchaseReportComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  onTypeChange(value: SalePurchaseReportType | null): void {
+    this.selectedType = value ?? 'All';
   }
 
   clearFilters(): void {

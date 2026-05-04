@@ -25,7 +25,9 @@
       <app-searchable-select
         [options]="customerOptions"
         [placeholder]="'Select customer...'"
+        [allowAdd]="true"
         [(ngModel)]="selectedCustomerId"
+        (addClicked)="onAddCustomerClicked($event)"
       ></app-searchable-select>
     </div>
     <div class="form-group">
@@ -95,8 +97,10 @@
               [placeholder]="'Select product...'"
               [compact]="true"
               [disabled]="lineCategoryIds[i] == null"
+              [allowAdd]="lineCategoryIds[i] != null"
               [ngModel]="line.product?.id"
               (ngModelChange)="onProductChange(line, $event)"
+              (addClicked)="onAddProductClicked(i, $event)"
             ></app-searchable-select>
           </td>
           <td class="col-packing">
@@ -178,3 +182,13 @@
 <div class="loading-state" *ngIf="loading">
   <p>Loading...</p>
 </div>
+
+<app-add-account-modal
+  [isVisible]="showAddAccountModal"
+  [prefillName]="addAccountPrefillName"
+  [defaultType]="addAccountDefaultType"
+  [defaultPartyRole]="addAccountDefaultRole"
+  [defaultCategoryId]="addAccountDefaultCategoryId"
+  (accountCreated)="onNewAccountCreated($event)"
+  (modalClosed)="onAddAccountModalClosed()"
+></app-add-account-modal>

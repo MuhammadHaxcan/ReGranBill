@@ -17,6 +17,7 @@ public class JournalVoucherEntryDto
 {
     public int Id { get; set; }
     public int AccountId { get; set; }
+    public int CategoryId { get; set; }
     public string? AccountName { get; set; }
     public string? Description { get; set; }
     public decimal Debit { get; set; }

@@ -45,12 +45,16 @@ export class JournalVoucherComponent implements OnInit {
   categoryOptions: SelectOption[] = [];
   // per-category account cache, keyed by categoryId
   accountsByCategory = new Map<number, Account[]>();
-  // all accounts loaded once (used in edit mode to resolve categoryId from accountId)
-  allAccounts: Account[] = [];
   lines: EditableJournalLine[] = [];
 
   // track in-flight API calls per categoryId to avoid duplicate requests
   private categoryAccountRequests = new Map<number, Observable<Account[]>>();
+
+  // Add account modal
+  showAddAccountModal = false;
+  addAccountPrefillName = '';
+  addAccountDefaultCategoryId: number | undefined;
+  private addAccountTargetLine: EditableJournalLine | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -94,6 +98,30 @@ export class JournalVoucherComponent implements OnInit {
     }
   }
 
+  onAddAccountClicked(line: EditableJournalLine, prefillName: string): void {
+    this.addAccountTargetLine = line;
+    this.addAccountPrefillName = prefillName;
+    this.addAccountDefaultCategoryId = line.categoryId ?? undefined;
+    this.showAddAccountModal = true;
+  }
+
+  onAddAccountModalClosed(): void {
+    this.showAddAccountModal = false;
+    this.addAccountTargetLine = null;
+  }
+
+  onNewAccountCreated(account: Account): void {
+    this.showAddAccountModal = false;
+    const bucket = this.accountsByCategory.get(account.categoryId) ?? [];
+    this.accountsByCategory.set(account.categoryId, [...bucket, account]);
+    if (this.addAccountTargetLine) {
+      this.addAccountTargetLine.categoryId = account.categoryId;
+      this.addAccountTargetLine.accountId = account.id;
+    }
+    this.addAccountTargetLine = null;
+    this.cdr.detectChanges();
+  }
+
   private loadData(): void {
     this.loading = true;
 
@@ -103,12 +131,10 @@ export class JournalVoucherComponent implements OnInit {
 
     if (this.isEditMode && this.voucherId) {
       forkJoin({
-        allAccounts: this.accountService.getAll(),
         categories: this.categoryService.getAll(),
         voucher: this.journalVoucherService.getById(this.voucherId)
       }).subscribe({
-        next: ({ allAccounts, categories, voucher }) => {
-          this.allAccounts = allAccounts;
+        next: ({ categories, voucher }) => {
           this.setCategories(categories);
           this.setVoucher(voucher);
           this.loading = false;
@@ -319,18 +345,19 @@ export class JournalVoucherComponent implements OnInit {
     this.description = voucher.description || '';
     this.lines = voucher.entries
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(entry => {
-        const account = this.allAccounts.find(a => a.id === entry.accountId);
-        return {
-          id: entry.id,
-          categoryId: account?.categoryId ?? null,
-          accountId: entry.accountId,
-          description: entry.description || '',
-          debit: entry.debit,
-          credit: entry.credit,
-          isEdited: entry.isEdited
-        };
-      });
+      .map(entry => ({
+        id: entry.id,
+        categoryId: entry.categoryId || null,
+        accountId: entry.accountId,
+        description: entry.description || '',
+        debit: entry.debit,
+        credit: entry.credit,
+        isEdited: entry.isEdited
+      }));
+
+    // Pre-seed account lists for each category so dropdowns work immediately
+    const uniqueCatIds = [...new Set(this.lines.map(l => l.categoryId).filter((id): id is number => !!id))];
+    uniqueCatIds.forEach(catId => this.loadAccountsForCategory(catId));
 
     while (this.lines.length < 2) {
       this.lines.push(this.newLine());

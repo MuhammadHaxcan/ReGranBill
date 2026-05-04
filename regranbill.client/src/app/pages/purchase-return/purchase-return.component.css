@@ -53,8 +53,8 @@
 /* Form */
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
 .form-row-3 {
@@ -62,13 +62,15 @@
 }
 
 .form-row-4 {
-  grid-template-columns: 150px 1fr 1fr 150px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 
 .form-label {
@@ -80,10 +82,10 @@
 }
 
 .form-control {
-  padding: 10px 14px;
+  padding: 9px 12px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-primary);
   background: #fff;
   outline: none;

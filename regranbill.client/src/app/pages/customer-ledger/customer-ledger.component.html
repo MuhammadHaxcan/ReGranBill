@@ -13,10 +13,12 @@
   <div class="filter-row">
     <div class="filter-field">
       <label>Category</label>
-      <select class="filter-input" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
-        <option [ngValue]="null">Select category...</option>
-        <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
-      </select>
+      <app-searchable-select
+        [options]="categoryOptions"
+        [(ngModel)]="selectedCategoryId"
+        (ngModelChange)="onCategoryChange()"
+        placeholder="Select category...">
+      </app-searchable-select>
     </div>
     <div class="filter-field">
       <label>Party Account</label>

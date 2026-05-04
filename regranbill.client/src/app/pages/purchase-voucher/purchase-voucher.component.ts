@@ -8,7 +8,7 @@ import { CompanySettingsService } from '../../services/company-settings.service'
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
-import { Account } from '../../models/account.model';
+import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { Category } from '../../models/category.model';
 import { ProductLine, Cartage } from '../../models/delivery-challan.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -71,6 +71,14 @@ export class PurchaseVoucherComponent implements OnInit {
   cartageAmount: number = 0;
   isReadOnlyRatedVoucher = false;
 
+  // Add account modal
+  showAddAccountModal = false;
+  addAccountPrefillName = '';
+  addAccountDefaultType?: AccountType;
+  addAccountDefaultRole?: PartyRole;
+  addAccountDefaultCategoryId?: number;
+  private addProductTargetLineIndex = -1;
+
   constructor(
     private accountService: AccountService,
     private authService: AuthService,
@@ -90,6 +98,55 @@ export class PurchaseVoucherComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+  }
+
+  onAddVendorClicked(prefillName: string): void {
+    this.addAccountPrefillName = prefillName;
+    this.addAccountDefaultType = AccountType.Party;
+    this.addAccountDefaultRole = PartyRole.Vendor;
+    this.addAccountDefaultCategoryId = undefined;
+    this.addProductTargetLineIndex = -1;
+    this.showAddAccountModal = true;
+  }
+
+  onAddProductClicked(lineIndex: number, prefillName: string): void {
+    this.addAccountPrefillName = prefillName;
+    this.addAccountDefaultType = AccountType.Product;
+    this.addAccountDefaultRole = undefined;
+    this.addAccountDefaultCategoryId = this.lineCategoryIds[lineIndex] ?? undefined;
+    this.addProductTargetLineIndex = lineIndex;
+    this.showAddAccountModal = true;
+  }
+
+  onAddAccountModalClosed(): void {
+    this.showAddAccountModal = false;
+    this.addProductTargetLineIndex = -1;
+  }
+
+  onNewAccountCreated(account: Account): void {
+    this.showAddAccountModal = false;
+
+    if (this.addProductTargetLineIndex >= 0) {
+      this.products = [...this.products, account];
+      this.productOptions = this.products.map(p => ({
+        value: p.id,
+        label: p.name,
+        sublabel: p.packing || ''
+      }));
+      this.lineCategoryIds[this.addProductTargetLineIndex] = account.categoryId;
+      this.onProductChange(this.lines[this.addProductTargetLineIndex], account.id);
+      this.addProductTargetLineIndex = -1;
+    } else {
+      this.vendors = [...this.vendors, account];
+      this.vendorOptions = this.vendors.map(v => ({
+        value: v.id,
+        label: v.name,
+        sublabel: v.city || ''
+      }));
+      this.selectedVendorId = account.id;
+    }
+
+    this.cdr.detectChanges();
   }
 
   loadData(): void {

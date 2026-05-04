@@ -1,5 +1,5 @@
 import {
-  Component, Input, ElementRef, HostListener,
+  Component, Input, Output, EventEmitter, ElementRef, HostListener,
   forwardRef, OnChanges, SimpleChanges, ViewChild, AfterViewChecked
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -26,6 +26,8 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
   @Input() placeholder = 'Select...';
   @Input() compact = false;
   @Input() disabled = false;
+  @Input() allowAdd = false;
+  @Output() addClicked = new EventEmitter<string>();
 
   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('trigger') triggerRef!: ElementRef<HTMLElement>;
@@ -125,11 +127,12 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
 
   onKeydown(event: KeyboardEvent): void {
     const filtered = this.filteredOptions;
+    const totalItems = this.allowAdd ? filtered.length + 1 : filtered.length;
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
         if (!this.isOpen) { this.open(); return; }
-        this.highlightIndex = Math.min(this.highlightIndex + 1, filtered.length - 1);
+        this.highlightIndex = Math.min(this.highlightIndex + 1, totalItems - 1);
         break;
       case 'ArrowUp':
         event.preventDefault();
@@ -137,7 +140,9 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
         break;
       case 'Enter':
         event.preventDefault();
-        if (this.highlightIndex >= 0 && this.highlightIndex < filtered.length) {
+        if (this.allowAdd && this.highlightIndex === filtered.length) {
+          this.triggerAdd();
+        } else if (this.highlightIndex >= 0 && this.highlightIndex < filtered.length) {
           this.selectOption(filtered[this.highlightIndex]);
         }
         break;
@@ -145,6 +150,12 @@ export class SearchableSelectComponent implements ControlValueAccessor, OnChange
         this.close();
         break;
     }
+  }
+
+  triggerAdd(): void {
+    const term = this.searchTerm.trim();
+    this.close();
+    this.addClicked.emit(term);
   }
 
   onTriggerKeydown(event: KeyboardEvent): void {

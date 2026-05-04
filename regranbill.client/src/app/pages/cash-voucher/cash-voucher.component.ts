@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
-import { Account, AccountType } from '../../models/account.model';
+import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { CashVoucher, CashVoucherMode, CreateCashVoucherRequest } from '../../models/cash-voucher.model';
 import { AccountService } from '../../services/account.service';
 import { CashVoucherService } from '../../services/cash-voucher.service';
@@ -45,6 +45,14 @@ export class CashVoucherComponent implements OnInit {
   partyOptions: SelectOption[] = [];
   cashAccountOptions: SelectOption[] = [];
   lines: EditableCashVoucherLine[] = [];
+
+  // Add account modal
+  showAddAccountModal = false;
+  addAccountPrefillName = '';
+  addAccountDefaultType: AccountType | undefined;
+  addAccountDefaultRole: PartyRole | undefined;
+  addAccountDefaultCategoryId: number | undefined;
+  private addAccountContext: 'party' | 'cash' = 'party';
 
   constructor(
     private route: ActivatedRoute,
@@ -97,6 +105,53 @@ export class CashVoucherComponent implements OnInit {
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as CashVoucherMode) || 'receipt';
     this.loadData();
+  }
+
+  onAddPartyClicked(prefillName: string): void {
+    this.addAccountPrefillName = prefillName;
+    this.addAccountDefaultType = AccountType.Party;
+    this.addAccountDefaultRole = this.mode === 'receipt' ? PartyRole.Customer : PartyRole.Vendor;
+    this.addAccountContext = 'party';
+    this.showAddAccountModal = true;
+  }
+
+  onAddCashAccountClicked(prefillName: string): void {
+    this.addAccountPrefillName = prefillName;
+    this.addAccountDefaultType = AccountType.Account;
+    this.addAccountDefaultRole = undefined;
+    this.addAccountContext = 'cash';
+    this.showAddAccountModal = true;
+  }
+
+  onAddAccountModalClosed(): void {
+    this.showAddAccountModal = false;
+  }
+
+  onNewAccountCreated(account: Account): void {
+    this.showAddAccountModal = false;
+
+    if (this.addAccountContext === 'party') {
+      this.partyAccounts = [...this.partyAccounts, account];
+      this.partyOptions = this.partyAccounts.map(a => ({
+        value: a.id,
+        label: a.name,
+        sublabel: a.city || a.partyRole || 'Party'
+      }));
+      this.partyAccountId = account.id;
+    } else {
+      this.cashAccounts = [...this.cashAccounts, account];
+      this.cashAccountOptions = this.cashAccounts.map(a => ({
+        value: a.id,
+        label: a.name,
+        sublabel: a.bankName || 'Cash / Bank'
+      }));
+      const emptyLine = this.lines.find(l => l.accountId == null);
+      if (emptyLine) {
+        emptyLine.accountId = account.id;
+      }
+    }
+
+    this.cdr.detectChanges();
   }
 
   @HostListener('document:keydown', ['$event'])

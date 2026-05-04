@@ -63,6 +63,8 @@ public class VoucherEditorService : IVoucherEditorService
         var accountsById = await ValidateUpdateRequestAsync(voucherType, request);
         await ValidateLinkedVoucherConsistencyAsync(voucher, voucherType, request);
 
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
         voucher.Date = request.Date;
         voucher.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
         voucher.VehicleNumber = SupportsVehicleNumber(voucherType)
@@ -107,6 +109,7 @@ public class VoucherEditorService : IVoucherEditorService
         await SynchronizeLinkedCartageVoucherAsync(voucher, voucherType, accountsById);
 
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         var savedVoucher = await _db.JournalVouchers
             .Where(v => v.Id == voucher.Id)
@@ -301,8 +304,8 @@ public class VoucherEditorService : IVoucherEditorService
         if (entries.Count != productLines.Count + 1)
             throw new RequestValidationException("Sale voucher allows only one customer debit line and inventory credit lines.");
 
-        if (!ReferenceEquals(entries[0], customerLine))
-            throw new RequestValidationException("Customer debit line must remain the first line in the sale voucher.");
+        if (customerLine.SortOrder != 0)
+            throw new RequestValidationException("Customer debit line must have sort order 0.");
 
         var nonProductCredits = entries
             .Where(e => e.Credit > 0 && !IsInventoryAccount(accountsById[e.AccountId]))
@@ -371,8 +374,8 @@ public class VoucherEditorService : IVoucherEditorService
         if (entries.Count != productLines.Count + 1)
             throw new RequestValidationException("Purchase voucher allows only one vendor credit line and inventory debit lines.");
 
-        if (!ReferenceEquals(entries[0], vendorLine))
-            throw new RequestValidationException("Vendor credit line must remain the first line in the purchase voucher.");
+        if (vendorLine.SortOrder != 0)
+            throw new RequestValidationException("Vendor credit line must have sort order 0.");
 
         var nonProductDebits = entries
             .Where(e => e.Debit > 0 && !IsInventoryAccount(accountsById[e.AccountId]))
@@ -475,8 +478,8 @@ public class VoucherEditorService : IVoucherEditorService
         if (entries.Count != productLines.Count + 1)
             throw new RequestValidationException("Sale return voucher allows only one customer credit line and inventory debit lines.");
 
-        if (!ReferenceEquals(entries[0], customerLine))
-            throw new RequestValidationException("Customer credit line must remain the first line in the sale return voucher.");
+        if (customerLine.SortOrder != 0)
+            throw new RequestValidationException("Customer credit line must have sort order 0.");
 
         var nonProductDebits = entries
             .Where(e => e.Debit > 0 && !IsInventoryAccount(accountsById[e.AccountId]))
@@ -551,8 +554,8 @@ public class VoucherEditorService : IVoucherEditorService
         if (entries.Count != productLines.Count + 1)
             throw new RequestValidationException("Purchase return voucher allows only one vendor debit line and inventory credit lines.");
 
-        if (!ReferenceEquals(entries[0], vendorLine))
-            throw new RequestValidationException("Vendor debit line must remain the first line in the purchase return voucher.");
+        if (vendorLine.SortOrder != 0)
+            throw new RequestValidationException("Vendor debit line must have sort order 0.");
 
         var nonProductCredits = entries
             .Where(e => e.Credit > 0 && !IsInventoryAccount(accountsById[e.AccountId]))

@@ -37,7 +37,7 @@ export class AccountClosingReportComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.accountService.getAll().subscribe({
+    this.accountService.getJournalAccounts().subscribe({
       next: accounts => {
         const cashBankAccounts = accounts.filter(account => account.accountType === 'Account');
         this.accounts = cashBankAccounts;

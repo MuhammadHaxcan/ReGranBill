@@ -1,0 +1,129 @@
+<div class="modal-overlay" *ngIf="isVisible" (click)="close()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">New Account</h2>
+      <button class="btn-icon modal-close" (click)="close()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-error" *ngIf="acctFormError">{{ acctFormError }}</div>
+
+      <div class="modal-field">
+        <label class="field-label">Account Name</label>
+        <input
+          #nameInput
+          type="text"
+          class="form-control"
+          placeholder="Enter account name..."
+          [(ngModel)]="acctName"
+          (keydown.escape)="close()"
+        />
+      </div>
+
+      <div class="modal-field">
+        <label class="field-label">Category</label>
+        <app-searchable-select
+          [options]="categoryOptions"
+          [placeholder]="'Select category...'"
+          [(ngModel)]="acctCategoryId"
+        ></app-searchable-select>
+      </div>
+
+      <div class="modal-field" *ngIf="acctCategoryId !== null">
+        <label class="field-label">Account Type</label>
+        <div class="type-selector">
+          <button
+            *ngFor="let t of visibleAccountTypes"
+            class="type-btn"
+            [class.type-btn-active]="acctType === t"
+            (click)="acctType = t; onAcctTypeChange()"
+          >
+            <span class="type-btn-icon">
+              <ng-container [ngSwitch]="t">
+                <svg *ngSwitchCase="'Product'" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="6" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <svg *ngSwitchCase="'RawMaterial'" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 13.5h12L13.5 6h-7L4 13.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 9.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <svg *ngSwitchCase="'Expense'" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v8M7.5 8.5h5a1.5 1.5 0 010 3H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <svg *ngSwitchCase="'Account'" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 9h16" stroke="currentColor" stroke-width="1.5"/></svg>
+                <svg *ngSwitchCase="'Party'" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="7" r="3" stroke="currentColor" stroke-width="1.3" stroke-dasharray="2 1.5"/><path d="M1 17a6 6 0 0112 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </ng-container>
+            </span>
+            {{ t }}
+          </button>
+        </div>
+      </div>
+
+      <div class="type-fields" *ngIf="acctType && acctCategoryId !== null">
+        <div class="type-fields-divider"></div>
+
+        <ng-container *ngIf="acctType === 'Product' || acctType === 'RawMaterial'">
+          <div class="modal-field-row">
+            <div class="modal-field">
+              <label class="field-label">Packing</label>
+              <input type="text" class="form-control" placeholder="e.g. 50kg / Bag" [(ngModel)]="acctPacking" />
+            </div>
+            <div class="modal-field">
+              <label class="field-label">Weight Per Pack (kg)</label>
+              <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctPackingWeight" min="0" />
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="acctType === 'Expense'">
+          <p class="type-hint">No additional fields required for expense accounts.</p>
+        </ng-container>
+
+        <ng-container *ngIf="acctType === 'Account'">
+          <div class="modal-field-row">
+            <div class="modal-field">
+              <label class="field-label">Bank Name</label>
+              <input type="text" class="form-control" placeholder="Leave empty for cash" [(ngModel)]="acctBankName" />
+            </div>
+            <div class="modal-field">
+              <label class="field-label">Account Number</label>
+              <input type="text" class="form-control" placeholder="e.g. 1234-5678-0001" [(ngModel)]="acctAccountNumber" />
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="acctType === 'Party'">
+          <div class="modal-field">
+            <label class="field-label">Role</label>
+            <div class="role-selector">
+              <button
+                *ngFor="let r of partyRoles"
+                class="role-btn"
+                [class.role-btn-active]="acctPartyRole === r"
+                (click)="acctPartyRole = r"
+              >{{ r }}</button>
+            </div>
+          </div>
+          <div class="modal-field-row">
+            <div class="modal-field">
+              <label class="field-label">Contact Person</label>
+              <input type="text" class="form-control" placeholder="Full name..." [(ngModel)]="acctContactPerson" />
+            </div>
+            <div class="modal-field">
+              <label class="field-label">Phone</label>
+              <input type="text" class="form-control" placeholder="e.g. 0300-1234567" [(ngModel)]="acctPhone" />
+            </div>
+          </div>
+          <div class="modal-field">
+            <label class="field-label">City</label>
+            <input type="text" class="form-control" placeholder="City..." [(ngModel)]="acctCity" />
+          </div>
+          <div class="modal-field">
+            <label class="field-label">Address</label>
+            <input type="text" class="form-control" placeholder="Full address..." [(ngModel)]="acctAddress" />
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="close()" [disabled]="saving">Cancel</button>
+      <button class="btn btn-primary" (click)="save()" [disabled]="saving">
+        {{ saving ? 'Creating...' : 'Create Account' }}
+      </button>
+    </div>
+  </div>
+</div>

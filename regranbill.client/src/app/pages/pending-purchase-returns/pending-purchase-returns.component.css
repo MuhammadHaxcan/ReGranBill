@@ -15,7 +15,7 @@
 
 .invoice-title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
@@ -24,7 +24,7 @@
 
 .invoice-subtitle {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   margin: 5px 0 0 0;
 }
 
@@ -122,17 +122,17 @@
   background: var(--slate-50);
 }
 
-.col-num { width: 40px; text-align: center; color: var(--text-muted); font-size: 12px; }
-.col-invoice-no { width: 130px; }
-.col-date { width: 110px; white-space: nowrap; color: var(--text-secondary); font-size: 13px; }
+.col-num { width: 40px; text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 500; }
+.col-invoice-no { width: 150px; min-width: 150px; }
+.col-date { width: 120px; white-space: nowrap; color: var(--text-secondary); }
 .col-vendor { min-width: 160px; }
-.vendor-name { font-weight: 500; }
-.col-products { width: 80px; text-align: center; }
-.col-bags { width: 70px; text-align: center; }
-.col-weight { width: 120px; text-align: right; }
-.col-amount { width: 130px; text-align: right; font-weight: 600; }
-.col-status { width: 100px; }
-.col-actions { width: 130px; }
+.vendor-name { font-weight: 600; color: var(--text-primary); }
+.col-products { width: 80px; }
+.col-bags { width: 60px; }
+.col-weight { width: 110px; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.col-amount { width: 120px; text-align: right; font-weight: 700; color: var(--text-primary); white-space: nowrap; letter-spacing: -0.01em; }
+.col-status { width: 100px; text-align: center; }
+.col-actions { width: 200px; text-align: center; }
 
 .invoice-number-badge {
   display: inline-block;
@@ -187,8 +187,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;

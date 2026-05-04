@@ -169,6 +169,7 @@ public class JournalVoucherService : IJournalVoucherService
             {
                 Id = e.Id,
                 AccountId = e.AccountId,
+                CategoryId = e.Account?.CategoryId ?? 0,
                 AccountName = e.Account?.Name,
                 Description = e.Description,
                 Debit = e.Debit,

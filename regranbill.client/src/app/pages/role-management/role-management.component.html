@@ -6,7 +6,7 @@
     </div>
     <div class="header-right">
       <input type="text" class="form-control search-input" placeholder="Search roles..." [(ngModel)]="searchText" />
-      <button class="btn btn-primary" (click)="openAddModal()">+ Add Role</button>
+      <button class="btn btn-primary" (click)="openAddModal()">+ Add</button>
     </div>
   </div>
 </section>
@@ -63,59 +63,82 @@
   </div>
 </section>
 
-<!-- Edit/Add Modal -->
+<!-- Add / Edit Modal -->
 <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
   <div class="modal" (click)="$event.stopPropagation()">
+
     <div class="modal-header">
-      <h3 class="modal-title">
+      <h2 class="modal-title">
         <ng-container *ngIf="editingRoleId == null">New Role</ng-container>
-        <ng-container *ngIf="editingRoleId != null && editingIsSystem">{{ name }} (read-only)</ng-container>
+        <ng-container *ngIf="editingRoleId != null && editingIsSystem">{{ name }} <span class="readonly-tag">Read-only</span></ng-container>
         <ng-container *ngIf="editingRoleId != null && !editingIsSystem">Edit Role</ng-container>
-      </h3>
-      <button class="btn-close" (click)="closeModal()">&times;</button>
+      </h2>
+      <button class="btn-icon modal-close" (click)="closeModal()">&times;</button>
     </div>
 
     <div class="modal-body">
+      <div class="modal-error" *ngIf="formError">{{ formError }}</div>
+
       <div class="modal-field">
         <label class="field-label">Role Name</label>
-        <input type="text" class="form-control" [(ngModel)]="name" placeholder="e.g. Sales Operator..." [disabled]="editingIsSystem" />
+        <input
+          #nameInput
+          type="text"
+          class="form-control"
+          [(ngModel)]="name"
+          placeholder="e.g. Sales Operator..."
+          [disabled]="editingIsSystem"
+          (keydown.escape)="closeModal()"
+        />
       </div>
 
       <div class="modal-field">
-        <label class="field-label">Pages</label>
-        <p *ngIf="editingIsAdmin" class="hint-text">Admin role has access to every page automatically — assignment is managed by the system.</p>
+        <label class="field-label">Page Access</label>
+        <p *ngIf="editingIsAdmin" class="admin-hint">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M7 6v4M7 4.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Admin role has access to every page — managed by the system.
+        </p>
       </div>
 
-      <div class="page-grid" *ngIf="!editingIsAdmin">
-        <div class="page-group" *ngFor="let group of pageGroups">
-          <div class="page-group-header">
-            <label class="page-group-label">
-              <input type="checkbox"
-                     [checked]="isGroupAllSelected(group)"
-                     [indeterminate]="isGroupSomeSelected(group)"
-                     [disabled]="editingIsSystem"
-                     (change)="toggleGroup(group)" />
-              <strong>{{ group.label }}</strong>
-            </label>
+      <div class="perm-section" *ngIf="!editingIsAdmin">
+        <div class="perm-group" *ngFor="let group of pageGroups">
+          <div class="perm-group-header">
+            <span class="perm-group-label">{{ group.label }}</span>
+            <button
+              class="perm-toggle-all"
+              [class.all-selected]="isGroupAllSelected(group)"
+              [class.some-selected]="isGroupSomeSelected(group)"
+              [disabled]="editingIsSystem"
+              (click)="toggleGroup(group)"
+            >
+              <span *ngIf="isGroupAllSelected(group)">All on</span>
+              <span *ngIf="isGroupSomeSelected(group)">Partial</span>
+              <span *ngIf="!isGroupAllSelected(group) && !isGroupSomeSelected(group)">All off</span>
+            </button>
           </div>
-          <div class="page-group-body">
-            <label class="page-checkbox" *ngFor="let page of group.pages">
-              <input type="checkbox"
-                     [checked]="isPageSelected(page.key)"
-                     [disabled]="editingIsSystem"
-                     (change)="togglePage(page.key)" />
-              <span>{{ page.label }}</span>
-            </label>
+          <div class="perm-chips">
+            <button
+              *ngFor="let page of group.pages"
+              class="perm-chip"
+              [class.perm-chip-on]="isPageSelected(page.key)"
+              [class.perm-chip-hidden]="page.hidden"
+              [disabled]="editingIsSystem"
+              (click)="togglePage(page.key)"
+            >
+              <span class="perm-chip-dot"></span>
+              {{ page.label }}
+            </button>
           </div>
         </div>
       </div>
-
-      <div class="form-error" *ngIf="formError">{{ formError }}</div>
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-primary" (click)="saveRole()" *ngIf="!editingIsSystem">Save</button>
+      <button class="btn btn-outline" (click)="closeModal()" [disabled]="saving">Cancel</button>
+      <button class="btn btn-primary" (click)="saveRole()" *ngIf="!editingIsSystem" [disabled]="saving">
+        {{ saving ? 'Saving...' : (editingRoleId == null ? 'Create Role' : 'Save Changes') }}
+      </button>
     </div>
+
   </div>
 </div>

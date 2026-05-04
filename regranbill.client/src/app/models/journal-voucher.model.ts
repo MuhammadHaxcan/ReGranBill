@@ -1,6 +1,7 @@
 export interface JournalVoucherEntry {
   id?: number;
   accountId: number;
+  categoryId: number;
   accountName?: string;
   description?: string;
   debit: number;

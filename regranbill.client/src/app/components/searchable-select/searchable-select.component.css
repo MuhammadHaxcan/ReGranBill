@@ -162,6 +162,30 @@
   font-size: 13px;
 }
 
+.ss-add-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  border-top: 1px solid var(--border-light);
+  transition: background 0.08s var(--ease);
+  user-select: none;
+}
+
+.ss-add-footer:hover,
+.ss-add-footer.ss-highlighted {
+  background: var(--primary-light);
+}
+
+.ss-add-icon {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
 /* Disabled state */
 .ss-disabled .ss-trigger {
   opacity: 0.55;

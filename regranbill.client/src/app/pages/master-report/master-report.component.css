@@ -89,15 +89,14 @@
 
 /* Buttons */
 .btn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   border: 1.5px solid transparent;
   transition: all 0.15s var(--ease);
   font-family: inherit;
-  letter-spacing: -0.01em;
 }
 
 .btn-primary {
@@ -109,7 +108,8 @@
 .btn-primary:hover {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
 }
 
 .btn-primary:disabled {

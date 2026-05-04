@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { ToastService } from '../../services/toast.service';
 import { RoleService } from '../../services/role.service';
@@ -22,6 +22,7 @@ export class RoleManagementComponent implements OnInit {
   roles: Role[] = [];
   searchText = '';
   loading = false;
+  saving = false;
   showModal = false;
   editingRoleId: number | null = null;
   editingIsSystem = false;
@@ -30,6 +31,8 @@ export class RoleManagementComponent implements OnInit {
 
   name = '';
   selectedPages = new Set<string>();
+
+  @ViewChild('nameInput') nameInputRef!: ElementRef<HTMLInputElement>;
 
   readonly pageGroups: PageGroupView[] = PAGE_GROUPS.map(g => ({
     group: g.group,
@@ -83,6 +86,7 @@ export class RoleManagementComponent implements OnInit {
     this.editingIsAdmin = false;
     this.resetForm();
     this.showModal = true;
+    setTimeout(() => this.nameInputRef?.nativeElement.focus());
   }
 
   openEditModal(role: Role): void {
@@ -93,6 +97,7 @@ export class RoleManagementComponent implements OnInit {
     this.selectedPages = new Set(role.pages);
     this.formError = '';
     this.showModal = true;
+    setTimeout(() => this.nameInputRef?.nativeElement.focus());
   }
 
   closeModal(): void {
@@ -104,6 +109,7 @@ export class RoleManagementComponent implements OnInit {
     this.name = '';
     this.selectedPages = new Set();
     this.formError = '';
+    this.saving = false;
   }
 
   togglePage(key: string): void {
@@ -157,6 +163,7 @@ export class RoleManagementComponent implements OnInit {
     }
 
     this.formError = '';
+    this.saving = true;
     const payload = { name, pages: Array.from(this.selectedPages) };
 
     const obs = this.editingRoleId == null
@@ -165,11 +172,13 @@ export class RoleManagementComponent implements OnInit {
 
     obs.subscribe({
       next: () => {
+        this.saving = false;
         this.toast.success(this.editingRoleId == null ? 'Role created.' : 'Role updated.');
         this.closeModal();
         this.loadRoles();
       },
       error: err => {
+        this.saving = false;
         this.formError = getApiErrorMessage(err, 'Unable to save role.');
         this.cdr.detectChanges();
       }

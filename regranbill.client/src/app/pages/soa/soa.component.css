@@ -1,12 +1,4 @@
 /* ===== Header Card ===== */
-.card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
-  margin-bottom: 20px;
-}
-
 .invoice-header {
   padding: 24px 28px;
 }
@@ -205,7 +197,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 28px;
+  padding: 13px 24px;
   background: var(--slate-900);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   color: #fff;
@@ -218,8 +210,9 @@
 }
 
 .card-header-title {
-  font-weight: 700;
-  font-size: 15px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
 }
 
 .line-count {
@@ -227,11 +220,11 @@
   align-items: center;
   justify-content: center;
   min-width: 24px;
-  height: 24px;
+  height: 22px;
   padding: 0 7px;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 11px;
+  font-size: 11px;
   font-weight: 600;
 }
 

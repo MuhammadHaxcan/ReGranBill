@@ -19,11 +19,12 @@
     </div>
     <div class="filter-field">
       <label>Type</label>
-      <select [(ngModel)]="selectedType" class="filter-input">
-        <option value="All">All</option>
-        <option value="Sale">Sale</option>
-        <option value="Purchase">Purchase</option>
-      </select>
+      <app-searchable-select
+        [options]="typeOptions"
+        [ngModel]="selectedType"
+        (ngModelChange)="onTypeChange($event)"
+        placeholder="All">
+      </app-searchable-select>
     </div>
     <div class="filter-field">
       <label>Product</label>

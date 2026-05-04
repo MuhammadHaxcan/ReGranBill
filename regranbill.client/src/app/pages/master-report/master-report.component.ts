@@ -7,7 +7,6 @@ import { ToastService } from '../../services/toast.service';
 import { SearchableSelectComponent, SelectOption } from '../../components/searchable-select/searchable-select.component';
 import { MasterReport, MasterReportAccountSummary, MasterReportEntry } from '../../models/master-report.model';
 import { Account, PartyRole } from '../../models/account.model';
-import { forkJoin } from 'rxjs';
 import { toDateInputValue } from '../../utils/date-utils';
 
 interface Category {
@@ -73,12 +72,8 @@ export class MasterReportComponent implements OnInit {
   }
 
   private loadFilters(): void {
-    forkJoin({
-      accounts: this.accountService.getAll(),
-      categories: this.http.get<Category[]>('/api/categories')
-    }).subscribe({
-      next: ({ accounts, categories }) => {
-        this.accounts = accounts;
+    this.http.get<Category[]>('/api/categories').subscribe({
+      next: (categories) => {
         this.categories = categories;
         this.categoryOptions = [
           { value: null as any, label: 'All Categories' },
@@ -164,13 +159,29 @@ export class MasterReportComponent implements OnInit {
     this.toDate = null;
     this.selectedCategoryId = null;
     this.selectedAccountId = null;
+    this.accounts = [];
+    this.accountOptions = this.buildAccountOptions();
     this.searchText = '';
     this.loadReport();
   }
 
   onCategoryChange(): void {
     this.selectedAccountId = null;
+    this.accounts = [];
     this.accountOptions = this.buildAccountOptions();
+
+    if (this.selectedCategoryId) {
+      this.accountService.getByCategory(this.selectedCategoryId).subscribe({
+        next: accounts => {
+          this.accounts = accounts;
+          this.accountOptions = this.buildAccountOptions();
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.toast.error('Unable to load accounts for selected category.');
+        }
+      });
+    }
   }
 
   isColumnVisible(column: MasterReportColumnKey): boolean {

@@ -18,6 +18,7 @@ import { formatDateDisplay, toDateInputValue } from '../../utils/date-utils';
 export class CustomerLedgerComponent implements OnInit {
   accounts: Account[] = [];
   categories: Category[] = [];
+  categoryOptions: SelectOption[] = [];
   accountOptions: SelectOption[] = [];
   selectedCategoryId: number | null = null;
   selectedAccountId: number | null = null;
@@ -42,6 +43,7 @@ export class CustomerLedgerComponent implements OnInit {
     this.categoryService.getAll().subscribe({
       next: (categories) => {
         this.categories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+        this.categoryOptions = this.categories.map(c => ({ value: c.id, label: c.name }));
         this.cdr.detectChanges();
       },
       error: () => {
@@ -59,11 +61,10 @@ export class CustomerLedgerComponent implements OnInit {
       return;
     }
 
-    this.accountService.getAll().subscribe({
+    this.accountService.getByCategory(this.selectedCategoryId).subscribe({
       next: (accounts) => {
         const filtered = accounts.filter(account =>
           account.accountType === AccountType.Party &&
-          account.categoryId === this.selectedCategoryId &&
           (account.partyRole === PartyRole.Customer
             || account.partyRole === PartyRole.Vendor
             || account.partyRole === PartyRole.Both)

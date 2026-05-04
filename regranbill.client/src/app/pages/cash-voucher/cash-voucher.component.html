@@ -19,8 +19,10 @@
       <app-searchable-select
         [options]="partyOptions"
         [placeholder]="'Select ' + partyLabel.toLowerCase() + '...'"
+        [allowAdd]="true"
         [ngModel]="partyAccountId"
         (ngModelChange)="onPartyChange($event)"
+        (addClicked)="onAddPartyClicked($event)"
       ></app-searchable-select>
     </div>
     <div class="form-group">
@@ -73,8 +75,10 @@
               [options]="cashAccountOptions"
               [placeholder]="'Select cash/bank account...'"
               [compact]="true"
+              [allowAdd]="true"
               [ngModel]="line.accountId"
               (ngModelChange)="onAccountChange(line, $event)"
+              (addClicked)="onAddCashAccountClicked($event)"
             ></app-searchable-select>
           </td>
           <td class="col-desc">
@@ -154,3 +158,13 @@
 <div class="loading-state" *ngIf="loading">
   <p>Loading...</p>
 </div>
+
+<app-add-account-modal
+  [isVisible]="showAddAccountModal"
+  [prefillName]="addAccountPrefillName"
+  [defaultType]="addAccountDefaultType"
+  [defaultPartyRole]="addAccountDefaultRole"
+  [defaultCategoryId]="addAccountDefaultCategoryId"
+  (accountCreated)="onNewAccountCreated($event)"
+  (modalClosed)="onAddAccountModalClosed()"
+></app-add-account-modal>
