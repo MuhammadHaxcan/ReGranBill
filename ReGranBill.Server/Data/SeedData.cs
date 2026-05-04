@@ -12,12 +12,12 @@ public static class SeedData
 
         await EnsureUsersAsync(db);
 
-        var categories = await EnsureCategoriesAsync(db);
+        //var categories = await EnsureCategoriesAsync(db);
 
-        await EnsureInventoryAccountsAsync(db, categories);
-        await EnsureExpenseAccountsAsync(db, categories);
-        await EnsureBankAccountsAsync(db, categories);
-        await EnsurePartyAccountsAsync(db, categories);
+        //await EnsureInventoryAccountsAsync(db, categories);
+        //await EnsureExpenseAccountsAsync(db, categories);
+        //await EnsureBankAccountsAsync(db, categories);
+        //await EnsurePartyAccountsAsync(db, categories);
     }
 
     private static async Task EnsureUsersAsync(AppDbContext db)
