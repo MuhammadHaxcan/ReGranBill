@@ -20,11 +20,7 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {
-    if (this.authService.isLoggedIn) {
-      this.router.navigate([this.authService.firstAccessibleRoute() ?? '/login']);
-    }
-  }
+  ) {}
 
   login(): void {
     const username = this.username.trim();
@@ -42,7 +38,7 @@ export class LoginComponent {
       next: () => {
         this.loading = false;
         this.cdr.detectChanges();
-        this.router.navigate([this.authService.firstAccessibleRoute() ?? '/login']);
+        this.router.navigateByUrl(this.authService.firstAccessibleRoute() ?? '/login', { replaceUrl: true });
       },
       error: (err: HttpErrorResponse) => {
         this.handleLoginError(err);

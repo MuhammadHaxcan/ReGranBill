@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivate, Router, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
 
@@ -20,18 +20,16 @@ export class PageAccessGuard implements CanActivate {
     private toast: ToastService
   ) {}
 
-  canActivate(route: ActivatedRouteSnapshot): boolean {
+  canActivate(route: ActivatedRouteSnapshot): boolean | UrlTree {
     if (!this.authService.isLoggedIn) {
-      this.router.navigate(['/login']);
-      return false;
+      return this.router.parseUrl('/login');
     }
 
     const pageKey = route.data?.['pageKey'] as string | undefined;
     if (!pageKey) {
       // If a protected route forgets its pageKey we fail closed.
       console.warn('PageAccessGuard: route missing data.pageKey', route.url);
-      this.router.navigate(['/login']);
-      return false;
+      return this.router.parseUrl('/login');
     }
 
     if (this.authService.hasPage(pageKey)) {
@@ -40,7 +38,6 @@ export class PageAccessGuard implements CanActivate {
 
     this.toast.info("You don't have access to that page. Ask an admin to update your role.");
     const fallback = this.authService.firstAccessibleRoute();
-    this.router.navigate([fallback ?? '/login']);
-    return false;
+    return this.router.parseUrl(fallback ?? '/login');
   }
 }
