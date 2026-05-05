@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.Middleware;
@@ -103,6 +104,13 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 var webRootPath = app.Environment.WebRootPath;
 var hasWebRoot = !string.IsNullOrWhiteSpace(webRootPath) && Directory.Exists(webRootPath);
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownNetworks = { },
+    KnownProxies = { }
+});
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
