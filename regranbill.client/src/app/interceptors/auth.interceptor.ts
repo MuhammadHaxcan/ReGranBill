@@ -32,14 +32,8 @@ export class AuthInterceptor implements HttpInterceptor {
         const isAuthCall = req.url.includes('/api/auth/login');
         if (!isAuthCall) {
           if (error.status === 401) {
-            // Token invalid / expired — sign out and bounce to login.
-            this.authService.logout();
-            if (this.router.url !== '/login') {
-              this.router.navigate(['/login']);
-            }
+            this.toast.error('A request was rejected as unauthorized. Refresh the page or sign in again if this keeps happening.');
           } else if (error.status === 403) {
-            // Authenticated but lacks the required page permission. Don't log out;
-            // just surface a friendly toast so the user knows why the action failed.
             this.toast.error("You don't have permission to do that. Ask an admin to grant access.");
           }
         }
