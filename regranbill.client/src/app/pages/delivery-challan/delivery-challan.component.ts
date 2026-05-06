@@ -137,7 +137,7 @@ export class DeliveryChallanComponent implements OnInit {
       this.selectedCustomerId = account.id;
     }
 
-    
+    this.cdr.detectChanges();
   }
 
   loadData(): void {
@@ -193,7 +193,7 @@ export class DeliveryChallanComponent implements OnInit {
       error: () => {
         this.toast.error('Unable to load form data.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -241,12 +241,12 @@ export class DeliveryChallanComponent implements OnInit {
             this.isReadOnlyRatedVoucher = !!dc.ratesAdded;
           }
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to load delivery challan.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
     } else {
@@ -255,12 +255,12 @@ export class DeliveryChallanComponent implements OnInit {
           this.dcNumber = num;
           this.addLine();
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to get next challan number.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
     }
@@ -496,7 +496,7 @@ export class DeliveryChallanComponent implements OnInit {
     this.dcService.getNextNumber().subscribe({
       next: num => {
         this.dcNumber = num;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to get next challan number.');

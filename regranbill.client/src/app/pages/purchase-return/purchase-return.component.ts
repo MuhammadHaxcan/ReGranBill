@@ -122,7 +122,7 @@ export class PurchaseReturnComponent implements OnInit {
       this.selectedVendorId = account.id;
     }
 
-    
+    this.cdr.detectChanges();
   }
 
   loadData(): void {
@@ -170,7 +170,7 @@ export class PurchaseReturnComponent implements OnInit {
       error: () => {
         this.toast.error('Unable to load form data.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -210,12 +210,12 @@ export class PurchaseReturnComponent implements OnInit {
           });
           this.isReadOnlyRatedVoucher = !!pr.ratesAdded;
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to load purchase return.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
     } else {
@@ -224,12 +224,12 @@ export class PurchaseReturnComponent implements OnInit {
           this.prNumber = num;
           this.addLine();
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to get next purchase return number.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
     }
@@ -421,7 +421,7 @@ export class PurchaseReturnComponent implements OnInit {
     this.purchaseReturnService.getNextNumber().subscribe({
       next: num => {
         this.prNumber = num;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to get next purchase return number.');

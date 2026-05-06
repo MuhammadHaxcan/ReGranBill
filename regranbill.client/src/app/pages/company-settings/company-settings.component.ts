@@ -49,7 +49,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
       error: () => {
         this.toast.error('Unable to load company settings.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -66,7 +66,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
 
     this.revokePreviewUrl();
     this.previewUrl = URL.createObjectURL(file);
-    
+    this.cdr.detectChanges();
   }
 
   save(): void {
@@ -89,7 +89,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
       error: err => {
         this.toast.error(getApiErrorMessage(err, 'Unable to update company settings.'));
         this.saving = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -100,7 +100,7 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
         this.vehicles = vehicles
           .slice()
           .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load vehicle options.');
@@ -170,12 +170,12 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
           .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
         this.savingVehicles = false;
         this.toast.success('Vehicle options updated.');
-        
+        this.cdr.detectChanges();
       },
       error: err => {
         this.toast.error(getApiErrorMessage(err, 'Unable to update vehicle options.'));
         this.savingVehicles = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -189,18 +189,18 @@ export class CompanySettingsComponent implements OnInit, OnDestroy {
 
     if (!this.currentSettings?.hasLogo) {
       this.previewUrl = null;
-      
+      this.cdr.detectChanges();
       return;
     }
 
     this.companySettingsService.getLogo().subscribe({
       next: blob => {
         this.previewUrl = URL.createObjectURL(blob);
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.previewUrl = null;
-        
+        this.cdr.detectChanges();
       }
     });
   }

@@ -44,7 +44,7 @@ export class CustomerLedgerComponent implements OnInit {
       next: (categories) => {
         this.categories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
         this.categoryOptions = this.categories.map(c => ({ value: c.id, label: c.name }));
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load categories.');
@@ -57,7 +57,7 @@ export class CustomerLedgerComponent implements OnInit {
       this.accounts = [];
       this.accountOptions = [];
       this.selectedAccountId = null;
-      
+      this.cdr.detectChanges();
       return;
     }
 
@@ -77,7 +77,7 @@ export class CustomerLedgerComponent implements OnInit {
           label: `${account.name} (${this.getAccountSublabel(account)})`,
           sublabel: this.getAccountSublabel(account)
         }));
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load accounts.');
@@ -109,12 +109,12 @@ export class CustomerLedgerComponent implements OnInit {
       next: data => {
         this.ledger = data;
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load ledger.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -127,7 +127,7 @@ export class CustomerLedgerComponent implements OnInit {
     this.fromDate = null;
     this.toDate = null;
     this.ledger = null;
-    
+    this.cdr.detectChanges();
   }
 
   getFormattedDate(date: string): string {

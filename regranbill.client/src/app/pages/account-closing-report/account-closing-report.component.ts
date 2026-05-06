@@ -50,7 +50,7 @@ export class AccountClosingReportComponent implements OnInit {
           }))
         ];
         this.filtersLoaded = true;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load account filters.');
@@ -96,12 +96,12 @@ export class AccountClosingReportComponent implements OnInit {
           }
         }
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load account closing report.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -129,12 +129,12 @@ export class AccountClosingReportComponent implements OnInit {
         this.report = report;
         this.selectedAccountHistory = report.history ?? [];
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load account history.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -142,7 +142,7 @@ export class AccountClosingReportComponent implements OnInit {
   closeHistory(): void {
     this.selectedAccountId = null;
     this.selectedAccountHistory = [];
-    
+    this.cdr.detectChanges();
   }
 
   isSelectedRow(accountId: number): boolean {

@@ -60,12 +60,12 @@ export class AddPurchaseReturnRateComponent implements OnInit {
           this.journalVouchers = pr.journalVouchers || [];
         }
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load purchase return details.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

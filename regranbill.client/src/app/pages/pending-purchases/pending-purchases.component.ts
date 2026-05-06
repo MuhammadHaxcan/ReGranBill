@@ -42,12 +42,12 @@ export class PendingPurchasesComponent implements OnInit {
       next: data => {
         this.vouchers = data;
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load pending purchases.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

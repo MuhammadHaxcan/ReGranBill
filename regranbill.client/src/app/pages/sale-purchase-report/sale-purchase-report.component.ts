@@ -52,7 +52,7 @@ export class SalePurchaseReportComponent implements OnInit {
           }))
         ];
         this.filtersLoaded = true;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load product filters.');
@@ -93,12 +93,12 @@ export class SalePurchaseReportComponent implements OnInit {
       next: report => {
         this.report = report;
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load sale purchase register.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

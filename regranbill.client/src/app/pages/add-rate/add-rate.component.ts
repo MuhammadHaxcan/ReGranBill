@@ -67,12 +67,12 @@ export class AddRateComponent implements OnInit {
           this.journalVouchers = dc.journalVouchers || [];
         }
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load challan details.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

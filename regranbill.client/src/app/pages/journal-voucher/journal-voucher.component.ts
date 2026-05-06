@@ -119,7 +119,7 @@ export class JournalVoucherComponent implements OnInit {
       this.addAccountTargetLine.accountId = account.id;
     }
     this.addAccountTargetLine = null;
-    
+    this.cdr.detectChanges();
   }
 
   private loadData(): void {
@@ -138,12 +138,12 @@ export class JournalVoucherComponent implements OnInit {
           this.setCategories(categories);
           this.setVoucher(voucher);
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to load journal voucher.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
       return;
@@ -160,12 +160,12 @@ export class JournalVoucherComponent implements OnInit {
         this.voucherDate = new Date();
         this.lines = [this.newLine(), this.newLine()];
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to initialize journal voucher.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -229,7 +229,7 @@ export class JournalVoucherComponent implements OnInit {
           this.setVoucher(voucher);
           this.toast.success(`${voucher.voucherNumber} updated successfully.`);
           this.saving = false;
-          
+          this.cdr.detectChanges();
           return;
         }
 
@@ -241,7 +241,7 @@ export class JournalVoucherComponent implements OnInit {
       error: err => {
         this.toast.error(getApiErrorMessage(err, fallbackMessage));
         this.saving = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -258,11 +258,11 @@ export class JournalVoucherComponent implements OnInit {
     this.journalVoucherService.getNextNumber().subscribe({
       next: num => {
         this.voucherNumber = num;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to refresh voucher number.');
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -328,7 +328,7 @@ export class JournalVoucherComponent implements OnInit {
       next: accounts => {
         this.accountsByCategory.set(categoryId, accounts);
         this.categoryAccountRequests.delete(categoryId);
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.categoryAccountRequests.delete(categoryId);
@@ -389,11 +389,11 @@ export class JournalVoucherComponent implements OnInit {
     this.journalVoucherService.getNextNumber().subscribe({
       next: voucherNumber => {
         this.voucherNumber = voucherNumber;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Voucher created, but unable to fetch next number.');
-        
+        this.cdr.detectChanges();
       }
     });
   }

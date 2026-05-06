@@ -46,12 +46,12 @@ export class PendingChallansComponent implements OnInit {
       next: data => {
         this.challans = data;
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load pending challans.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

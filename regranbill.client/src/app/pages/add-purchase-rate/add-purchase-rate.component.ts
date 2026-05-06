@@ -71,12 +71,12 @@ export class AddPurchaseRateComponent implements OnInit {
           this.journalVouchers = voucher.journalVouchers || [];
         }
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load purchase voucher details.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

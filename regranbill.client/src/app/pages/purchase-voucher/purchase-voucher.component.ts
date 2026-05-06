@@ -146,7 +146,7 @@ export class PurchaseVoucherComponent implements OnInit {
       this.selectedVendorId = account.id;
     }
 
-    
+    this.cdr.detectChanges();
   }
 
   loadData(): void {
@@ -202,7 +202,7 @@ export class PurchaseVoucherComponent implements OnInit {
       error: () => {
         this.toast.error('Unable to load form data.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -249,12 +249,12 @@ export class PurchaseVoucherComponent implements OnInit {
           } : null;
           this.isReadOnlyRatedVoucher = !!voucher.ratesAdded;
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to load purchase voucher.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
     } else {
@@ -263,12 +263,12 @@ export class PurchaseVoucherComponent implements OnInit {
           this.voucherNumber = num;
           this.addLine();
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error('Unable to get next voucher number.');
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
     }
@@ -512,7 +512,7 @@ export class PurchaseVoucherComponent implements OnInit {
     this.purchaseService.getNextNumber().subscribe({
       next: num => {
         this.voucherNumber = num;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to get next voucher number.');

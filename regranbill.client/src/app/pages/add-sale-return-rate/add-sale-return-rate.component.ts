@@ -61,12 +61,12 @@ export class AddSaleReturnRateComponent implements OnInit {
           this.journalVouchers = sr.journalVouchers || [];
         }
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load sale return details.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }

@@ -92,7 +92,7 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
     }
 
     this.loading = false;
-    
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy(): void {
@@ -104,7 +104,7 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
   protected setError(message: string): void {
     this.error = message;
     this.loading = false;
-    
+    this.cdr.detectChanges();
   }
 
   private setPdfResponse(blob: Blob, title: string): void {
@@ -115,6 +115,6 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
     this.objectUrl = URL.createObjectURL(blob);
     this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl);
     document.title = title;
-    
+    this.cdr.detectChanges();
   }
 }

@@ -151,7 +151,7 @@ export class CashVoucherComponent implements OnInit {
       }
     }
 
-    
+    this.cdr.detectChanges();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -219,7 +219,7 @@ export class CashVoucherComponent implements OnInit {
           this.setVoucher(voucher);
           this.toast.success(`${voucher.voucherNumber} updated successfully.`);
           this.saving = false;
-          
+          this.cdr.detectChanges();
           return;
         }
 
@@ -230,7 +230,7 @@ export class CashVoucherComponent implements OnInit {
       error: err => {
         this.toast.error(getApiErrorMessage(err, fallbackMessage));
         this.saving = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -248,11 +248,11 @@ export class CashVoucherComponent implements OnInit {
     this.cashVoucherService.getNextNumber(this.mode).subscribe({
       next: voucherNumber => {
         this.voucherNumber = voucherNumber;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to refresh voucher number.');
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -282,12 +282,12 @@ export class CashVoucherComponent implements OnInit {
           this.setAccounts(partyAccounts, cashAccounts);
           this.setVoucher(voucher);
           this.loading = false;
-          
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast.error(`Unable to load ${this.pageTitle.toLowerCase()}.`);
           this.loading = false;
-          
+          this.cdr.detectChanges();
         }
       });
       return;
@@ -306,12 +306,12 @@ export class CashVoucherComponent implements OnInit {
         this.voucherDate = new Date();
         this.lines = [this.newLine()];
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error(`Unable to initialize ${this.pageTitle.toLowerCase()}.`);
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
@@ -402,11 +402,11 @@ export class CashVoucherComponent implements OnInit {
     this.cashVoucherService.getNextNumber(this.mode).subscribe({
       next: voucherNumber => {
         this.voucherNumber = voucherNumber;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Voucher created, but unable to fetch next number.');
-        
+        this.cdr.detectChanges();
       }
     });
   }

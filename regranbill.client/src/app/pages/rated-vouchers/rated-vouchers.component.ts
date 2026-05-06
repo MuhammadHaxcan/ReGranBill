@@ -67,37 +67,37 @@ export class RatedVouchersComponent implements OnInit {
     this.dcService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(dc => dc.ratesAdded).map(dc => this.toRowDc(dc)));
-        
+        this.cdr.detectChanges();
       },
-      error: () => { this.toast.error('Unable to load challans.');  }
+      error: () => { this.toast.error('Unable to load challans.'); this.cdr.detectChanges(); }
     });
 
     this.srService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(sr => sr.ratesAdded).map(sr => this.toRowSr(sr)));
-        
+        this.cdr.detectChanges();
       },
-      error: () => { this.toast.error('Unable to load sale returns.');  }
+      error: () => { this.toast.error('Unable to load sale returns.'); this.cdr.detectChanges(); }
     });
 
     this.pvService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(pv => pv.ratesAdded).map(pv => this.toRowPv(pv)));
-        
+        this.cdr.detectChanges();
       },
-      error: () => { this.toast.error('Unable to load purchases.');  }
+      error: () => { this.toast.error('Unable to load purchases.'); this.cdr.detectChanges(); }
     });
 
     this.prService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(pr => pr.ratesAdded).map(pr => this.toRowPr(pr)));
         this.loading = false;
-        
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load purchase returns.');
         this.loading = false;
-        
+        this.cdr.detectChanges();
       }
     });
   }
