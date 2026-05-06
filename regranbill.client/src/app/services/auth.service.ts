@@ -59,7 +59,12 @@ export class AuthService {
   firstAccessibleRoute(): string | null {
     const user = this.currentUser;
     if (!user) return null;
-    return '/home';
+    for (const page of PAGES) {
+      if (user.isAdmin || user.pages.includes(page.key)) {
+        return page.route;
+      }
+    }
+    return null;
   }
 
   syncCurrentUser(update: Partial<Pick<AppUser, 'username' | 'fullName' | 'roleId' | 'roleName' | 'isAdmin' | 'pages'>>): void {

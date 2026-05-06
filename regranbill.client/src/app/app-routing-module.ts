@@ -37,7 +37,6 @@ import { PrintCustomerLedgerComponent } from './pages/print-customer-ledger/prin
 import { PendingComponent } from './pages/pending/pending.component';
 import { RatedVouchersComponent } from './pages/rated-vouchers/rated-vouchers.component';
 import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
-import { HomeComponent } from './pages/home/home.component';
 import { AuthGuard } from './guards/auth.guard';
 import { PageAccessGuard } from './guards/page-access.guard';
 
@@ -45,8 +44,6 @@ const guarded = [AuthGuard, PageAccessGuard];
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
-  { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
-  { path: 'route-check', component: HomeComponent, canActivate: guarded, data: { pageKey: 'metadata' } },
 
   // Delivery Challan + supporting routes
   { path: 'delivery-challan',          component: DeliveryChallanComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },

@@ -188,7 +188,6 @@ export class App implements OnInit, OnDestroy {
 
     const routeTitles: Array<{ startsWith: string; title: string }> = [
       { startsWith: '/login', title: 'Login' },
-      { startsWith: '/home', title: 'Home' },
       { startsWith: '/delivery-challan', title: 'Delivery Challan' },
       { startsWith: '/purchase-voucher', title: 'Purchase Voucher' },
       { startsWith: '/sale-return', title: 'Sale Return' },
