@@ -45,6 +45,7 @@ import { PrintPrComponent } from './pages/print-pr/print-pr.component';
 import { PendingComponent } from './pages/pending/pending.component';
 import { RatedVouchersComponent } from './pages/rated-vouchers/rated-vouchers.component';
 import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
+import { HomeComponent } from './pages/home/home.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 import { FlexNumberPipe } from './pipes/flex-number.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
@@ -98,6 +99,7 @@ import { AddAccountModalComponent } from './components/add-account-modal/add-acc
     PendingComponent,
     RatedVouchersComponent,
     CustomerLedgerComponent,
+    HomeComponent,
       ],
   imports: [
     BrowserModule,
