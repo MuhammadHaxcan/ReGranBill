@@ -22,11 +22,14 @@ export class App implements OnInit, OnDestroy {
   toastVisible = false;
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'success';
+  readonly sidebarLinkActiveOptions = { exact: false };
+  visibleGroups: SidebarGroup[] = [];
   /** Bumps each time a new toast replaces the visible one. Used as an *ngFor key
    *  to retrigger the entry animation so a swap feels like a new pop, not a relabel. */
   toastSeq = 0;
   private toastSub!: Subscription;
   private routeSub!: Subscription;
+  private userSub!: Subscription;
 
   // Each group is open by default; user can collapse via the chevron.
   private collapsedGroups = new Set<PageGroup>();
@@ -45,9 +48,11 @@ export class App implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.updateVisibleGroups();
     this.routeSub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => this.updatePageTitle());
+    this.userSub = this.authService.currentUser$.subscribe(() => this.updateVisibleGroups());
 
     this.toastSub = this.toastService.toast$.subscribe((toast: Toast) => {
       this.showToast(toast);
@@ -68,6 +73,7 @@ export class App implements OnInit, OnDestroy {
     this.toastSub?.unsubscribe();
     this.routeSub?.unsubscribe();
     this.modalSub?.unsubscribe();
+    this.userSub?.unsubscribe();
   }
 
   private showToast(toast: Toast): void {
@@ -134,8 +140,12 @@ export class App implements OnInit, OnDestroy {
     return this.authService.currentUser?.roleName || '';
   }
 
-  get visibleGroups(): SidebarGroup[] {
-    return PAGE_GROUPS
+  trackSidebarGroup = (_: number, group: SidebarGroup): string => group.group;
+
+  trackSidebarPage = (_: number, page: PageDefinition): string => page.key;
+
+  private updateVisibleGroups(): void {
+    this.visibleGroups = PAGE_GROUPS
       .map(g => ({
         group: g.group,
         label: g.label,

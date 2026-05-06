@@ -19,7 +19,7 @@
     </div>
 
     <nav class="sidebar-nav">
-      <div class="nav-section" *ngFor="let group of visibleGroups">
+      <div class="nav-section" *ngFor="let group of visibleGroups; trackBy: trackSidebarGroup">
         <button class="nav-group-toggle" (click)="toggleGroup(group.group)">
           <span class="nav-section-label">{{ group.label }}</span>
           <svg class="nav-chevron" [class.open]="isGroupOpen(group.group)" width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -27,10 +27,10 @@
           </svg>
         </button>
         <div class="nav-group-items" *ngIf="isGroupOpen(group.group)">
-          <a *ngFor="let page of group.pages"
+          <a *ngFor="let page of group.pages; trackBy: trackSidebarPage"
              [routerLink]="page.route"
              routerLinkActive="nav-active"
-             [routerLinkActiveOptions]="{exact: false}"
+             [routerLinkActiveOptions]="sidebarLinkActiveOptions"
              class="nav-item">
             <span>{{ page.label }}</span>
           </a>
