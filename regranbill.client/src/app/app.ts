@@ -60,7 +60,7 @@ export class App implements OnInit, OnDestroy {
         this.modalVisible = false;
         this.modalData = null;
       }
-      this.cdr.detectChanges();
+      
     });
   }
 

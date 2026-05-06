@@ -37,20 +37,20 @@ export class LoginComponent {
     this.authService.login({ username, password }).subscribe({
       next: () => {
         this.loading = false;
-        this.cdr.detectChanges();
+        
         this.router.navigateByUrl(this.authService.firstAccessibleRoute() ?? '/login', { replaceUrl: true });
       },
       error: (err: HttpErrorResponse) => {
         this.handleLoginError(err);
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
     });
   }
 
   private handleLoginError(err: HttpErrorResponse): void {
     this.error = this.resolveErrorMessage(err);
-    this.cdr.detectChanges();
+    
 
     // Some 401 responses arrive as Blob/text. Parse those too and update message.
     if (err.error instanceof Blob) {
@@ -62,7 +62,7 @@ export class LoginComponent {
         } catch {
           this.error = text;
         }
-        this.cdr.detectChanges();
+        
       });
     }
   }

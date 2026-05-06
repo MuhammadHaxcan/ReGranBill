@@ -70,12 +70,12 @@ export class RoleManagementComponent implements OnInit {
       next: roles => {
         this.roles = roles;
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.loading = false;
         this.toast.error('Unable to load roles.');
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -180,7 +180,7 @@ export class RoleManagementComponent implements OnInit {
       error: err => {
         this.saving = false;
         this.formError = getApiErrorMessage(err, 'Unable to save role.');
-        this.cdr.detectChanges();
+        
       }
     });
   }

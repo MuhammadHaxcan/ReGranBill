@@ -67,37 +67,37 @@ export class PendingComponent implements OnInit {
     this.dcService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(dc => !this.hasRatesDc(dc)).map(dc => this.toRowDc(dc)));
-        this.cdr.detectChanges();
+        
       },
-      error: () => { this.toast.error('Unable to load challans.'); this.cdr.detectChanges(); }
+      error: () => { this.toast.error('Unable to load challans.');  }
     });
 
     this.srService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(sr => !this.hasRatesSr(sr)).map(sr => this.toRowSr(sr)));
-        this.cdr.detectChanges();
+        
       },
-      error: () => { this.toast.error('Unable to load sale returns.'); this.cdr.detectChanges(); }
+      error: () => { this.toast.error('Unable to load sale returns.');  }
     });
 
     this.pvService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(pv => !this.hasRatesPv(pv)).map(pv => this.toRowPv(pv)));
-        this.cdr.detectChanges();
+        
       },
-      error: () => { this.toast.error('Unable to load purchases.'); this.cdr.detectChanges(); }
+      error: () => { this.toast.error('Unable to load purchases.');  }
     });
 
     this.prService.getAll().subscribe({
       next: data => {
         this.rows.push(...data.filter(pr => !this.hasRatesPr(pr)).map(pr => this.toRowPr(pr)));
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load purchase returns.');
         this.loading = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }

@@ -47,7 +47,7 @@ export class SoaComponent implements OnInit {
           label: account.name,
           sublabel: this.getAccountSublabel(account)
         }));
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load accounts.');
@@ -72,12 +72,12 @@ export class SoaComponent implements OnInit {
       next: data => {
         this.statement = data;
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load statement.');
         this.loading = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }

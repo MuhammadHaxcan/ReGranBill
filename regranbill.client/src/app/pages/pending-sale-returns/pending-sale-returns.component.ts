@@ -46,12 +46,12 @@ export class PendingSaleReturnsComponent implements OnInit {
       next: data => {
         this.saleReturns = data;
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load pending sale returns.');
         this.loading = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }

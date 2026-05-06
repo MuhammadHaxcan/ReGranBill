@@ -64,7 +64,7 @@ export class ProductStockReportComponent implements OnInit {
         ];
         this.productOptions = this.buildProductOptions();
         this.filtersLoaded = true;
-        this.cdr.detectChanges();
+        
         this.loadReport();
       },
       error: () => {
@@ -119,12 +119,12 @@ export class ProductStockReportComponent implements OnInit {
       next: (data) => {
         this.report = data;
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load product stock report.');
         this.loading = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }

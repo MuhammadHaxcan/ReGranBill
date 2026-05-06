@@ -209,7 +209,7 @@ export class VoucherEditorComponent implements OnInit {
       next: voucher => {
         this.setVoucher(voucher);
         this.searching = false;
-        this.cdr.detectChanges();
+        
       },
       error: err => {
         if (err?.status === 404) {
@@ -218,7 +218,7 @@ export class VoucherEditorComponent implements OnInit {
           this.toast.error(getApiErrorMessage(err, 'Unable to load voucher.'));
         }
         this.searching = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -231,7 +231,7 @@ export class VoucherEditorComponent implements OnInit {
     this.searchVoucherType = voucherType;
     this._pendingPrefix = this.getPrefixForType(voucherType);
     this.searchVoucherNumber = this._pendingPrefix;
-    this.cdr.detectChanges();
+    
   }
 
   private getPrefixForType(voucherType: VoucherType): string {
@@ -312,12 +312,12 @@ export class VoucherEditorComponent implements OnInit {
         this.setVoucher(voucher);
         this.toast.success(`${voucher.voucherNumber} updated successfully.`);
         this.saving = false;
-        this.cdr.detectChanges();
+        
       },
       error: err => {
         this.toast.error(getApiErrorMessage(err, 'Unable to update voucher.'));
         this.saving = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -356,12 +356,12 @@ export class VoucherEditorComponent implements OnInit {
         }));
 
         this.loadingAccounts = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load account lists.');
         this.loadingAccounts = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -377,7 +377,7 @@ export class VoucherEditorComponent implements OnInit {
       next: accounts => {
         this.accountsByCategory.set(categoryId, accounts);
         this.categoryAccountRequests.delete(categoryId);
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.categoryAccountRequests.delete(categoryId);

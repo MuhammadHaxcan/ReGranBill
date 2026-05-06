@@ -68,7 +68,7 @@ export class UserManagementComponent implements OnInit {
         if (this.roleId === null && roles.length > 0) {
           this.roleId = roles[0].id;
         }
-        this.cdr.detectChanges();
+        
       },
       error: () => this.toast.error('Unable to load roles.')
     });
@@ -80,12 +80,12 @@ export class UserManagementComponent implements OnInit {
       next: users => {
         this.users = users;
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.loading = false;
         this.toast.error('Unable to load users.');
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -167,7 +167,7 @@ export class UserManagementComponent implements OnInit {
         },
         error: err => {
           this.formError = getApiErrorMessage(err, 'Unable to create user.');
-          this.cdr.detectChanges();
+          
         }
       });
 
@@ -199,7 +199,7 @@ export class UserManagementComponent implements OnInit {
       },
       error: err => {
         this.formError = getApiErrorMessage(err, 'Unable to update user.');
-        this.cdr.detectChanges();
+        
       }
     });
   }

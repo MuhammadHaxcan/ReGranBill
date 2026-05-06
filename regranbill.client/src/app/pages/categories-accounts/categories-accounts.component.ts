@@ -81,7 +81,7 @@ export class CategoriesAccountsComponent implements OnInit {
       next: cats => {
         this.categories = cats;
         this.categoryOptions = cats.map(c => ({ value: c.id, label: c.name }));
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load categories.');
@@ -134,7 +134,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.toast.success('Category updated.');
           this.loadCategories();
           this.cancelCatForm();
-          this.cdr.detectChanges();
+          
         },
         error: err => {
           this.toast.error(getApiErrorMessage(err, 'Unable to update category.'));
@@ -146,7 +146,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.toast.success('Category created.');
           this.loadCategories();
           this.cancelCatForm();
-          this.cdr.detectChanges();
+          
         },
         error: err => {
           this.toast.error(getApiErrorMessage(err, 'Unable to create category.'));
@@ -186,7 +186,7 @@ export class CategoriesAccountsComponent implements OnInit {
     this.accountService.getAll().subscribe({
       next: accts => {
         this.accounts = accts;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load accounts.');
@@ -303,7 +303,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.toast.success('Account updated.');
           this.loadAccounts();
           this.closeAcctModal();
-          this.cdr.detectChanges();
+          
         },
         error: err => {
           this.toast.error(getApiErrorMessage(err, 'Unable to update account.'));
@@ -315,7 +315,7 @@ export class CategoriesAccountsComponent implements OnInit {
           this.toast.success('Account created.');
           this.loadAccounts();
           this.closeAcctModal();
-          this.cdr.detectChanges();
+          
         },
         error: err => {
           this.toast.error(getApiErrorMessage(err, 'Unable to create account.'));

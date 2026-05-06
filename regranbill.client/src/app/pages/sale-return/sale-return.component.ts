@@ -127,7 +127,7 @@ export class SaleReturnComponent implements OnInit {
       this.selectedCustomerId = account.id;
     }
 
-    this.cdr.detectChanges();
+    
   }
 
   loadData(): void {
@@ -175,7 +175,7 @@ export class SaleReturnComponent implements OnInit {
       error: () => {
         this.toast.error('Unable to load form data.');
         this.loading = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -215,12 +215,12 @@ export class SaleReturnComponent implements OnInit {
           });
           this.isReadOnlyRatedVoucher = !!sr.ratesAdded;
           this.loading = false;
-          this.cdr.detectChanges();
+          
         },
         error: () => {
           this.toast.error('Unable to load sale return.');
           this.loading = false;
-          this.cdr.detectChanges();
+          
         }
       });
     } else {
@@ -229,12 +229,12 @@ export class SaleReturnComponent implements OnInit {
           this.srNumber = num;
           this.addLine();
           this.loading = false;
-          this.cdr.detectChanges();
+          
         },
         error: () => {
           this.toast.error('Unable to get next sale return number.');
           this.loading = false;
-          this.cdr.detectChanges();
+          
         }
       });
     }
@@ -431,7 +431,7 @@ export class SaleReturnComponent implements OnInit {
     this.saleReturnService.getNextNumber().subscribe({
       next: num => {
         this.srNumber = num;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to get next sale return number.');

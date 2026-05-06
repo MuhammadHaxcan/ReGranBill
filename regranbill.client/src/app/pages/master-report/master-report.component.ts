@@ -81,7 +81,7 @@ export class MasterReportComponent implements OnInit {
         ];
         this.accountOptions = this.buildAccountOptions();
         this.filtersLoaded = true;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load filters.');
@@ -144,12 +144,12 @@ export class MasterReportComponent implements OnInit {
       next: data => {
         this.report = data;
         this.loading = false;
-        this.cdr.detectChanges();
+        
       },
       error: () => {
         this.toast.error('Unable to load report.');
         this.loading = false;
-        this.cdr.detectChanges();
+        
       }
     });
   }
@@ -175,7 +175,7 @@ export class MasterReportComponent implements OnInit {
         next: accounts => {
           this.accounts = accounts;
           this.accountOptions = this.buildAccountOptions();
-          this.cdr.detectChanges();
+          
         },
         error: () => {
           this.toast.error('Unable to load accounts for selected category.');
