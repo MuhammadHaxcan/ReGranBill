@@ -46,6 +46,7 @@ const guarded = [AuthGuard, PageAccessGuard];
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
+  { path: 'route-check', component: HomeComponent, canActivate: guarded, data: { pageKey: 'metadata' } },
 
   // Delivery Challan + supporting routes
   { path: 'delivery-challan',          component: DeliveryChallanComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
