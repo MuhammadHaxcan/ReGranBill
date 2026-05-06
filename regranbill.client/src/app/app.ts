@@ -22,7 +22,6 @@ export class App implements OnInit, OnDestroy {
   toastVisible = false;
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'success';
-  readonly sidebarLinkActiveOptions = { exact: false };
   visibleGroups: SidebarGroup[] = [];
   /** Bumps each time a new toast replaces the visible one. Used as an *ngFor key
    *  to retrigger the entry animation so a swap feels like a new pop, not a relabel. */
@@ -164,6 +163,18 @@ export class App implements OnInit, OnDestroy {
     } else {
       this.collapsedGroups.add(group);
     }
+  }
+
+  navigateTo(route: string): void {
+    if (!route) return;
+    void this.router.navigateByUrl(route);
+  }
+
+  isPageActive(route: string): boolean {
+    if (!route) return false;
+    const currentPath = this.router.url.split('?')[0].toLowerCase();
+    const targetPath = route.toLowerCase();
+    return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
   }
 
   logout(): void {

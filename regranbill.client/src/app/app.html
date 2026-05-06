@@ -27,13 +27,13 @@
           </svg>
         </button>
         <div class="nav-group-items" *ngIf="isGroupOpen(group.group)">
-          <a *ngFor="let page of group.pages; trackBy: trackSidebarPage"
-             [routerLink]="page.route"
-             routerLinkActive="nav-active"
-             [routerLinkActiveOptions]="sidebarLinkActiveOptions"
-             class="nav-item">
+          <button *ngFor="let page of group.pages; trackBy: trackSidebarPage"
+             type="button"
+             (click)="navigateTo(page.route)"
+             class="nav-item nav-item-button"
+             [class.nav-active]="isPageActive(page.route)">
             <span>{{ page.label }}</span>
-          </a>
+          </button>
         </div>
       </div>
     </nav>
