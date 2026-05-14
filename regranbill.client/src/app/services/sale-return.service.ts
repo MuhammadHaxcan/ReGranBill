@@ -51,13 +51,8 @@ export class SaleReturnService {
     return this.http.get(`${this.url}/${id}/pdf`, { responseType: 'blob' });
   }
 
-  openPdfInNewTab(id: number): void {
-    this.getPdf(id).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      },
-      error: () => { }
-    });
+  openPdfInNewTab(id: number, srNumber?: string | null): void {
+    const key = srNumber?.trim() || id.toString();
+    window.open(`/print-sr/${encodeURIComponent(key)}`, '_blank');
   }
 }

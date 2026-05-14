@@ -85,7 +85,7 @@ export class PendingPurchasesComponent implements OnInit {
   }
 
   printChallan(voucher: PurchaseVoucherViewModel): void {
-    this.purchaseService.openPdfInNewTab(voucher.id);
+    this.purchaseService.openPdfInNewTab(voucher.id, voucher.voucherNumber);
   }
 
   async deleteVoucher(voucher: PurchaseVoucherViewModel): Promise<void> {

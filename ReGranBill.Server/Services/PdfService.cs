@@ -10,6 +10,7 @@ using ReGranBill.Server.DTOs.PurchaseReturns;
 using ReGranBill.Server.DTOs.SOA;
 using ReGranBill.Server.DTOs.SaleReturns;
 using ReGranBill.Server.DTOs.CustomerLedger;
+using ReGranBill.Server.DTOs.WashingVouchers;
 
 namespace ReGranBill.Server.Services;
 
@@ -93,6 +94,181 @@ public class PdfService : IPdfService
                 "Yes",
                 line.Qty,
                 line.TotalWeightKg)).ToList());
+
+    public byte[] GenerateWashingVoucherPdf(WashingVoucherDto dto)
+    {
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.MarginHorizontal(28);
+                page.MarginVertical(24);
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(Green).FontFamily("Times New Roman"));
+
+                page.Content().Border(1.5f).BorderColor(Green).Padding(22).Column(column =>
+                {
+                    column.Spacing(0);
+
+                    column.Item().Element(ComposeCompanyHeader);
+                    column.Item().PaddingVertical(12).LineHorizontal(1).LineColor(Green);
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(info =>
+                        {
+                            info.Item().Text("WASHING VOUCHER").Bold().FontSize(17).FontColor(Green);
+                            info.Item().PaddingTop(5).Text(dto.SourceVendorName ?? "-").Bold().FontSize(13);
+                            info.Item().PaddingTop(3).Text($"Unwashed: {dto.UnwashedAccountName ?? "-"}").FontSize(10);
+                            info.Item().PaddingTop(2).Text(dto.OutputLines.Count <= 1
+                                ? $"Output: {dto.WashedAccountName ?? "-"}"
+                                : $"Outputs: {dto.OutputLines.Count} raw-material lines").FontSize(10);
+                        });
+
+                        row.ConstantItem(185).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
+                        {
+                            summary.Item().AlignRight().Text($"Voucher No: {dto.VoucherNumber}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Date: {dto.Date:dd/MM/yyyy}").FontSize(10);
+                            summary.Item().AlignRight().Text($"Vendor Rate: {FormatDecimal(dto.SourceRate)} / kg").FontSize(10);
+                            summary.Item().PaddingTop(3).AlignRight().Text($"Washed Rate: {FormatDecimal(dto.WashedRate)} / kg").Bold().FontSize(10);
+                        });
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(dto.Description))
+                    {
+                        column.Item().PaddingTop(10).Border(1).BorderColor(BorderGreen).Background(LightGreen).Padding(8).Text(t =>
+                        {
+                            t.Span("Note: ").Bold();
+                            t.Span(dto.Description);
+                        });
+                    }
+
+                    column.Item().PaddingTop(12).Text("Material Flow").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(1.2f);
+                            columns.RelativeColumn(1.8f);
+                        });
+
+                        AddKeyValueRow(table, "Source Vendor", dto.SourceVendorName ?? "-");
+                        AddKeyValueRow(table, "Unwashed Material", dto.UnwashedAccountName ?? "-");
+                        AddKeyValueRow(table, "Output Accounts", dto.OutputLines.Count == 0
+                            ? "-"
+                            : string.Join(", ", dto.OutputLines.Select(line => line.AccountName)));
+                    });
+
+                    column.Item().PaddingTop(12).Text("Output Breakdown").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(34);
+                            columns.RelativeColumn(2.4f);
+                            columns.ConstantColumn(88);
+                            columns.ConstantColumn(88);
+                            columns.ConstantColumn(96);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Element(CellStyle).Text("#").Bold();
+                            header.Cell().Element(CellStyle).Text("Account").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Weight").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Rate").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Amount").Bold();
+                        });
+
+                        foreach (var outputLine in dto.OutputLines.Select((line, index) => new { line, index }))
+                        {
+                            table.Cell().Element(CellStyle).Text((outputLine.index + 1).ToString());
+                            table.Cell().Element(CellStyle).Text(outputLine.line.AccountName);
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(outputLine.line.WeightKg)} kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(outputLine.line.Rate)} / kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text(FormatCurrency(outputLine.line.Debit));
+                        }
+                    });
+
+                    column.Item().PaddingTop(12).Text("Weight / Shortage Details").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(1.5f);
+                            columns.ConstantColumn(92);
+                            columns.RelativeColumn(1.5f);
+                            columns.ConstantColumn(92);
+                        });
+
+                        AddMetricRow(table,
+                            "Input Weight", $"{FormatDecimal(dto.InputWeightKg)} kg",
+                            "Output Weight", $"{FormatDecimal(dto.OutputWeightKg)} kg");
+                        AddMetricRow(table,
+                            "Total Wastage / Shortage", $"{FormatDecimal(dto.WastageKg)} kg",
+                            "Wastage %", $"{FormatDecimal(dto.WastagePct)}%");
+                        AddMetricRow(table,
+                            "Allowed Threshold", $"{FormatDecimal(dto.ThresholdPct)}%",
+                            "Allowed Wastage", $"{FormatDecimal(dto.WastageKg - dto.ExcessWastageKg)} kg");
+                        AddMetricRow(table,
+                            "Excess Wastage", $"{FormatDecimal(dto.ExcessWastageKg)} kg",
+                            "Recovered from Vendor", FormatCurrency(dto.ExcessWastageValue));
+                    });
+
+                    column.Item().PaddingTop(12).Text("Costing Summary").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(1.5f);
+                            columns.ConstantColumn(110);
+                            columns.RelativeColumn(1.5f);
+                            columns.ConstantColumn(110);
+                        });
+
+                        AddMetricRow(table,
+                            "Source Rate", $"{FormatDecimal(dto.SourceRate)} / kg",
+                            "Washed Rate", $"{FormatDecimal(dto.WashedRate)} / kg");
+                        AddMetricRow(table,
+                            "Input Cost", FormatCurrency(dto.InputCost),
+                            "Washed Stock Cost", FormatCurrency(dto.WashedDebit));
+                        AddMetricRow(table,
+                            "Excess Recovery", FormatCurrency(dto.ExcessWastageValue),
+                            "Net Capitalized Value", FormatCurrency(dto.WashedDebit));
+                    });
+
+                    if (dto.ExcessWastageKg > 0)
+                    {
+                        column.Item().PaddingTop(12).Border(1).BorderColor(BorderGreen).Padding(8).Text(t =>
+                        {
+                            t.Span("Recovery Note: ").Bold();
+                            t.Span($"Excess washing loss of {FormatDecimal(dto.ExcessWastageKg)} kg beyond the {FormatDecimal(dto.ThresholdPct)}% threshold has been charged back to {dto.SourceVendorName ?? "the vendor"}.");
+                        });
+                    }
+
+                    column.Item().PaddingTop(42).Row(row =>
+                    {
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().BorderBottom(1.5f).BorderColor(Green).Height(34);
+                            c.Item().PaddingTop(4).AlignCenter().Text("Prepared by").Bold().FontSize(11);
+                        });
+                        row.ConstantItem(140);
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().BorderBottom(1.5f).BorderColor(Green).Height(34);
+                            c.Item().PaddingTop(4).AlignCenter().Text("Received by").Bold().FontSize(11);
+                        });
+                    });
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+
+        IContainer CellStyle(IContainer container) =>
+            container.Border(1).BorderColor(BorderGreen).PaddingVertical(5).PaddingHorizontal(6);
+    }
 
     public byte[] GenerateStatementOfAccountPdf(StatementOfAccountDto dto)
     {
@@ -798,6 +974,26 @@ public class PdfService : IPdfService
     ];
 
     private static string FormatCurrency(decimal amount) => $"Rs. {amount:N2}";
+
+    private static void AddKeyValueRow(TableDescriptor table, string label, string value)
+    {
+        table.Cell().Border(0.5f).BorderColor(BorderGreen).Background(LightGreen).Padding(6)
+            .AlignLeft().Text(label).Bold().FontSize(10);
+        table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(6)
+            .AlignLeft().Text(value).FontSize(10);
+    }
+
+    private static void AddMetricRow(TableDescriptor table, string leftLabel, string leftValue, string rightLabel, string rightValue)
+    {
+        table.Cell().Border(0.5f).BorderColor(BorderGreen).Background(LightGreen).Padding(6)
+            .AlignLeft().Text(leftLabel).Bold().FontSize(10);
+        table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(6)
+            .AlignRight().Text(leftValue).FontSize(10);
+        table.Cell().Border(0.5f).BorderColor(BorderGreen).Background(LightGreen).Padding(6)
+            .AlignLeft().Text(rightLabel).Bold().FontSize(10);
+        table.Cell().Border(0.5f).BorderColor(BorderGreen).Padding(6)
+            .AlignRight().Text(rightValue).FontSize(10);
+    }
 
     private enum CellTextAlign
     {

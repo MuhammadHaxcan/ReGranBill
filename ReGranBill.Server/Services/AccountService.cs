@@ -61,7 +61,9 @@ public class AccountService : IAccountService
     {
         var accounts = await _db.Accounts
             .Include(a => a.ProductDetail)
-            .Where(a => a.AccountType == AccountType.Product || a.AccountType == AccountType.RawMaterial)
+            .Where(a => a.AccountType == AccountType.Product
+                     || a.AccountType == AccountType.RawMaterial
+                     || a.AccountType == AccountType.UnwashedMaterial)
             .OrderBy(a => a.Name)
             .ToListAsync();
         return accounts.Select(MapToDto).ToList();
@@ -100,11 +102,13 @@ public class AccountService : IAccountService
 
         var accountType = ParseAccountType(request.AccountType);
         var partyRole = ParsePartyRole(accountType, request.PartyRole);
+        var washedAccountId = await ResolveWashedAccountIdAsync(accountType, request.WashedAccountId);
         var account = new Account
         {
             Name = accountName,
             CategoryId = request.CategoryId,
-            AccountType = accountType
+            AccountType = accountType,
+            WashedAccountId = washedAccountId
         };
         _db.Accounts.Add(account);
         await _db.SaveChangesAsync();
@@ -134,9 +138,11 @@ public class AccountService : IAccountService
 
         var accountType = ParseAccountType(request.AccountType);
         var partyRole = ParsePartyRole(accountType, request.PartyRole);
+        var washedAccountId = await ResolveWashedAccountIdAsync(accountType, request.WashedAccountId);
         account.Name = accountName;
         account.CategoryId = request.CategoryId;
         account.AccountType = accountType;
+        account.WashedAccountId = washedAccountId;
         await _db.SaveChangesAsync();
 
         await CreateDetailRow(account.Id, request, accountType, partyRole);
@@ -168,6 +174,7 @@ public class AccountService : IAccountService
         {
             case AccountType.Product:
             case AccountType.RawMaterial:
+            case AccountType.UnwashedMaterial:
                 _db.ProductDetails.Add(new ProductDetail
                 {
                     AccountId = accountId,
@@ -222,7 +229,8 @@ public class AccountService : IAccountService
         ContactPerson = a.PartyDetail?.ContactPerson,
         Phone = a.PartyDetail?.Phone,
         City = a.PartyDetail?.City,
-        Address = a.PartyDetail?.Address
+        Address = a.PartyDetail?.Address,
+        WashedAccountId = a.WashedAccountId
     };
 
     private static string ValidateName(string? name)
@@ -263,6 +271,27 @@ public class AccountService : IAccountService
         }
 
         return parsed;
+    }
+
+    private async Task<int?> ResolveWashedAccountIdAsync(AccountType accountType, int? washedAccountId)
+    {
+        if (accountType != AccountType.UnwashedMaterial)
+        {
+            return null;
+        }
+
+        if (!washedAccountId.HasValue || washedAccountId.Value <= 0)
+        {
+            return null;
+        }
+
+        var washed = await _db.Accounts.FirstOrDefaultAsync(a => a.Id == washedAccountId.Value);
+        if (washed == null || washed.AccountType != AccountType.RawMaterial)
+        {
+            throw new RequestValidationException("Linked washed account must reference an existing RawMaterial account.");
+        }
+
+        return washed.Id;
     }
 
     private static PartyRole? ParsePartyRole(AccountType accountType, string? partyRole)

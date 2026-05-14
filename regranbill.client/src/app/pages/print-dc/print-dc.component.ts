@@ -9,11 +9,14 @@ import { AuthenticatedPdfPageBase } from '../print-shared/authenticated-pdf-page
 })
 export class PrintDcComponent extends AuthenticatedPdfPageBase implements OnInit {
   ngOnInit(): void {
-    const id = this.requireRouteParam('id', 'No challan ID provided');
-    if (!id) {
+    const voucherKey = this.requireRouteParam('voucherKey', 'No challan reference provided');
+    if (!voucherKey) {
       return;
     }
-
-    this.loadPdf(`/api/delivery-challans/${id}/pdf`, `Print DC - ${id}`);
+    const isNumeric = /^\d+$/.test(voucherKey);
+    const apiPath = isNumeric
+      ? `/api/delivery-challans/${voucherKey}/pdf`
+      : `/api/delivery-challans/by-number/${encodeURIComponent(voucherKey)}/pdf`;
+    this.loadPdf(apiPath, `Print DC - ${voucherKey}`);
   }
 }

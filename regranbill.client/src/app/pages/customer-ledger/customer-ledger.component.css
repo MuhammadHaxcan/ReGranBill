@@ -367,6 +367,18 @@
   color: var(--primary);
 }
 
+.type-productionvoucher {
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #5eead4;
+}
+
+.type-washingvoucher {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
 .col-product {
   min-width: 160px;
   color: var(--text-primary);

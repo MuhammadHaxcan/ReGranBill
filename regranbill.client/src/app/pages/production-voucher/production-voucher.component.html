@@ -1,0 +1,313 @@
+<div class="prod-page" *ngIf="!loading">
+
+  <!-- ── Top header card ── -->
+  <div class="prod-header">
+    <div class="prod-header-row">
+      <div>
+        <div class="prod-eyebrow">Production</div>
+        <h1 class="prod-title">{{ isEditMode ? 'Edit' : 'New' }} Production Voucher</h1>
+      </div>
+      <span class="prod-voucher-num">{{ voucherNumber }}</span>
+    </div>
+
+    <div class="prod-header-fields">
+      <div class="prod-field">
+        <label class="prod-label">Date</label>
+        <input type="text" class="form-control"
+               bsDatepicker [(ngModel)]="voucherDate"
+               [bsConfig]="{ dateInputFormat: 'DD-MM-YYYY', containerClass: 'theme-default' }" />
+      </div>
+      <div class="prod-field">
+        <label class="prod-label">Lot Number</label>
+        <input type="text" class="form-control" [(ngModel)]="lotNumber" placeholder="e.g. LOT-2025-014" />
+      </div>
+      <div class="prod-field prod-field-wide">
+        <label class="prod-label">Description</label>
+        <input type="text" class="form-control" [(ngModel)]="description" placeholder="Auto-generated if blank" />
+      </div>
+    </div>
+
+    <div class="prod-recipe-strip">
+      <div class="prod-field prod-field-wide">
+        <label class="prod-label">Formulation (optional)</label>
+        <app-searchable-select
+          [options]="formulationOptions"
+          [(ngModel)]="selectedFormulationId"
+          placeholder="Pick a saved formulation…">
+        </app-searchable-select>
+      </div>
+      <div class="prod-field">
+        <label class="prod-label">Total input kg</label>
+        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="formulationBatchKg" />
+      </div>
+      <div class="prod-field prod-field-action">
+        <button type="button" class="pv-btn pv-btn-outline-primary"
+                [disabled]="!selectedFormulationId || formulationBatchKg <= 0"
+                (click)="applyFormulation()">
+          Apply Formulation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Mass balance ribbon ── -->
+  <div class="prod-balance" [class.balanced]="balanceState === 'balanced'"
+                            [class.near]="balanceState === 'near'"
+                            [class.off]="balanceState === 'off'">
+    <div class="prod-balance-cell">
+      <span class="prod-balance-label">IN</span>
+      <span class="prod-balance-value">{{ totalInputKg | number:'1.2-2' }} kg</span>
+    </div>
+    <span class="prod-balance-sep">→</span>
+    <div class="prod-balance-cell">
+      <span class="prod-balance-label">OUT</span>
+      <span class="prod-balance-value">{{ totalOutputKg | number:'1.2-2' }} kg</span>
+    </div>
+    <span class="prod-balance-sep">+</span>
+    <div class="prod-balance-cell">
+      <span class="prod-balance-label">LUMPS</span>
+      <span class="prod-balance-value">{{ totalByproductKg | number:'1.2-2' }} kg</span>
+    </div>
+    <span class="prod-balance-sep">+</span>
+    <div class="prod-balance-cell">
+      <span class="prod-balance-label">SHORT</span>
+      <span class="prod-balance-value">{{ shortageWeightKg | number:'1.2-2' }} kg</span>
+    </div>
+    <span class="prod-balance-sep">=</span>
+    <div class="prod-balance-cell prod-balance-rhs">
+      <span class="prod-balance-value">{{ balanceRhs | number:'1.2-2' }} kg</span>
+    </div>
+    <div class="prod-balance-status">
+      <span *ngIf="balanceState === 'balanced'" class="prod-balance-tag balanced">✓ Balanced</span>
+      <span *ngIf="balanceState === 'near'"     class="prod-balance-tag near">≈ Off by {{ balanceDelta | number:'1.2-2' }} kg</span>
+      <span *ngIf="balanceState === 'off'"      class="prod-balance-tag off">✗ Off by {{ balanceDelta | number:'1.2-2' }} kg</span>
+    </div>
+  </div>
+
+  <!-- ── INPUTS ── -->
+  <div class="prod-section" (click)="focusSection('input')">
+    <div class="prod-sec-hd input-hd">
+      <div class="prod-sec-hd-left">
+        <span class="prod-sec-dot"></span>
+        <span class="prod-sec-title">Inputs · Raw Materials</span>
+        <span class="prod-sec-count">{{ inputs.length }}</span>
+      </div>
+      <button type="button" class="pv-btn pv-btn-ghost" (click)="addInput()">
+        + Add Input <kbd>Alt+N</kbd>
+      </button>
+    </div>
+    <div class="prod-table-wrapper">
+      <table class="prod-lines-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-account">Vendor</th>
+            <th class="col-account">Material</th>
+            <th class="col-bags">Bags</th>
+            <th class="col-kg">Kg</th>
+            <th class="col-kg">Rate /kg</th>
+            <th class="col-kg">Line Cost</th>
+            <th class="col-act"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of inputs; let i = index">
+            <td class="col-num">{{ i + 1 }}</td>
+            <td class="col-account">
+              <app-searchable-select [options]="vendorOptions" [compact]="true"
+                [(ngModel)]="row.vendorId" placeholder="Pick vendor…"
+                (ngModelChange)="onInputVendorOrAccountChanged(row)">
+              </app-searchable-select>
+            </td>
+            <td class="col-account">
+              <app-searchable-select [options]="inputAccountOptions" [compact]="true"
+                [(ngModel)]="row.accountId" placeholder="Pick material…"
+                (ngModelChange)="onLineChanged(); onInputVendorOrAccountChanged(row)">
+              </app-searchable-select>
+            </td>
+            <td class="col-bags">
+              <input type="number" min="0" step="1" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.qty" (ngModelChange)="onLineChanged()" />
+            </td>
+            <td class="col-kg">
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.weightKg" (ngModelChange)="onLineChanged()" />
+            </td>
+            <td class="col-kg">
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.rate" [title]="row.rateSource || ''" placeholder="Rate" />
+            </td>
+            <td class="col-kg">
+              {{ ((row.weightKg || 0) * (row.rate || 0)) | number:'1.2-2' }}
+            </td>
+            <td class="col-act">
+              <button type="button" class="btn-remove" title="Remove row" (click)="removeInput(i)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prod-sec-totals">
+      <span>Bags: <b>{{ inputBags(inputs) }}</b></span>
+      <span>Kg: <b>{{ inputKg(inputs) | number:'1.2-2' }}</b></span>
+      <span>Total Cost: <b>{{ totalInputCost | number:'1.2-2' }}</b></span>
+    </div>
+  </div>
+
+  <!-- ── OUTPUTS ── -->
+  <div class="prod-section" (click)="focusSection('output')">
+    <div class="prod-sec-hd output-hd">
+      <div class="prod-sec-hd-left">
+        <span class="prod-sec-dot"></span>
+        <span class="prod-sec-title">Outputs · Finished Goods</span>
+        <span class="prod-sec-count">{{ outputs.length }}</span>
+      </div>
+      <button type="button" class="pv-btn pv-btn-ghost" (click)="addOutput()">+ Add Output</button>
+    </div>
+    <div class="prod-table-wrapper">
+      <table class="prod-lines-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-account-wide">Account</th>
+            <th class="col-bags">Bags</th>
+            <th class="col-kg">Kg</th>
+            <th class="col-act"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of outputs; let i = index">
+            <td class="col-num">{{ i + 1 }}</td>
+            <td class="col-account-wide">
+              <app-searchable-select [options]="outputAccountOptions" [compact]="true"
+                [(ngModel)]="row.accountId" placeholder="Pick output product…"
+                (ngModelChange)="onLineChanged()">
+              </app-searchable-select>
+            </td>
+            <td class="col-bags">
+              <input type="number" min="0" step="1" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.qty" (ngModelChange)="onLineChanged()" />
+            </td>
+            <td class="col-kg">
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.weightKg" (ngModelChange)="onLineChanged()" />
+            </td>
+            <td class="col-act">
+              <button type="button" class="btn-remove" title="Remove row" (click)="removeOutput(i)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prod-sec-totals">
+      <span>Bags: <b>{{ inputBags(outputs) }}</b></span>
+      <span>Kg: <b>{{ inputKg(outputs) | number:'1.2-2' }}</b></span>
+    </div>
+  </div>
+
+  <!-- ── BYPRODUCTS ── -->
+  <div class="prod-section" (click)="focusSection('byproduct')">
+    <div class="prod-sec-hd byproduct-hd">
+      <div class="prod-sec-hd-left">
+        <span class="prod-sec-dot"></span>
+        <span class="prod-sec-title">Byproducts · Lumps / Recoverables</span>
+        <span class="prod-sec-count">{{ byproducts.length }}</span>
+      </div>
+      <button type="button" class="pv-btn pv-btn-ghost" (click)="addByproduct()">+ Add Byproduct</button>
+    </div>
+    <div class="prod-table-wrapper" *ngIf="byproducts.length > 0">
+      <table class="prod-lines-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-account-wide">Account</th>
+            <th class="col-bags">Bags</th>
+            <th class="col-kg">Kg</th>
+            <th class="col-act"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of byproducts; let i = index">
+            <td class="col-num">{{ i + 1 }}</td>
+            <td class="col-account-wide">
+              <app-searchable-select [options]="outputAccountOptions" [compact]="true"
+                [(ngModel)]="row.accountId" placeholder="Pick byproduct…"
+                (ngModelChange)="onLineChanged()">
+              </app-searchable-select>
+            </td>
+            <td class="col-bags">
+              <input type="number" min="0" step="1" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.qty" (ngModelChange)="onLineChanged()" />
+            </td>
+            <td class="col-kg">
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.weightKg" (ngModelChange)="onLineChanged()" />
+            </td>
+            <td class="col-act">
+              <button type="button" class="btn-remove" title="Remove row" (click)="removeByproduct(i)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prod-sec-empty" *ngIf="byproducts.length === 0">
+      No byproducts recorded. Click <strong>+ Add Byproduct</strong> to add lumps or recoverables.
+    </div>
+    <div class="prod-sec-totals" *ngIf="byproducts.length > 0">
+      <span>Bags: <b>{{ inputBags(byproducts) }}</b></span>
+      <span>Kg: <b>{{ inputKg(byproducts) | number:'1.2-2' }}</b></span>
+    </div>
+  </div>
+
+  <!-- ── SHORTAGE ── -->
+  <div class="prod-section">
+    <div class="prod-sec-hd shortage-hd">
+      <div class="prod-sec-hd-left">
+        <span class="prod-sec-dot"></span>
+        <span class="prod-sec-title">Shortage · Loss / Scrap</span>
+      </div>
+      <button type="button" class="pv-btn pv-btn-ghost"
+              [disabled]="!shortageUserEdited"
+              (click)="resetShortageOverride()">↻ Auto-suggest</button>
+    </div>
+    <div class="prod-shortage-row">
+      <div>
+        <label class="prod-label">Production Loss Account</label>
+        <app-searchable-select
+          [options]="expenseAccountOptions"
+          [(ngModel)]="shortageAccountId"
+          placeholder="Pick a Production Loss / Scrap expense account…">
+        </app-searchable-select>
+      </div>
+      <div>
+        <label class="prod-label">Kg</label>
+        <input type="number" min="0" step="0.01" class="form-control prod-num-input"
+               [(ngModel)]="shortageWeightKg"
+               (ngModelChange)="onShortageChanged()" />
+      </div>
+    </div>
+    <p class="prod-shortage-hint" *ngIf="!shortageUserEdited">
+      Auto-suggested as input − (output + byproduct). Edit to override; click ↻ Auto-suggest to reset.
+    </p>
+  </div>
+
+  <!-- ── Footer actions ── -->
+  <footer class="prod-footer">
+    <button type="button" class="pv-btn pv-btn-outline" (click)="discard()">Discard</button>
+    <button type="button" class="pv-btn pv-btn-primary"
+            [disabled]="!canSave"
+            [title]="canSave ? '' : balanceErrorTooltip"
+            (click)="save()">
+      {{ saving ? 'Saving…' : (isEditMode ? 'Update Voucher' : 'Save Voucher') }}
+    </button>
+  </footer>
+
+</div>
+
+<div class="prod-loading" *ngIf="loading">Loading…</div>

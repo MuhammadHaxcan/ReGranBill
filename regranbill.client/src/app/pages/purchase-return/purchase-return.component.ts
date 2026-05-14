@@ -392,7 +392,7 @@ export class PurchaseReturnComponent implements OnInit {
         if (isEdit) {
           this.toast.success('Purchase return updated successfully.');
           if (openPdf) {
-            this.purchaseReturnService.openPdfInNewTab(purchaseReturn.id);
+            this.purchaseReturnService.openPdfInNewTab(purchaseReturn.id, purchaseReturn.prNumber);
           }
           this.router.navigate(['/pending']);
           return;
@@ -400,7 +400,7 @@ export class PurchaseReturnComponent implements OnInit {
 
         this.toast.success(`${purchaseReturn.prNumber} created successfully.`);
         if (openPdf) {
-          this.purchaseReturnService.openPdfInNewTab(purchaseReturn.id);
+          this.purchaseReturnService.openPdfInNewTab(purchaseReturn.id, purchaseReturn.prNumber);
         }
         this.resetForm();
       },

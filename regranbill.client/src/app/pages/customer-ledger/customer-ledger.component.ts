@@ -8,6 +8,7 @@ import { CustomerLedger, CustomerLedgerEntry } from '../../models/customer-ledge
 import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { Category } from '../../models/category.model';
 import { formatDateDisplay, toDateInputValue } from '../../utils/date-utils';
+import { getVoucherPrintPath, isPrintableVoucherType } from '../../utils/voucher-print-routes';
 
 @Component({
   selector: 'app-customer-ledger',
@@ -139,14 +140,12 @@ export class CustomerLedgerComponent implements OnInit {
   }
 
   isPrintableVoucher(entry: CustomerLedgerEntry): boolean {
-    return (entry.voucherType === 'SaleVoucher' || entry.voucherType === 'PurchaseVoucher') && entry.voucherId > 0;
+    return isPrintableVoucherType(entry.voucherType, entry.voucherId, entry.voucherNumber);
   }
 
   openVoucherPrint(entry: CustomerLedgerEntry): void {
-    if (!this.isPrintableVoucher(entry)) return;
-    const targetPath = entry.voucherType === 'SaleVoucher'
-      ? `/print-dc/${entry.voucherId}`
-      : `/print-pv/${entry.voucherId}`;
+    const targetPath = getVoucherPrintPath(entry.voucherType, entry.voucherId, entry.voucherNumber);
+    if (!targetPath) return;
     window.open(targetPath, '_blank');
   }
 

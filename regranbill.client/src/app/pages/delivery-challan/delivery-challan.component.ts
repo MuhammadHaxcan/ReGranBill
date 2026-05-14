@@ -465,7 +465,7 @@ export class DeliveryChallanComponent implements OnInit {
         if (isEdit) {
           this.toast.success('Challan updated successfully.');
           if (openPdf) {
-            this.dcService.openPdfInNewTab(dc.id);
+            this.dcService.openPdfInNewTab(dc.id, dc.dcNumber);
           }
           this.router.navigate(['/pending']);
           return;
@@ -473,7 +473,7 @@ export class DeliveryChallanComponent implements OnInit {
 
         this.toast.success(`${dc.dcNumber} created successfully.`);
         if (openPdf) {
-          this.dcService.openPdfInNewTab(dc.id);
+          this.dcService.openPdfInNewTab(dc.id, dc.dcNumber);
         }
         this.resetForm();
       },

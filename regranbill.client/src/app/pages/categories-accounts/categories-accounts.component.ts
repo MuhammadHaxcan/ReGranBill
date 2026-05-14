@@ -53,7 +53,7 @@ export class CategoriesAccountsComponent implements OnInit {
   acctAddress = '';
 
   categoryOptions: SelectOption[] = [];
-  accountTypes: AccountType[] = [AccountType.Product, AccountType.RawMaterial, AccountType.Expense, AccountType.Account, AccountType.Party];
+  accountTypes: AccountType[] = [AccountType.Product, AccountType.RawMaterial, AccountType.Expense, AccountType.Account, AccountType.Party, AccountType.UnwashedMaterial];
   partyRoles: PartyRole[] = [PartyRole.Customer, PartyRole.Vendor, PartyRole.Transporter, PartyRole.Both];
 
   constructor(
@@ -226,7 +226,6 @@ export class CategoriesAccountsComponent implements OnInit {
     this.acctPhone = acct.phone || '';
     this.acctCity = acct.city || '';
     this.acctAddress = acct.address || '';
-
     this.showAcctModal = true;
   }
 
@@ -295,6 +294,9 @@ export class CategoriesAccountsComponent implements OnInit {
       data.phone = this.acctPhone;
       data.city = this.acctCity;
       data.address = this.acctAddress;
+    } else if (this.acctType === 'UnwashedMaterial') {
+      data.packing = this.acctPacking;
+      data.packingWeightKg = this.acctPackingWeight ?? 0;
     }
 
     if (this.acctEditingId !== null) {
@@ -352,6 +354,24 @@ export class CategoriesAccountsComponent implements OnInit {
       case AccountType.Expense: return 'badge-expense';
       case AccountType.Account: return 'badge-account';
       case AccountType.Party: return 'badge-party';
+      case AccountType.UnwashedMaterial: return 'badge-unwashed';
+    }
+    return '';
+  }
+
+  getLinkedWashedAccountName(washedAccountId: number | null | undefined): string {
+    if (!washedAccountId) return '';
+    return this.accounts.find(account => account.id === washedAccountId)?.name ?? '';
+  }
+
+  accountTypeLabel(t: AccountType): string {
+    switch (t) {
+      case AccountType.Product: return 'Product';
+      case AccountType.RawMaterial: return 'Raw Material';
+      case AccountType.Expense: return 'Expense';
+      case AccountType.Account: return 'Account';
+      case AccountType.Party: return 'Party';
+      case AccountType.UnwashedMaterial: return 'Unwashed Material';
       default: return '';
     }
   }

@@ -7,6 +7,7 @@ import { AccountService } from '../../services/account.service';
 import { AccountClosingReportService } from '../../services/account-closing-report.service';
 import { ToastService } from '../../services/toast.service';
 import { toDateInputValue } from '../../utils/date-utils';
+import { getVoucherPrintPath, isPrintableVoucherType } from '../../utils/voucher-print-routes';
 
 @Component({
   selector: 'app-account-closing-report',
@@ -158,14 +159,11 @@ export class AccountClosingReportComponent implements OnInit {
   }
 
   isPrintableVoucher(entry: AccountClosingHistoryEntry): boolean {
-    return (entry.voucherType === 'SaleVoucher' || entry.voucherType === 'PurchaseVoucher') && entry.voucherId > 0;
+    return isPrintableVoucherType(entry.voucherType, entry.voucherId, entry.voucherNumber);
   }
 
-  getVoucherPrintLink(entry: AccountClosingHistoryEntry): string[] | null {
-    if (!this.isPrintableVoucher(entry)) return null;
-    return entry.voucherType === 'SaleVoucher'
-      ? ['/print-dc', entry.voucherId.toString()]
-      : ['/print-pv', entry.voucherId.toString()];
+  getVoucherPrintLink(entry: AccountClosingHistoryEntry): string | null {
+    return getVoucherPrintPath(entry.voucherType, entry.voucherId, entry.voucherNumber);
   }
 
   openPrint(): void {

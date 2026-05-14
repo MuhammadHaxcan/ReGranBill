@@ -44,21 +44,14 @@ public class DeliveryChallanService : IDeliveryChallanService
 
     public async Task<DeliveryChallanDto?> GetByIdAsync(int id)
     {
-        var saleJv = await _db.JournalVouchers
-            .Where(j => j.Id == id && j.VoucherType == VoucherType.SaleVoucher)
-            .Include(j => j.Creator).ThenInclude(u => u.Role)
-            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
-            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
-            .FirstOrDefaultAsync();
+        return await GetVoucherAsync(j => j.Id == id);
+    }
 
-        if (saleJv == null) return null;
-
-        var cartageRef = await _db.JournalVoucherReferences
-            .Where(r => r.MainVoucherId == saleJv.Id)
-            .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
-            .FirstOrDefaultAsync();
-
-        return MapToDto(saleJv, cartageRef?.ReferenceVoucher);
+    public async Task<DeliveryChallanDto?> GetByNumberAsync(string dcNumber)
+    {
+        var normalized = dcNumber?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized)) return null;
+        return await GetVoucherAsync(j => j.VoucherNumber == normalized);
     }
 
     public Task<string> GetNextNumberAsync() =>
@@ -598,4 +591,24 @@ public class DeliveryChallanService : IDeliveryChallanService
         IReadOnlyDictionary<int, Account> ProductAccounts,
         Account PartyAccount,
         Account? TransporterAccount);
+
+    private async Task<DeliveryChallanDto?> GetVoucherAsync(System.Linq.Expressions.Expression<Func<JournalVoucher, bool>> predicate)
+    {
+        var saleJv = await _db.JournalVouchers
+            .Where(j => j.VoucherType == VoucherType.SaleVoucher)
+            .Where(predicate)
+            .Include(j => j.Creator).ThenInclude(u => u.Role)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
+            .FirstOrDefaultAsync();
+
+        if (saleJv == null) return null;
+
+        var cartageRef = await _db.JournalVoucherReferences
+            .Where(r => r.MainVoucherId == saleJv.Id)
+            .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
+            .FirstOrDefaultAsync();
+
+        return MapToDto(saleJv, cartageRef?.ReferenceVoucher);
+    }
 }

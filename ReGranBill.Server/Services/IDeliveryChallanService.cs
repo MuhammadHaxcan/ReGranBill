@@ -7,6 +7,7 @@ public interface IDeliveryChallanService
 {
     Task<List<DeliveryChallanDto>> GetAllAsync();
     Task<DeliveryChallanDto?> GetByIdAsync(int id);
+    Task<DeliveryChallanDto?> GetByNumberAsync(string dcNumber);
     Task<string> GetNextNumberAsync();
     Task<DeliveryChallanDto> CreateAsync(CreateDcRequest request, int userId);
     Task<DeliveryChallanDto?> UpdateAsync(int id, CreateDcRequest request);

@@ -6,7 +6,7 @@ namespace ReGranBill.Server.Helpers;
 internal static class VoucherHelpers
 {
     public static bool IsInventoryAccount(Account? account) =>
-        account?.AccountType is AccountType.Product or AccountType.RawMaterial;
+        account?.AccountType is AccountType.Product or AccountType.RawMaterial or AccountType.UnwashedMaterial;
 
     public static bool IsValidRbp(string? rbp) =>
         string.Equals(rbp, "Yes", StringComparison.OrdinalIgnoreCase)

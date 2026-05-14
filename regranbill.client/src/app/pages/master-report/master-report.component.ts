@@ -8,6 +8,7 @@ import { SearchableSelectComponent, SelectOption } from '../../components/search
 import { MasterReport, MasterReportAccountSummary, MasterReportEntry } from '../../models/master-report.model';
 import { Account, PartyRole } from '../../models/account.model';
 import { toDateInputValue } from '../../utils/date-utils';
+import { getVoucherPrintPath, isPrintableVoucherType } from '../../utils/voucher-print-routes';
 
 interface Category {
   id: number;
@@ -210,6 +211,14 @@ export class MasterReportComponent implements OnInit {
       month: 'short',
       year: 'numeric'
     });
+  }
+
+  isPrintableVoucher(entry: MasterReportEntry): boolean {
+    return isPrintableVoucherType(entry.voucherType, entry.voucherId, entry.voucherNumber);
+  }
+
+  getVoucherPrintLink(entry: MasterReportEntry): string | null {
+    return getVoucherPrintPath(entry.voucherType, entry.voucherId, entry.voucherNumber);
   }
 
   openPrint(): void {

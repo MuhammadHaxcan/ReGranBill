@@ -21,4 +21,7 @@ public class AccountDto
     public string? Phone { get; set; }
     public string? City { get; set; }
     public string? Address { get; set; }
+
+    // Optional legacy link retained for older UnwashedMaterial records.
+    public int? WashedAccountId { get; set; }
 }

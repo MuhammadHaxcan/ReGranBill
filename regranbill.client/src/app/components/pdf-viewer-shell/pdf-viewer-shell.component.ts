@@ -9,6 +9,8 @@ import { SafeResourceUrl } from '@angular/platform-browser';
 })
 export class PdfViewerShellComponent {
   @Input() pdfUrl: SafeResourceUrl | null = null;
+  @Input() downloadUrl: string | null = null;
+  @Input() fileName = '';
   @Input() loading = true;
   @Input() error = '';
   @Output() loaded = new EventEmitter<void>();

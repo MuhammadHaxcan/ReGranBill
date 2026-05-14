@@ -37,6 +37,12 @@ import { PrintCustomerLedgerComponent } from './pages/print-customer-ledger/prin
 import { PendingComponent } from './pages/pending/pending.component';
 import { RatedVouchersComponent } from './pages/rated-vouchers/rated-vouchers.component';
 import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
+import { ProductionVoucherComponent } from './pages/production-voucher/production-voucher.component';
+import { FormulationsComponent } from './pages/formulations/formulations.component';
+import { WashingVoucherComponent } from './pages/washing-voucher/washing-voucher.component';
+import { PendingProductionsComponent } from './pages/pending-productions/pending-productions.component';
+import { PrintProdComponent } from './pages/print-prod/print-prod.component';
+import { PrintWshComponent } from './pages/print-wsh/print-wsh.component';
 import { AuthGuard } from './guards/auth.guard';
 import { PageAccessGuard } from './guards/page-access.guard';
 
@@ -48,28 +54,28 @@ const routes: Routes = [
   // Delivery Challan + supporting routes
   { path: 'delivery-challan',          component: DeliveryChallanComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
   { path: 'delivery-challan/:id',      component: DeliveryChallanComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
-  { path: 'print-dc/:id',              component: PrintDcComponent,            canActivate: guarded, data: { pageKey: 'delivery-challan' } },
+  { path: 'print-dc/:voucherKey',      component: PrintDcComponent,            canActivate: guarded, data: { pageKey: 'delivery-challan' } },
   { path: 'add-rate/:id',              component: AddRateComponent,            canActivate: guarded, data: { pageKey: 'voucher-rates' } },
   { path: 'pending-challans',          component: PendingChallansComponent,    canActivate: guarded, data: { pageKey: 'delivery-challan' } },
 
   // Purchase Voucher + supporting routes
   { path: 'purchase-voucher',          component: PurchaseVoucherComponent,    canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
   { path: 'purchase-voucher/:id',      component: PurchaseVoucherComponent,    canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
-  { path: 'print-pv/:id',              component: PrintPvComponent,            canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
+  { path: 'print-pv/:voucherKey',      component: PrintPvComponent,            canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
   { path: 'add-purchase-rate/:id',     component: AddPurchaseRateComponent,    canActivate: guarded, data: { pageKey: 'voucher-rates' } },
   { path: 'pending-purchases',         component: PendingPurchasesComponent,   canActivate: guarded, data: { pageKey: 'purchase-voucher' } },
 
   // Sale Return + supporting routes
   { path: 'sale-return',               component: SaleReturnComponent,         canActivate: guarded, data: { pageKey: 'sale-return' } },
   { path: 'sale-return/:id',           component: SaleReturnComponent,         canActivate: guarded, data: { pageKey: 'sale-return' } },
-  { path: 'print-sr/:id',              component: PrintSrComponent,            canActivate: guarded, data: { pageKey: 'sale-return' } },
+  { path: 'print-sr/:voucherKey',      component: PrintSrComponent,            canActivate: guarded, data: { pageKey: 'sale-return' } },
   { path: 'add-sale-return-rate/:id',  component: AddSaleReturnRateComponent,  canActivate: guarded, data: { pageKey: 'voucher-rates' } },
   { path: 'pending-sale-returns',      component: PendingSaleReturnsComponent, canActivate: guarded, data: { pageKey: 'sale-return' } },
 
   // Purchase Return + supporting routes
   { path: 'purchase-return',           component: PurchaseReturnComponent,         canActivate: guarded, data: { pageKey: 'purchase-return' } },
   { path: 'purchase-return/:id',       component: PurchaseReturnComponent,         canActivate: guarded, data: { pageKey: 'purchase-return' } },
-  { path: 'print-pr/:id',              component: PrintPrComponent,                canActivate: guarded, data: { pageKey: 'purchase-return' } },
+  { path: 'print-pr/:voucherKey',      component: PrintPrComponent,                canActivate: guarded, data: { pageKey: 'purchase-return' } },
   { path: 'add-purchase-return-rate/:id', component: AddPurchaseReturnRateComponent, canActivate: guarded, data: { pageKey: 'voucher-rates' } },
   { path: 'pending-purchase-returns',  component: PendingPurchaseReturnsComponent, canActivate: guarded, data: { pageKey: 'purchase-return' } },
 
@@ -82,6 +88,15 @@ const routes: Routes = [
   // Journal voucher
   { path: 'journal-voucher',           component: JournalVoucherComponent,     canActivate: guarded, data: { pageKey: 'journal-voucher' } },
   { path: 'journal-voucher/:id',       component: JournalVoucherComponent,     canActivate: guarded, data: { pageKey: 'journal-voucher' } },
+
+  // Production voucher + supporting routes
+  { path: 'production-voucher',        component: ProductionVoucherComponent,  canActivate: guarded, data: { pageKey: 'production-voucher' } },
+  { path: 'production-voucher/:id',    component: ProductionVoucherComponent,  canActivate: guarded, data: { pageKey: 'production-voucher' } },
+  { path: 'pending-productions',       component: PendingProductionsComponent, canActivate: guarded, data: { pageKey: 'production-voucher' } },
+  { path: 'formulations',              component: FormulationsComponent,       canActivate: guarded, data: { pageKey: 'formulations' } },
+  { path: 'washing-voucher',           component: WashingVoucherComponent,     canActivate: guarded, data: { pageKey: 'washing-room' } },
+  { path: 'print-prod/:id',            component: PrintProdComponent,          canActivate: guarded, data: { pageKey: 'production-voucher' } },
+  { path: 'print-wsh/:voucherKey',     component: PrintWshComponent,           canActivate: guarded, data: { pageKey: 'washing-room' } },
 
   // Review group
   { path: 'pending',                   component: PendingComponent,            canActivate: guarded, data: { pageKey: 'pending' } },

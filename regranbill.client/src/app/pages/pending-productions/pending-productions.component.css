@@ -1,0 +1,114 @@
+.prod-list-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 20px 60px;
+}
+
+.prod-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.prod-list-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.prod-list-title {
+  margin: 2px 0 0 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.prod-list-empty {
+  background: var(--card-bg);
+  border: 1px dashed var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.prod-list-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prod-list-row {
+  display: grid;
+  grid-template-columns: 110px 110px 1fr 120px 120px 110px 110px 80px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.prod-list-head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 6px 16px;
+}
+
+.prod-list-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.05s;
+}
+
+.prod-list-card:hover {
+  border-color: #6366f1;
+}
+
+.prod-list-card:active {
+  transform: translateY(1px);
+}
+
+.prod-list-num {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.prod-list-desc {
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ralign { text-align: right; }
+.mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 13px; }
+.short { color: #b91c1c; }
+
+.prod-list-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.prod-list-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.prod-list-icon:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+}

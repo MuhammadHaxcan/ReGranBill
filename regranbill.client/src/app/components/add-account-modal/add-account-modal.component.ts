@@ -19,6 +19,7 @@ export class AddAccountModalComponent implements OnInit, OnChanges {
   @Input() isVisible = false;
   @Input() prefillName = '';
   @Input() defaultType?: AccountType;
+  @Input() allowedTypes?: AccountType[];
   @Input() defaultPartyRole?: PartyRole;
   @Input() defaultCategoryId?: number;
 
@@ -45,16 +46,17 @@ export class AddAccountModalComponent implements OnInit, OnChanges {
   categoryOptions: SelectOption[] = [];
   readonly allAccountTypes: AccountType[] = [
     AccountType.Product, AccountType.RawMaterial,
-    AccountType.Expense, AccountType.Account, AccountType.Party
+    AccountType.Expense, AccountType.Account, AccountType.Party, AccountType.UnwashedMaterial
   ];
   partyRoles: PartyRole[] = [
     PartyRole.Customer, PartyRole.Vendor, PartyRole.Transporter, PartyRole.Both
   ];
 
   get visibleAccountTypes(): AccountType[] {
+    if (this.allowedTypes?.length) return this.allowedTypes;
     if (!this.defaultType) return this.allAccountTypes;
     if (this.defaultType === AccountType.Product || this.defaultType === AccountType.RawMaterial) {
-      return [AccountType.Product, AccountType.RawMaterial];
+      return [AccountType.Product, AccountType.RawMaterial, AccountType.UnwashedMaterial];
     }
     return [this.defaultType];
   }
@@ -121,6 +123,9 @@ export class AddAccountModalComponent implements OnInit, OnChanges {
     };
 
     if (this.acctType === AccountType.Product || this.acctType === AccountType.RawMaterial) {
+      data.packing = this.acctPacking;
+      data.packingWeightKg = this.acctPackingWeight ?? 0;
+    } else if (this.acctType === AccountType.UnwashedMaterial) {
       data.packing = this.acctPacking;
       data.packingWeightKg = this.acctPackingWeight ?? 0;
     } else if (this.acctType === AccountType.Account) {

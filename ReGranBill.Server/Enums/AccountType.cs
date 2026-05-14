@@ -6,5 +6,6 @@ public enum AccountType
     RawMaterial,
     Expense,
     Account,
-    Party
+    Party,
+    UnwashedMaterial
 }

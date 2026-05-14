@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { DeliveryChallanService } from '../../services/delivery-challan.service';
 import { DeliveryChallanViewModel } from '../../models/delivery-challan.model';
@@ -8,7 +9,9 @@ import { SaleReturnViewModel } from '../../models/sale-return.model';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
 import { PurchaseVoucherViewModel } from '../../models/purchase-voucher.model';
 import { PurchaseReturnService, PurchaseReturnViewModel } from '../../services/purchase-return.service';
+import { WashingVoucherService } from '../../services/washing-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import { WashingVoucherListDto } from '../../models/washing-voucher.model';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
 import {
   getDeliveryTotalAmount,
@@ -20,7 +23,7 @@ import {
 } from '../../utils/delivery-calculations';
 
 interface RatedRow {
-  type: 'dc' | 'sr' | 'pv' | 'pr';
+  type: 'dc' | 'sr' | 'pv' | 'pr' | 'wsh';
   id: number;
   number: string;
   date: string;
@@ -46,6 +49,7 @@ export class RatedVouchersComponent implements OnInit {
     private srService: SaleReturnService,
     private pvService: PurchaseVoucherService,
     private prService: PurchaseReturnService,
+    private washingService: WashingVoucherService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
@@ -62,40 +66,30 @@ export class RatedVouchersComponent implements OnInit {
 
   loadAll(): void {
     this.loading = true;
-    this.rows = [];
-
-    this.dcService.getAll().subscribe({
-      next: data => {
-        this.rows.push(...data.filter(dc => dc.ratesAdded).map(dc => this.toRowDc(dc)));
-        this.cdr.detectChanges();
-      },
-      error: () => { this.toast.error('Unable to load challans.'); this.cdr.detectChanges(); }
-    });
-
-    this.srService.getAll().subscribe({
-      next: data => {
-        this.rows.push(...data.filter(sr => sr.ratesAdded).map(sr => this.toRowSr(sr)));
-        this.cdr.detectChanges();
-      },
-      error: () => { this.toast.error('Unable to load sale returns.'); this.cdr.detectChanges(); }
-    });
-
-    this.pvService.getAll().subscribe({
-      next: data => {
-        this.rows.push(...data.filter(pv => pv.ratesAdded).map(pv => this.toRowPv(pv)));
-        this.cdr.detectChanges();
-      },
-      error: () => { this.toast.error('Unable to load purchases.'); this.cdr.detectChanges(); }
-    });
-
-    this.prService.getAll().subscribe({
-      next: data => {
-        this.rows.push(...data.filter(pr => pr.ratesAdded).map(pr => this.toRowPr(pr)));
+    forkJoin({
+      dcs: this.dcService.getAll(),
+      srs: this.srService.getAll(),
+      pvs: this.pvService.getAll(),
+      prs: this.prService.getAll(),
+      wshs: this.washingService.getAll()
+    }).subscribe({
+      next: ({ dcs, srs, pvs, prs, wshs }) => {
+        this.rows = [
+          ...dcs.filter(dc => dc.ratesAdded).map(dc => this.toRowDc(dc)),
+          ...srs.filter(sr => sr.ratesAdded).map(sr => this.toRowSr(sr)),
+          ...pvs.filter(pv => pv.ratesAdded).map(pv => this.toRowPv(pv)),
+          ...prs.filter(pr => pr.ratesAdded).map(pr => this.toRowPr(pr)),
+          ...wshs.map(wsh => this.toRowWsh(wsh))
+        ].sort((a, b) => {
+          const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+          if (dateDiff !== 0) return dateDiff;
+          return b.id - a.id;
+        });
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.toast.error('Unable to load purchase returns.');
+        this.toast.error('Unable to load rated vouchers.');
         this.loading = false;
         this.cdr.detectChanges();
       }
@@ -142,6 +136,20 @@ export class RatedVouchersComponent implements OnInit {
     };
   }
 
+  private toRowWsh(wsh: WashingVoucherListDto): RatedRow {
+    return {
+      type: 'wsh',
+      id: wsh.id,
+      number: wsh.voucherNumber,
+      date: wsh.date,
+      partyName: wsh.sourceVendorName || '-',
+      productCount: wsh.outputLineCount || 1,
+      bags: 0,
+      weight: wsh.outputWeightKg,
+      amount: wsh.washedDebit
+    };
+  }
+
   fmt(date: string): string {
     return formatDateDdMmYyyy(date);
   }
@@ -152,6 +160,7 @@ export class RatedVouchersComponent implements OnInit {
       case 'sr': return 'SR';
       case 'pv': return 'PV';
       case 'pr': return 'PR';
+      case 'wsh': return 'WSH';
       default: return type.toUpperCase();
     }
   }
@@ -162,15 +171,17 @@ export class RatedVouchersComponent implements OnInit {
       case 'sr': this.router.navigate(['/sale-return', row.id]); break;
       case 'pv': this.router.navigate(['/purchase-voucher', row.id]); break;
       case 'pr': this.router.navigate(['/purchase-return', row.id]); break;
+      case 'wsh': this.washingService.openPrintInNewTab(row.id, row.number); break;
     }
   }
 
   print(row: RatedRow): void {
     switch (row.type) {
-      case 'dc': this.dcService.openPdfInNewTab(row.id); break;
-      case 'sr': this.srService.openPdfInNewTab(row.id); break;
-      case 'pv': this.pvService.openPdfInNewTab(row.id); break;
-      case 'pr': this.prService.openPdfInNewTab(row.id); break;
+      case 'dc': this.dcService.openPdfInNewTab(row.id, row.number); break;
+      case 'sr': this.srService.openPdfInNewTab(row.id, row.number); break;
+      case 'pv': this.pvService.openPdfInNewTab(row.id, row.number); break;
+      case 'pr': this.prService.openPdfInNewTab(row.id, row.number); break;
+      case 'wsh': this.washingService.openPrintInNewTab(row.id, row.number); break;
     }
   }
 }

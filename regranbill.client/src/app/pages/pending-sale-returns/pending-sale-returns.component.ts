@@ -89,7 +89,7 @@ export class PendingSaleReturnsComponent implements OnInit {
   }
 
   printSaleReturn(sr: SaleReturnViewModel): void {
-    this.saleReturnService.openPdfInNewTab(sr.id);
+    this.saleReturnService.openPdfInNewTab(sr.id, sr.srNumber);
   }
 
   async deleteSaleReturn(sr: SaleReturnViewModel): Promise<void> {

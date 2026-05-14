@@ -1,0 +1,44 @@
+<div class="prod-list-page">
+  <div class="prod-list-header">
+    <div>
+      <div class="prod-list-eyebrow">Production</div>
+      <h1 class="prod-list-title">Production Vouchers</h1>
+    </div>
+    <button type="button" class="btn btn-primary" routerLink="/production-voucher">
+      + New Production
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="prod-list-empty">Loading…</div>
+
+  <div *ngIf="!loading && vouchers.length === 0" class="prod-list-empty">
+    No production vouchers yet. Click "New Production" to record one.
+  </div>
+
+  <div class="prod-list-table" *ngIf="!loading && vouchers.length > 0">
+    <div class="prod-list-row prod-list-head">
+      <div>Voucher #</div>
+      <div>Date</div>
+      <div>Description</div>
+      <div class="ralign">Inputs (kg)</div>
+      <div class="ralign">Outputs (kg)</div>
+      <div class="ralign">Lumps (kg)</div>
+      <div class="ralign">Shortage (kg)</div>
+      <div class="prod-list-actions"></div>
+    </div>
+
+    <div class="prod-list-row prod-list-card" *ngFor="let v of vouchers" (click)="open(v)">
+      <div class="prod-list-num">{{ v.voucherNumber }}</div>
+      <div>{{ formatDate(v.date) }}</div>
+      <div class="prod-list-desc">{{ v.description || '—' }}</div>
+      <div class="ralign mono">{{ v.totalInputKg | number:'1.2-2' }}</div>
+      <div class="ralign mono">{{ v.totalOutputKg | number:'1.2-2' }}</div>
+      <div class="ralign mono">{{ v.totalByproductKg | number:'1.2-2' }}</div>
+      <div class="ralign mono short">{{ v.shortageKg | number:'1.2-2' }}</div>
+      <div class="prod-list-actions">
+        <button type="button" class="prod-list-icon" title="Edit" (click)="open(v)">✎</button>
+        <button type="button" class="prod-list-icon" title="Delete" (click)="delete(v, $event)">×</button>
+      </div>
+    </div>
+  </div>
+</div>

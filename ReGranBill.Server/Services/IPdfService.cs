@@ -7,6 +7,7 @@ using ReGranBill.Server.DTOs.PurchaseVouchers;
 using ReGranBill.Server.DTOs.PurchaseReturns;
 using ReGranBill.Server.DTOs.SOA;
 using ReGranBill.Server.DTOs.SaleReturns;
+using ReGranBill.Server.DTOs.WashingVouchers;
 
 namespace ReGranBill.Server.Services;
 
@@ -16,6 +17,7 @@ public interface IPdfService
     byte[] GeneratePurchaseVoucherPdf(PurchaseVoucherDto dto);
     byte[] GenerateSaleReturnPdf(SaleReturnDto dto);
     byte[] GeneratePurchaseReturnPdf(PurchaseReturnDto dto);
+    byte[] GenerateWashingVoucherPdf(WashingVoucherDto dto);
     byte[] GenerateStatementOfAccountPdf(StatementOfAccountDto dto);
     byte[] GenerateMasterReportPdf(MasterReportDto dto, IReadOnlyCollection<string>? visibleColumns = null);
     byte[] GenerateAccountClosingReportPdf(AccountClosingReportDto dto);

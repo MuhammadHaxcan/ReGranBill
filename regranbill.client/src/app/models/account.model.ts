@@ -4,6 +4,7 @@ export enum AccountType {
   Expense = 'Expense',
   Account = 'Account',
   Party = 'Party',
+  UnwashedMaterial = 'UnwashedMaterial',
 }
 
 export enum PartyRole {
@@ -33,4 +34,7 @@ export interface Account {
   phone?: string;
   city?: string;
   address?: string;
+
+  // Optional legacy link retained for older UnwashedMaterial records.
+  washedAccountId?: number | null;
 }

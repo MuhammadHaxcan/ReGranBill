@@ -7,6 +7,7 @@ public interface ISaleReturnService
 {
     Task<List<SaleReturnDto>> GetAllAsync();
     Task<SaleReturnDto?> GetByIdAsync(int id);
+    Task<SaleReturnDto?> GetByNumberAsync(string srNumber);
     Task<string> GetNextNumberAsync();
     Task<List<LatestProductRateDto>> GetLatestRatesAsync(IReadOnlyCollection<int> productIds);
     Task<SaleReturnDto> CreateAsync(CreateSaleReturnRequest request, int userId);

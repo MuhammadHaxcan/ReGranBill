@@ -497,6 +497,11 @@
   color: #6b21a8;
 }
 
+.badge-unwashed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .role-tag {
   display: inline-block;
   margin-left: 6px;
@@ -621,7 +626,7 @@
 /* ===== Type Selector Buttons ===== */
 .type-selector {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -734,7 +739,7 @@
   }
 
   .type-selector {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .modal-field-row {

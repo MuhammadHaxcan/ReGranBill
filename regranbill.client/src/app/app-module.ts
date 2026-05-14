@@ -45,6 +45,12 @@ import { PrintPrComponent } from './pages/print-pr/print-pr.component';
 import { PendingComponent } from './pages/pending/pending.component';
 import { RatedVouchersComponent } from './pages/rated-vouchers/rated-vouchers.component';
 import { CustomerLedgerComponent } from './pages/customer-ledger/customer-ledger.component';
+import { ProductionVoucherComponent } from './pages/production-voucher/production-voucher.component';
+import { FormulationsComponent } from './pages/formulations/formulations.component';
+import { WashingVoucherComponent } from './pages/washing-voucher/washing-voucher.component';
+import { PendingProductionsComponent } from './pages/pending-productions/pending-productions.component';
+import { PrintProdComponent } from './pages/print-prod/print-prod.component';
+import { PrintWshComponent } from './pages/print-wsh/print-wsh.component';
 import { PkCurrencyPipe } from './pipes/pk-currency.pipe';
 import { FlexNumberPipe } from './pipes/flex-number.pipe';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
@@ -98,6 +104,12 @@ import { AddAccountModalComponent } from './components/add-account-modal/add-acc
     PendingComponent,
     RatedVouchersComponent,
     CustomerLedgerComponent,
+    ProductionVoucherComponent,
+    FormulationsComponent,
+    WashingVoucherComponent,
+    PendingProductionsComponent,
+    PrintProdComponent,
+    PrintWshComponent,
       ],
   imports: [
     BrowserModule,

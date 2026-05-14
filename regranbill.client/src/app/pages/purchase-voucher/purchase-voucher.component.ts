@@ -75,6 +75,7 @@ export class PurchaseVoucherComponent implements OnInit {
   showAddAccountModal = false;
   addAccountPrefillName = '';
   addAccountDefaultType?: AccountType;
+  addAccountAllowedTypes?: AccountType[];
   addAccountDefaultRole?: PartyRole;
   addAccountDefaultCategoryId?: number;
   private addProductTargetLineIndex = -1;
@@ -103,6 +104,7 @@ export class PurchaseVoucherComponent implements OnInit {
   onAddVendorClicked(prefillName: string): void {
     this.addAccountPrefillName = prefillName;
     this.addAccountDefaultType = AccountType.Party;
+    this.addAccountAllowedTypes = undefined;
     this.addAccountDefaultRole = PartyRole.Vendor;
     this.addAccountDefaultCategoryId = undefined;
     this.addProductTargetLineIndex = -1;
@@ -112,6 +114,11 @@ export class PurchaseVoucherComponent implements OnInit {
   onAddProductClicked(lineIndex: number, prefillName: string): void {
     this.addAccountPrefillName = prefillName;
     this.addAccountDefaultType = AccountType.Product;
+    this.addAccountAllowedTypes = [
+      AccountType.Product,
+      AccountType.RawMaterial,
+      AccountType.UnwashedMaterial
+    ];
     this.addAccountDefaultRole = undefined;
     this.addAccountDefaultCategoryId = this.lineCategoryIds[lineIndex] ?? undefined;
     this.addProductTargetLineIndex = lineIndex;
@@ -120,11 +127,13 @@ export class PurchaseVoucherComponent implements OnInit {
 
   onAddAccountModalClosed(): void {
     this.showAddAccountModal = false;
+    this.addAccountAllowedTypes = undefined;
     this.addProductTargetLineIndex = -1;
   }
 
   onNewAccountCreated(account: Account): void {
     this.showAddAccountModal = false;
+    this.addAccountAllowedTypes = undefined;
 
     if (this.addProductTargetLineIndex >= 0) {
       this.products = [...this.products, account];
@@ -481,7 +490,7 @@ export class PurchaseVoucherComponent implements OnInit {
         if (isEdit) {
           this.toast.success('Purchase voucher updated successfully.');
           if (openPdf) {
-            this.purchaseService.openPdfInNewTab(voucher.id);
+            this.purchaseService.openPdfInNewTab(voucher.id, voucher.voucherNumber);
           }
           this.router.navigate(['/pending']);
           return;
@@ -489,7 +498,7 @@ export class PurchaseVoucherComponent implements OnInit {
 
         this.toast.success(`${voucher.voucherNumber} created successfully.`);
         if (openPdf) {
-          this.purchaseService.openPdfInNewTab(voucher.id);
+          this.purchaseService.openPdfInNewTab(voucher.id, voucher.voucherNumber);
         }
         this.resetForm();
       },

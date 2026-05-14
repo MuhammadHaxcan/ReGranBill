@@ -1,0 +1,506 @@
+/* ───────────────────────────────────────────────────────────
+   PRODUCTION VOUCHER — Component styles
+   All button / section-header classes are prefixed pv-btn- or
+   prod-sec- so they do NOT clash with global .btn* overrides.
+   ─────────────────────────────────────────────────────────── */
+
+/* Page wrapper */
+.prod-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prod-loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ── Top header card ─────────────────────────────────────── */
+.prod-header {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--card-shadow);
+}
+
+.prod-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.prod-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.prod-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.prod-voucher-num {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'SF Mono', Menlo, monospace;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  white-space: nowrap;
+}
+
+.prod-header-fields {
+  display: grid;
+  grid-template-columns: 200px 200px 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.prod-recipe-strip {
+  display: grid;
+  grid-template-columns: 1fr 180px auto;
+  gap: 12px;
+  align-items: end;
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+}
+
+.prod-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.prod-field-wide { flex: 1; }
+.prod-field-action { align-self: flex-end; }
+
+.prod-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Mass balance ribbon ─────────────────────────────────── */
+.prod-balance {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid;
+  font-family: 'SF Mono', Menlo, 'Courier New', monospace;
+  flex-wrap: wrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.prod-balance.balanced {
+  background: var(--success-light);
+  border-color: var(--success-border);
+  color: #065f46;
+}
+
+.prod-balance.near {
+  background: var(--warning-light);
+  border-color: var(--warning-border);
+  color: #92400e;
+}
+
+.prod-balance.off {
+  background: var(--danger-light);
+  border-color: var(--danger-border);
+  color: #991b1b;
+}
+
+.prod-balance-cell {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.prod-balance-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+}
+
+.prod-balance-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.prod-balance-rhs .prod-balance-value {
+  font-size: 18px;
+}
+
+.prod-balance-sep {
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.45;
+}
+
+.prod-balance-status { margin-left: auto; }
+
+.prod-balance-tag {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.02em;
+}
+
+/* ── Section cards ───────────────────────────────────────── */
+.prod-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+/* Section header — dark, like DC / PV but NOT using .card-header
+   so global overrides don't interfere */
+.prod-sec-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  background: var(--slate-900);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.prod-sec-hd-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prod-sec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.input-hd     .prod-sec-dot { background: #60a5fa; }
+.output-hd    .prod-sec-dot { background: #4ade80; }
+.byproduct-hd .prod-sec-dot { background: #fbbf24; }
+.shortage-hd  .prod-sec-dot { background: #f87171; }
+
+.prod-sec-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.prod-sec-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Form controls — same local rules as DC / PV ────────────
+   Angular scopes component styles so these override the global
+   min-height:42px that otherwise inflates table row inputs.   */
+.form-control {
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  color: var(--text-primary);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  font-family: inherit;
+  width: 100%;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-muted);
+}
+
+/* Compact variant used inside table cells */
+.form-control-sm {
+  padding: 7px 10px;
+  font-size: 13px;
+  text-align: center;
+  width: 100%;
+}
+
+/* Lines table — mirrors DC/PV exactly ─────────────────── */
+.prod-table-wrapper {
+  overflow-x: auto;
+}
+
+.prod-lines-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.prod-lines-table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--slate-50);
+  white-space: nowrap;
+}
+
+.prod-lines-table tbody td {
+  padding: 11px 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13.5px;
+}
+
+.prod-lines-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.prod-lines-table tbody tr {
+  transition: background 0.1s var(--ease);
+}
+
+.prod-lines-table tbody tr:hover td {
+  background: var(--slate-50);
+}
+
+/* Column widths */
+.col-num          { width: 40px;  text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 500; }
+.col-account      { width: 220px; min-width: 180px; }
+.col-account-wide { min-width: 200px; }
+.col-desc         { min-width: 200px; }
+.col-bags         { width: 90px;  min-width: 80px;  text-align: right; }
+.col-kg           { width: 110px; min-width: 90px;  text-align: right; }
+.col-act          { width: 44px;  text-align: center; }
+
+.prod-lines-table th.col-bags,
+.prod-lines-table th.col-kg { text-align: right; }
+
+/* Override text-align for specific column types — same approach as DC/PV */
+.prod-desc-input { text-align: left; }
+.prod-num-input  { text-align: right; }
+
+/* Remove button — identical to DC */
+.btn-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--danger-border);
+  background: var(--danger-light);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  padding: 0;
+}
+
+.btn-remove:hover {
+  background: #fecaca;
+  border-color: var(--danger);
+}
+
+/* Section totals strip */
+.prod-sec-totals {
+  display: flex;
+  justify-content: flex-end;
+  gap: 28px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--slate-50);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.prod-sec-totals b {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.prod-sec-empty {
+  padding: 24px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Shortage row ─────────────────────────────────────────── */
+.prod-shortage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 16px;
+  align-items: end;
+  padding: 16px 20px 12px;
+}
+
+.prod-shortage-hint {
+  padding: 0 20px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.prod-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  margin-top: 4px;
+}
+
+/* ── Button system — fully self-contained, no .btn prefix ──
+   pv-btn = production-voucher button base
+   Styled to match the rest of the app but without fighting globals */
+
+.pv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  white-space: nowrap;
+  padding: 8px 18px;
+  border: 1.5px solid transparent;
+  line-height: 1.4;
+}
+
+/* Primary — filled indigo, same as .btn-primary in PV */
+.pv-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  padding: 10px 26px;
+}
+
+.pv-btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.28);
+}
+
+.pv-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Outline — white bg, gray border, dark text */
+.pv-btn-outline {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.pv-btn-outline:hover {
+  background: var(--slate-50);
+  border-color: var(--slate-300);
+}
+
+/* Outline-primary — indigo border + text, transparent bg */
+.pv-btn-outline-primary {
+  background: transparent;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pv-btn-outline-primary:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+.pv-btn-outline-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Ghost — for dark headers: semi-transparent white */
+.pv-btn-ghost {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  padding: 6px 14px;
+}
+
+.pv-btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.pv-btn-ghost:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* kbd inside ghost button (Alt+N hint) */
+.pv-btn-ghost kbd {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: inherit;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 1px 5px;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .prod-header-fields { grid-template-columns: 1fr; }
+  .prod-recipe-strip  { grid-template-columns: 1fr; }
+  .prod-balance { gap: 10px; padding: 10px 14px; }
+  .prod-balance-sep { display: none; }
+}

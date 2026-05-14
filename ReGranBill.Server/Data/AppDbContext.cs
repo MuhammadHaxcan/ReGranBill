@@ -22,6 +22,8 @@ public class AppDbContext : DbContext
     public DbSet<JournalVoucherReference> JournalVoucherReferences => Set<JournalVoucherReference>();
     public DbSet<VoucherCounter> VoucherCounters => Set<VoucherCounter>();
     public DbSet<VehicleOption> VehicleOptions => Set<VehicleOption>();
+    public DbSet<Formulation> Formulations => Set<Formulation>();
+    public DbSet<FormulationLine> FormulationLines => Set<FormulationLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -78,6 +80,7 @@ public class AppDbContext : DbContext
             e.Property(a => a.AccountType).HasMaxLength(20)
                 .HasConversion(v => v.ToString(), v => Enum.Parse<AccountType>(v));
             e.HasOne(a => a.Category).WithMany(c => c.Accounts).HasForeignKey(a => a.CategoryId);
+            e.HasOne(a => a.WashedAccount).WithMany().HasForeignKey(a => a.WashedAccountId).OnDelete(DeleteBehavior.Restrict);
         });
 
         // ProductDetail (1:1)
@@ -140,9 +143,39 @@ public class AppDbContext : DbContext
             e.Property(je => je.Rbp).HasMaxLength(5);
             e.Property(je => je.Rate).HasColumnType("decimal(12,2)");
             e.Property(je => je.IsEdited).HasDefaultValue(false);
+            e.Property(je => je.LineKind).HasMaxLength(20)
+                .HasConversion(v => v == null ? null : v.Value.ToString(), v => v == null ? null : Enum.Parse<ProductionLineKind>(v));
             e.HasOne(je => je.JournalVoucher).WithMany(j => j.Entries).HasForeignKey(je => je.VoucherId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(je => je.Account).WithMany().HasForeignKey(je => je.AccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(je => je.VendorAccount).WithMany().HasForeignKey(je => je.VendorAccountId).OnDelete(DeleteBehavior.Restrict);
             e.HasQueryFilter(je => !je.JournalVoucher.IsDeleted);
+        });
+
+        // Formulation
+        modelBuilder.Entity<Formulation>(e =>
+        {
+            e.ToTable("formulations");
+            e.HasIndex(f => f.Name).IsUnique();
+            e.Property(f => f.Name).HasMaxLength(120);
+            e.Property(f => f.Description).HasMaxLength(500);
+            e.Property(f => f.BaseInputKg).HasColumnType("decimal(10,2)").HasDefaultValue(100m);
+            e.Property(f => f.IsActive).HasDefaultValue(true);
+            e.Property(f => f.IsDeleted).HasDefaultValue(false);
+            e.HasOne(f => f.Creator).WithMany().HasForeignKey(f => f.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(f => !f.IsDeleted);
+        });
+
+        // FormulationLine
+        modelBuilder.Entity<FormulationLine>(e =>
+        {
+            e.ToTable("formulation_lines");
+            e.Property(fl => fl.LineKind).HasMaxLength(20)
+                .HasConversion(v => v.ToString(), v => Enum.Parse<ProductionLineKind>(v));
+            e.Property(fl => fl.AmountPerBase).HasColumnType("decimal(10,2)");
+            e.Property(fl => fl.BagsPerBase).HasColumnType("decimal(8,2)");
+            e.HasOne(fl => fl.Formulation).WithMany(f => f.Lines).HasForeignKey(fl => fl.FormulationId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(fl => fl.Account).WithMany().HasForeignKey(fl => fl.AccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(fl => !fl.Formulation.IsDeleted);
         });
 
         // JournalVoucherReference

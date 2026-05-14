@@ -402,7 +402,7 @@ export class SaleReturnComponent implements OnInit {
         if (isEdit) {
           this.toast.success('Sale return updated successfully.');
           if (openPdf) {
-            this.saleReturnService.openPdfInNewTab(saleReturn.id);
+            this.saleReturnService.openPdfInNewTab(saleReturn.id, saleReturn.srNumber);
           }
           this.router.navigate(['/pending']);
           return;
@@ -410,7 +410,7 @@ export class SaleReturnComponent implements OnInit {
 
         this.toast.success(`${saleReturn.srNumber} created successfully.`);
         if (openPdf) {
-          this.saleReturnService.openPdfInNewTab(saleReturn.id);
+          this.saleReturnService.openPdfInNewTab(saleReturn.id, saleReturn.srNumber);
         }
         this.resetForm();
       },

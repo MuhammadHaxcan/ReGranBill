@@ -14,10 +14,20 @@ public class VoucherEditorService : IVoucherEditorService
 
     public VoucherEditorService(AppDbContext db) => _db = db;
 
+    private static void RejectUnsupportedVoucherType(VoucherType voucherType)
+    {
+        if (voucherType == VoucherType.ProductionVoucher)
+            throw new RequestValidationException("Production vouchers can only be edited from the Production Voucher page.");
+        if (voucherType == VoucherType.WashingVoucher)
+            throw new RequestValidationException("Washing vouchers are auto-generated and cannot be edited here. Soft-delete and recreate if a correction is needed.");
+    }
+
     public async Task<VoucherLedgerDto?> FindByTypeAndNumberAsync(string voucherType, string voucherNumber)
     {
         if (!TryParseVoucherType(voucherType, out var parsedType))
             throw new RequestValidationException("Invalid voucher type.");
+
+        RejectUnsupportedVoucherType(parsedType);
 
         var number = voucherNumber?.Trim();
         if (string.IsNullOrWhiteSpace(number))
@@ -48,6 +58,8 @@ public class VoucherEditorService : IVoucherEditorService
     {
         if (!TryParseVoucherType(request.VoucherType, out var voucherType))
             throw new RequestValidationException("Invalid voucher type.");
+
+        RejectUnsupportedVoucherType(voucherType);
 
         var voucherNumber = request.VoucherNumber?.Trim();
         if (string.IsNullOrWhiteSpace(voucherNumber))

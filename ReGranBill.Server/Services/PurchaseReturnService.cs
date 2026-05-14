@@ -35,13 +35,14 @@ public class PurchaseReturnService : IPurchaseReturnService
 
     public async Task<PurchaseReturnDto?> GetByIdAsync(int id)
     {
-        var prJv = await _db.JournalVouchers
-            .Where(j => j.Id == id && j.VoucherType == VoucherType.PurchaseReturnVoucher)
-            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
-            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
-            .FirstOrDefaultAsync();
+        return await GetVoucherAsync(j => j.Id == id);
+    }
 
-        return prJv == null ? null : MapToDto(prJv);
+    public async Task<PurchaseReturnDto?> GetByNumberAsync(string prNumber)
+    {
+        var normalized = prNumber?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized)) return null;
+        return await GetVoucherAsync(j => j.VoucherNumber == normalized);
     }
 
     public Task<string> GetNextNumberAsync() =>
@@ -413,4 +414,16 @@ public class PurchaseReturnService : IPurchaseReturnService
     private sealed record ValidatedPurchaseReturnRequest(
         IReadOnlyDictionary<int, Account> ProductAccounts,
         Account PartyAccount);
+
+    private async Task<PurchaseReturnDto?> GetVoucherAsync(System.Linq.Expressions.Expression<Func<JournalVoucher, bool>> predicate)
+    {
+        var prJv = await _db.JournalVouchers
+            .Where(j => j.VoucherType == VoucherType.PurchaseReturnVoucher)
+            .Where(predicate)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
+            .FirstOrDefaultAsync();
+
+        return prJv == null ? null : MapToDto(prJv);
+    }
 }

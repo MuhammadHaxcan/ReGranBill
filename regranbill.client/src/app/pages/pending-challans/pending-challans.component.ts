@@ -93,7 +93,7 @@ export class PendingChallansComponent implements OnInit {
   }
 
   printChallan(dc: DeliveryChallanViewModel): void {
-    this.dcService.openPdfInNewTab(dc.id);
+    this.dcService.openPdfInNewTab(dc.id, dc.dcNumber);
   }
 
   async deleteChallan(dc: DeliveryChallanViewModel): Promise<void> {

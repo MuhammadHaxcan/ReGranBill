@@ -1,3 +1,12 @@
+<div class="pdf-viewer-toolbar" *ngIf="!error && pdfUrl">
+  <div class="pdf-viewer-name" [title]="fileName">{{ fileName || 'document.pdf' }}</div>
+  <a *ngIf="downloadUrl"
+     class="pdf-viewer-download"
+     [href]="downloadUrl"
+     [attr.download]="fileName || 'document.pdf'">
+    Download PDF
+  </a>
+</div>
 <div class="pdf-viewer-shell" *ngIf="!error && pdfUrl">
   <iframe [src]="pdfUrl" class="pdf-viewer-frame" (load)="onIframeLoad()"></iframe>
 </div>

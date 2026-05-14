@@ -1,0 +1,277 @@
+<div class="prod-page">
+
+  <!-- Page header (always visible) -->
+  <div class="prod-header">
+    <div class="prod-header-row">
+      <div>
+        <div class="prod-eyebrow">Production</div>
+        <h1 class="prod-title">Formulations</h1>
+      </div>
+      <button type="button" class="pv-btn pv-btn-primary" *ngIf="!showEditor" (click)="startNew()">
+        + New Formulation
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="prod-loading">Loading…</div>
+
+  <!-- LIST VIEW -->
+  <div *ngIf="!loading && !showEditor">
+    <div *ngIf="formulations.length === 0" class="form-empty">
+      No formulations yet. Click "New Formulation" to define one.
+    </div>
+
+    <div class="form-card-grid" *ngIf="formulations.length > 0">
+      <div class="form-card" *ngFor="let f of formulations" (click)="edit(f)">
+        <div class="form-card-head">
+          <span class="form-card-name">{{ f.name }}</span>
+          <span class="form-card-tag" [class.inactive]="!f.isActive">
+            {{ f.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+        <div class="form-card-desc" *ngIf="f.description">{{ f.description }}</div>
+        <div class="form-card-meta">
+          <span class="form-card-base">Base {{ f.baseInputKg }} kg</span>
+          <span class="form-card-sep">·</span>
+          <span>{{ f.lines.length }} lines</span>
+          <span class="form-card-sep">·</span>
+          <span>{{ f.updatedAt | date:'mediumDate' }}</span>
+        </div>
+        <div class="form-card-actions">
+          <button type="button" class="form-icon-btn" (click)="$event.stopPropagation(); edit(f)" title="Edit">✎</button>
+          <button type="button" class="form-icon-btn form-icon-btn-danger" (click)="$event.stopPropagation(); deleteFormulation(f)" title="Delete">×</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <ng-container *ngIf="!loading && showEditor">
+    <!-- Top header -->
+    <div class="prod-header">
+      <div class="prod-header-fields form-editor-header">
+        <div class="prod-field prod-field-wide">
+          <label class="prod-label">Formulation name</label>
+          <input type="text" class="form-control" [(ngModel)]="name" placeholder="e.g. PP White Granule" />
+        </div>
+        <div class="prod-field">
+          <label class="prod-label">Base input (kg)</label>
+          <input type="number" min="0.01" step="0.01" class="form-control" [(ngModel)]="baseInputKg" />
+        </div>
+        <div class="prod-field">
+          <label class="prod-label">Status</label>
+          <select class="form-control" [(ngModel)]="isActive">
+            <option [ngValue]="true">Active</option>
+            <option [ngValue]="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="prod-header-fields">
+        <div class="prod-field prod-field-wide">
+          <label class="prod-label">Description (optional)</label>
+          <input type="text" class="form-control" [(ngModel)]="description" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Balance ribbon -->
+    <div class="prod-balance"
+         [class.balanced]="inputsBalanced && outputsBalanced"
+         [class.off]="!inputsBalanced || !outputsBalanced">
+      <div class="prod-balance-cell">
+        <span class="prod-balance-label">INPUTS</span>
+        <span class="prod-balance-value">{{ inputTotal }} / {{ base }} kg</span>
+      </div>
+      <span class="prod-balance-sep">·</span>
+      <div class="prod-balance-cell">
+        <span class="prod-balance-label">OUT + BY + SHORT</span>
+        <span class="prod-balance-value">{{ outputTotal }} / {{ base }} kg</span>
+      </div>
+      <div class="prod-balance-status">
+        <span *ngIf="inputsBalanced && outputsBalanced" class="prod-balance-tag balanced">✓ Both sides balance</span>
+        <span *ngIf="!(inputsBalanced && outputsBalanced)" class="prod-balance-tag off">✗ Both totals must equal {{ base }}</span>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="prod-section">
+      <div class="prod-sec-hd input-hd">
+        <div class="prod-sec-hd-left">
+          <span class="prod-sec-dot"></span>
+          <span class="prod-sec-title">Inputs · Raw materials</span>
+          <span class="prod-sec-count">{{ inputs.length }}</span>
+        </div>
+        <button type="button" class="pv-btn pv-btn-ghost" (click)="addInput()">+ Add Input</button>
+      </div>
+      <div class="prod-table-wrapper">
+        <table class="prod-lines-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-account-wide">Account</th>
+              <th class="col-kg">Amount per {{ base }} kg</th>
+              <th class="col-kg">Bags per {{ base }} kg (optional)</th>
+              <th class="col-act"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of inputs; let i = index">
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-account-wide">
+                <app-searchable-select [options]="inputAccountOptions" [compact]="true"
+                  [(ngModel)]="l.accountId" placeholder="Pick raw material…">
+                </app-searchable-select>
+              </td>
+              <td class="col-kg">
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                       [(ngModel)]="l.amountPerBase" />
+              </td>
+              <td class="col-kg">
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                       [(ngModel)]="l.bagsPerBase" />
+              </td>
+              <td class="col-act">
+                <button type="button" class="btn-remove" (click)="removeLine(inputs, i)" title="Remove row">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Outputs -->
+    <div class="prod-section">
+      <div class="prod-sec-hd output-hd">
+        <div class="prod-sec-hd-left">
+          <span class="prod-sec-dot"></span>
+          <span class="prod-sec-title">Outputs · Finished goods</span>
+          <span class="prod-sec-count">{{ outputs.length }}</span>
+        </div>
+        <button type="button" class="pv-btn pv-btn-ghost" (click)="addOutput()">+ Add Output</button>
+      </div>
+      <div class="prod-table-wrapper">
+        <table class="prod-lines-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-account-wide">Account</th>
+              <th class="col-kg">Amount per {{ base }} kg</th>
+              <th class="col-kg">Bags per {{ base }} kg (optional)</th>
+              <th class="col-act"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of outputs; let i = index">
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-account-wide">
+                <app-searchable-select [options]="outputAccountOptions" [compact]="true"
+                  [(ngModel)]="l.accountId" placeholder="Pick output product…">
+                </app-searchable-select>
+              </td>
+              <td class="col-kg">
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                       [(ngModel)]="l.amountPerBase" />
+              </td>
+              <td class="col-kg">
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                       [(ngModel)]="l.bagsPerBase" />
+              </td>
+              <td class="col-act">
+                <button type="button" class="btn-remove" (click)="removeLine(outputs, i)" title="Remove row">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Byproducts -->
+    <div class="prod-section">
+      <div class="prod-sec-hd byproduct-hd">
+        <div class="prod-sec-hd-left">
+          <span class="prod-sec-dot"></span>
+          <span class="prod-sec-title">Byproducts · Lumps / recoverables</span>
+          <span class="prod-sec-count">{{ byproducts.length }}</span>
+        </div>
+        <button type="button" class="pv-btn pv-btn-ghost" (click)="addByproduct()">+ Add Byproduct</button>
+      </div>
+      <div class="prod-table-wrapper" *ngIf="byproducts.length > 0">
+        <table class="prod-lines-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-account-wide">Account</th>
+              <th class="col-kg">Amount per {{ base }} kg</th>
+              <th class="col-kg">Bags per {{ base }} kg (optional)</th>
+              <th class="col-act"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of byproducts; let i = index">
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-account-wide">
+                <app-searchable-select [options]="outputAccountOptions" [compact]="true"
+                  [(ngModel)]="l.accountId" placeholder="Pick byproduct…">
+                </app-searchable-select>
+              </td>
+              <td class="col-kg">
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                       [(ngModel)]="l.amountPerBase" />
+              </td>
+              <td class="col-kg">
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                       [(ngModel)]="l.bagsPerBase" />
+              </td>
+              <td class="col-act">
+                <button type="button" class="btn-remove" (click)="removeLine(byproducts, i)" title="Remove row">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prod-sec-empty" *ngIf="byproducts.length === 0">
+        No byproducts configured. Click <strong>+ Add Byproduct</strong> to add lumps or recoverables.
+      </div>
+    </div>
+
+    <!-- Shortage -->
+    <div class="prod-section">
+      <div class="prod-sec-hd shortage-hd">
+        <div class="prod-sec-hd-left">
+          <span class="prod-sec-dot"></span>
+          <span class="prod-sec-title">Shortage · Loss / scrap</span>
+        </div>
+        <button *ngIf="!shortage" class="pv-btn pv-btn-ghost" (click)="enableShortage()">+ Add Shortage</button>
+        <button *ngIf="shortage" class="pv-btn pv-btn-ghost" (click)="removeShortage()">Remove</button>
+      </div>
+      <div class="form-shortage-row" *ngIf="shortage">
+        <div class="prod-field">
+          <label class="prod-label">Production loss account</label>
+          <app-searchable-select [options]="expenseAccountOptions"
+            [(ngModel)]="shortage.accountId"
+            placeholder="Pick a Production Loss expense account…">
+          </app-searchable-select>
+        </div>
+        <div class="prod-field">
+          <label class="prod-label">Amount per {{ base }} kg</label>
+          <input type="number" min="0" step="0.01" class="form-control prod-num-input" [(ngModel)]="shortage.amountPerBase" />
+        </div>
+      </div>
+      <div class="prod-sec-empty" *ngIf="!shortage">No shortage configured.</div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="prod-footer">
+      <button type="button" class="pv-btn pv-btn-outline" (click)="cancelEdit()">Cancel</button>
+      <button type="button" class="pv-btn pv-btn-primary" [disabled]="!canSave" (click)="save()">
+        {{ saving ? 'Saving…' : (editingId ? 'Update Formulation' : 'Save Formulation') }}
+      </button>
+    </footer>
+  </ng-container>
+</div>

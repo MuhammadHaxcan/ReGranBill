@@ -45,6 +45,7 @@
                 <svg *ngSwitchCase="'Expense'" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v8M7.5 8.5h5a1.5 1.5 0 010 3H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                 <svg *ngSwitchCase="'Account'" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 9h16" stroke="currentColor" stroke-width="1.5"/></svg>
                 <svg *ngSwitchCase="'Party'" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="7" r="3" stroke="currentColor" stroke-width="1.3" stroke-dasharray="2 1.5"/><path d="M1 17a6 6 0 0112 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <svg *ngSwitchCase="'UnwashedMaterial'" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 15c2-1 3 1 5 0s3-1 5 0 4-1 4-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 10c2-1 3 1 5 0s3-1 5 0 4-1 4-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 5c2-1 3 1 5 0s3-1 5 0 4-1 4-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               </ng-container>
             </span>
             {{ t }}
@@ -66,6 +67,20 @@
               <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctPackingWeight" min="0" />
             </div>
           </div>
+        </ng-container>
+
+        <ng-container *ngIf="acctType === 'UnwashedMaterial'">
+          <div class="modal-field-row">
+            <div class="modal-field">
+              <label class="field-label">Packing</label>
+              <input type="text" class="form-control" placeholder="e.g. 50kg / Bag" [(ngModel)]="acctPacking" />
+            </div>
+            <div class="modal-field">
+              <label class="field-label">Weight Per Pack (kg)</label>
+              <input type="number" class="form-control" placeholder="0" [(ngModel)]="acctPackingWeight" min="0" />
+            </div>
+          </div>
+          <p class="type-hint">Unwashed material stands on its own. Choose the washed output molds later when creating the washing voucher.</p>
         </ng-container>
 
         <ng-container *ngIf="acctType === 'Expense'">

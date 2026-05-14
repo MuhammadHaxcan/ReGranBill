@@ -2,6 +2,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReGranBill.Server.Authorization;
+using ReGranBill.Server.Helpers;
 using ReGranBill.Server.DTOs.PurchaseVouchers;
 using ReGranBill.Server.Services;
 
@@ -79,7 +80,17 @@ public class PurchaseVouchersController : ControllerBase
         if (voucher == null) return NotFound();
 
         var pdfBytes = _pdfService.GeneratePurchaseVoucherPdf(voucher);
-        return File(pdfBytes, "application/pdf", $"PurchaseVoucher-{voucher.VoucherNumber}.pdf");
+        return File(pdfBytes, "application/pdf", PdfFileNameHelper.BuildVoucherFileName(voucher.VendorName, voucher.VoucherNumber, voucher.Date));
+    }
+
+    [HttpGet("by-number/{voucherNumber}/pdf")]
+    public async Task<IActionResult> GetPdfByNumber(string voucherNumber)
+    {
+        var voucher = await _purchaseService.GetByNumberAsync(voucherNumber);
+        if (voucher == null) return NotFound();
+
+        var pdfBytes = _pdfService.GeneratePurchaseVoucherPdf(voucher);
+        return File(pdfBytes, "application/pdf", PdfFileNameHelper.BuildVoucherFileName(voucher.VendorName, voucher.VoucherNumber, voucher.Date));
     }
 
     [HttpPatch("{id}/rates")]

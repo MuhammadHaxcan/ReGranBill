@@ -9,5 +9,7 @@ public enum VoucherType
     PaymentVoucher,
     CartageVoucher,
     SaleReturnVoucher,
-    PurchaseReturnVoucher
+    PurchaseReturnVoucher,
+    ProductionVoucher,
+    WashingVoucher
 }

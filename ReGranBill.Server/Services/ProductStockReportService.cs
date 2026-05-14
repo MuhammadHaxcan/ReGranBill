@@ -34,7 +34,9 @@ public class ProductStockReportService : IProductStockReportService
 
         var entryQuery = _db.JournalEntries
             .AsNoTracking()
-            .Where(e => e.Account.AccountType == AccountType.Product || e.Account.AccountType == AccountType.RawMaterial)
+            .Where(e => e.Account.AccountType == AccountType.Product
+                     || e.Account.AccountType == AccountType.RawMaterial
+                     || e.Account.AccountType == AccountType.UnwashedMaterial)
             .Where(e => e.JournalVoucher.RatesAdded);
 
         if (toDate.HasValue)
@@ -66,7 +68,8 @@ public class ProductStockReportService : IProductStockReportService
                 ActualWeightKg = e.ActualWeightKg,
                 Rbp = e.Rbp,
                 Rate = e.Rate,
-                IsEdited = e.IsEdited
+                IsEdited = e.IsEdited,
+                LineKind = e.LineKind
             })
             .OrderBy(e => e.Date)
             .ThenBy(e => e.VoucherId)
@@ -220,6 +223,18 @@ public class ProductStockReportService : IProductStockReportService
 
     private static string ResolveDirection(ProductStockSeed entry, ISet<string> anomalyCodes)
     {
+        if (entry.LineKind is { } kind)
+        {
+            return kind switch
+            {
+                ProductionLineKind.Input => OutwardDirection,
+                ProductionLineKind.Output => InwardDirection,
+                ProductionLineKind.Byproduct => InwardDirection,
+                ProductionLineKind.Shortage => OutwardDirection,
+                _ => InvalidDirection
+            };
+        }
+
         var hasDebit = entry.Debit > 0m;
         var hasCredit = entry.Credit > 0m;
 
@@ -398,6 +413,7 @@ public class ProductStockReportService : IProductStockReportService
         public string? Rbp { get; set; }
         public decimal? Rate { get; set; }
         public bool IsEdited { get; set; }
+        public ProductionLineKind? LineKind { get; set; }
     }
 
     private sealed class ProductAccumulator

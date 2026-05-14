@@ -117,10 +117,8 @@ export class PurchaseReturnService {
     return this.http.get(`${this.url}/${id}/pdf`, { responseType: 'blob' });
   }
 
-  openPdfInNewTab(id: number): void {
-    this.getPdf(id).subscribe(blob => {
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    });
+  openPdfInNewTab(id: number, prNumber?: string | null): void {
+    const key = prNumber?.trim() || id.toString();
+    window.open(`/print-pr/${encodeURIComponent(key)}`, '_blank');
   }
 }

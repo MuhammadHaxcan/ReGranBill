@@ -43,20 +43,14 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 
     public async Task<PurchaseVoucherDto?> GetByIdAsync(int id)
     {
-        var purchaseJv = await _db.JournalVouchers
-            .Where(j => j.Id == id && j.VoucherType == VoucherType.PurchaseVoucher)
-            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
-            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
-            .FirstOrDefaultAsync();
+        return await GetVoucherAsync(j => j.Id == id);
+    }
 
-        if (purchaseJv == null) return null;
-
-        var cartageRef = await _db.JournalVoucherReferences
-            .Where(r => r.MainVoucherId == purchaseJv.Id)
-            .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
-            .FirstOrDefaultAsync();
-
-        return MapToDto(purchaseJv, cartageRef?.ReferenceVoucher);
+    public async Task<PurchaseVoucherDto?> GetByNumberAsync(string voucherNumber)
+    {
+        var normalized = voucherNumber?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized)) return null;
+        return await GetVoucherAsync(j => j.VoucherNumber == normalized);
     }
 
     public Task<string> GetNextNumberAsync() =>
@@ -452,7 +446,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         {
             if (!accountsById.TryGetValue(productId, out var productAccount)
                 || !IsInventoryAccount(productAccount)
-                || productAccount.ProductDetail == null)
+                || !HasValidPurchaseInventorySetup(productAccount))
             {
                 throw new RequestValidationException("One or more selected inventory items are invalid.");
             }
@@ -477,6 +471,9 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 
     private static bool IsInventoryAccount(Account account) =>
         VoucherHelpers.IsInventoryAccount(account);
+
+    private static bool HasValidPurchaseInventorySetup(Account account) =>
+        account.AccountType == AccountType.UnwashedMaterial || account.ProductDetail != null;
 
     private static decimal CalculatePurchaseLineAmount(decimal totalWeightKg, decimal rate) =>
         VoucherHelpers.Round2(totalWeightKg * rate);
@@ -566,4 +563,23 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         IReadOnlyDictionary<int, Account> ProductAccounts,
         Account VendorAccount,
         Account? TransporterAccount);
+
+    private async Task<PurchaseVoucherDto?> GetVoucherAsync(System.Linq.Expressions.Expression<Func<JournalVoucher, bool>> predicate)
+    {
+        var purchaseJv = await _db.JournalVouchers
+            .Where(j => j.VoucherType == VoucherType.PurchaseVoucher)
+            .Where(predicate)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
+            .FirstOrDefaultAsync();
+
+        if (purchaseJv == null) return null;
+
+        var cartageRef = await _db.JournalVoucherReferences
+            .Where(r => r.MainVoucherId == purchaseJv.Id)
+            .Include(r => r.ReferenceVoucher).ThenInclude(v => v.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
+            .FirstOrDefaultAsync();
+
+        return MapToDto(purchaseJv, cartageRef?.ReferenceVoucher);
+    }
 }

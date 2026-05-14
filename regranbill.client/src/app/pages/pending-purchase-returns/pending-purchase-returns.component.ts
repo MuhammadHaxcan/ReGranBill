@@ -84,7 +84,7 @@ export class PendingPurchaseReturnsComponent implements OnInit {
   }
 
   printPurchaseReturn(pr: PurchaseReturnViewModel): void {
-    this.purchaseReturnService.openPdfInNewTab(pr.id);
+    this.purchaseReturnService.openPdfInNewTab(pr.id, pr.prNumber);
   }
 
   async deletePurchaseReturn(pr: PurchaseReturnViewModel): Promise<void> {

@@ -408,6 +408,14 @@
   background: #dc2626;
 }
 
+.vtype-productionvoucher {
+  background: #0f766e;
+}
+
+.vtype-washingvoucher {
+  background: #2563eb;
+}
+
 .voucher-link {
   text-decoration: none;
   cursor: pointer;

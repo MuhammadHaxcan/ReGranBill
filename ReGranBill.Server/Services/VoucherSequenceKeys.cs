@@ -10,4 +10,6 @@ public static class VoucherSequenceKeys
     public const string CartageVoucher = "CV";
     public const string SaleReturn = "SR";
     public const string PurchaseReturn = "PR";
+    public const string ProductionVoucher = "PRD";
+    public const string WashingVoucher = "WSH";
 }

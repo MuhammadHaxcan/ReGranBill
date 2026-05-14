@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.DeliveryChallans;
+using ReGranBill.Server.Helpers;
 using ReGranBill.Server.Services;
 
 namespace ReGranBill.Server.Controllers;
@@ -79,7 +80,17 @@ public class DeliveryChallansController : ControllerBase
         if (dc == null) return NotFound();
 
         var pdfBytes = _pdfService.GenerateDeliveryChallanPdf(dc);
-        return File(pdfBytes, "application/pdf", $"GatePass-{dc.DcNumber}.pdf");
+        return File(pdfBytes, "application/pdf", PdfFileNameHelper.BuildVoucherFileName(dc.CustomerName, dc.DcNumber, dc.Date));
+    }
+
+    [HttpGet("by-number/{dcNumber}/pdf")]
+    public async Task<IActionResult> GetPdfByNumber(string dcNumber)
+    {
+        var dc = await _dcService.GetByNumberAsync(dcNumber);
+        if (dc == null) return NotFound();
+
+        var pdfBytes = _pdfService.GenerateDeliveryChallanPdf(dc);
+        return File(pdfBytes, "application/pdf", PdfFileNameHelper.BuildVoucherFileName(dc.CustomerName, dc.DcNumber, dc.Date));
     }
 
     [HttpPatch("{id}/rates")]

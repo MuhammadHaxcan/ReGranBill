@@ -185,10 +185,10 @@ export class PendingComponent implements OnInit {
 
   print(row: PendingRow): void {
     switch (row.type) {
-      case 'dc': this.dcService.openPdfInNewTab(row.id); break;
-      case 'sr': this.srService.openPdfInNewTab(row.id); break;
-      case 'pv': this.pvService.openPdfInNewTab(row.id); break;
-      case 'pr': this.prService.openPdfInNewTab(row.id); break;
+      case 'dc': this.dcService.openPdfInNewTab(row.id, row.number); break;
+      case 'sr': this.srService.openPdfInNewTab(row.id, row.number); break;
+      case 'pv': this.pvService.openPdfInNewTab(row.id, row.number); break;
+      case 'pr': this.prService.openPdfInNewTab(row.id, row.number); break;
     }
   }
 

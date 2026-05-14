@@ -12,6 +12,8 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
   protected readonly cdr = inject(ChangeDetectorRef);
 
   pdfUrl: SafeResourceUrl | null = null;
+  downloadUrl: string | null = null;
+  fileName = '';
   loading = true;
   error = '';
 
@@ -55,7 +57,11 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
 
     xhr.onload = () => {
       if (xhr.status === 200) {
-        this.setPdfResponse(xhr.response, title);
+        this.setPdfResponse(
+          xhr.response,
+          title,
+          this.parseFileName(xhr.getResponseHeader('Content-Disposition')) ?? this.buildFallbackFileName(title)
+        );
         return;
       }
 
@@ -107,14 +113,42 @@ export abstract class AuthenticatedPdfPageBase implements OnDestroy {
     this.cdr.detectChanges();
   }
 
-  private setPdfResponse(blob: Blob, title: string): void {
+  private setPdfResponse(blob: Blob, title: string, fileName: string): void {
     if (this.objectUrl) {
       URL.revokeObjectURL(this.objectUrl);
     }
 
-    this.objectUrl = URL.createObjectURL(blob);
+    const pdfFile = new File([blob], fileName, { type: blob.type || 'application/pdf' });
+    this.objectUrl = URL.createObjectURL(pdfFile);
     this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl);
-    document.title = title;
+    this.downloadUrl = this.objectUrl;
+    this.fileName = pdfFile.name;
+    document.title = pdfFile.name || title;
     this.cdr.detectChanges();
+  }
+
+  private parseFileName(contentDisposition: string | null): string | null {
+    if (!contentDisposition) return null;
+
+    const utf8Match = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1].trim()).replace(/^["']|["']$/g, '');
+      } catch {
+        return utf8Match[1].trim().replace(/^["']|["']$/g, '');
+      }
+    }
+
+    const fileNameMatch = contentDisposition.match(/filename\s*=\s*("?)([^";]+)\1/i);
+    return fileNameMatch?.[2]?.trim() || null;
+  }
+
+  private buildFallbackFileName(title: string): string {
+    const normalized = title
+      .replace(/[^A-Za-z0-9._-]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    return `${normalized || 'document'}.pdf`;
   }
 }

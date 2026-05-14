@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
+using ReGranBill.Server.Helpers;
 
 namespace ReGranBill.Server.Data;
 
@@ -23,16 +24,47 @@ public static class SeedData
     private static async Task EnsureUsersAsync(AppDbContext db)
     {
         var adminRole = await EnsureAdminRoleAsync(db);
+        await EnsureAdminRolePagesAsync(db, adminRole);
 
-        if (!await db.Users.AnyAsync(u => u.Username == "admin"))
+        var adminUsername = Environment.GetEnvironmentVariable("SeedAdmin__Username")?.Trim();
+        if (string.IsNullOrWhiteSpace(adminUsername))
+        {
+            adminUsername = "admin";
+        }
+
+        var adminFullName = Environment.GetEnvironmentVariable("SeedAdmin__FullName")?.Trim();
+        if (string.IsNullOrWhiteSpace(adminFullName))
+        {
+            adminFullName = "Administrator";
+        }
+
+        var adminPassword = Environment.GetEnvironmentVariable("SeedAdmin__Password");
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            adminPassword = "Admin123!";
+        }
+
+        var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username == adminUsername);
+        if (adminUser == null)
         {
             db.Users.Add(new User
             {
-                Username = "admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-                FullName = "Administrator",
-                RoleId = adminRole.Id
+                Username = adminUsername,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                FullName = adminFullName,
+                RoleId = adminRole.Id,
+                IsActive = true
             });
+        }
+        else
+        {
+            adminUser.RoleId = adminRole.Id;
+            adminUser.IsActive = true;
+
+            if (string.IsNullOrWhiteSpace(adminUser.FullName))
+            {
+                adminUser.FullName = adminFullName;
+            }
         }
 
         await db.SaveChangesAsync();
@@ -54,6 +86,35 @@ public static class SeedData
         db.Roles.Add(admin);
         await db.SaveChangesAsync();
         return admin;
+    }
+
+    private static async Task EnsureAdminRolePagesAsync(AppDbContext db, Role adminRole)
+    {
+        var existingPageKeys = await db.RolePages
+            .Where(rp => rp.RoleId == adminRole.Id)
+            .Select(rp => rp.PageKey)
+            .ToListAsync();
+
+        var missingPageKeys = PageCatalog.All
+            .Select(page => page.Key)
+            .Except(existingPageKeys, StringComparer.Ordinal)
+            .ToList();
+
+        if (missingPageKeys.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var pageKey in missingPageKeys)
+        {
+            db.RolePages.Add(new RolePage
+            {
+                RoleId = adminRole.Id,
+                PageKey = pageKey
+            });
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task<Dictionary<string, Category>> EnsureCategoriesAsync(AppDbContext db)

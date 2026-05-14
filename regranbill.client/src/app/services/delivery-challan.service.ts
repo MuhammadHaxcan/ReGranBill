@@ -58,7 +58,8 @@ export class DeliveryChallanService {
     return this.http.delete<void>(`${this.url}/${id}`);
   }
 
-  openPdfInNewTab(id: number): void {
-    window.open(`/print-dc/${id}`, '_blank');
+  openPdfInNewTab(id: number, dcNumber?: string | null): void {
+    const key = dcNumber?.trim() || id.toString();
+    window.open(`/print-dc/${encodeURIComponent(key)}`, '_blank');
   }
 }

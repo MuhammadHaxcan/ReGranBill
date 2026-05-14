@@ -119,6 +119,7 @@
 .type-sr { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
 .type-pv { background: #f3e8ff; color: #7c3aed; border: 1px solid #d8b4fe; }
 .type-pr { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.type-wsh { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
 
 .action-buttons { display: flex; gap: 6px; }
 

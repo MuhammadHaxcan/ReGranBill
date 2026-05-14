@@ -69,8 +69,9 @@ export class PurchaseVoucherService {
     return this.http.delete<void>(`${this.url}/${id}`);
   }
 
-  openPdfInNewTab(id: number): void {
-    window.open(`/print-pv/${id}`, '_blank');
+  openPdfInNewTab(id: number, voucherNumber?: string | null): void {
+    const key = voucherNumber?.trim() || id.toString();
+    window.open(`/print-pv/${encodeURIComponent(key)}`, '_blank');
   }
 
   private mapVoucher(voucher: PurchaseVoucherApiDto): PurchaseVoucherViewModel {
