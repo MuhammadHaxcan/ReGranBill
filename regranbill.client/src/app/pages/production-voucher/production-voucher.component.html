@@ -1,6 +1,9 @@
 <div class="prod-page" *ngIf="!loading">
-
-  <!-- ── Top header card ── -->
+  <app-downstream-usage-banner
+    *ngIf="isEditMode"
+    [usages]="downstreamUsages"
+    [sourceLabel]="'production voucher'">
+  </app-downstream-usage-banner>
   <div class="prod-header">
     <div class="prod-header-row">
       <div>
@@ -33,7 +36,7 @@
         <app-searchable-select
           [options]="formulationOptions"
           [(ngModel)]="selectedFormulationId"
-          placeholder="Pick a saved formulation…">
+          placeholder="Pick a saved formulation...">
         </app-searchable-select>
       </div>
       <div class="prod-field">
@@ -50,7 +53,6 @@
     </div>
   </div>
 
-  <!-- ── Mass balance ribbon ── -->
   <div class="prod-balance" [class.balanced]="balanceState === 'balanced'"
                             [class.near]="balanceState === 'near'"
                             [class.off]="balanceState === 'off'">
@@ -78,13 +80,12 @@
       <span class="prod-balance-value">{{ balanceRhs | number:'1.2-2' }} kg</span>
     </div>
     <div class="prod-balance-status">
-      <span *ngIf="balanceState === 'balanced'" class="prod-balance-tag balanced">✓ Balanced</span>
-      <span *ngIf="balanceState === 'near'"     class="prod-balance-tag near">≈ Off by {{ balanceDelta | number:'1.2-2' }} kg</span>
-      <span *ngIf="balanceState === 'off'"      class="prod-balance-tag off">✗ Off by {{ balanceDelta | number:'1.2-2' }} kg</span>
+      <span *ngIf="balanceState === 'balanced'" class="prod-balance-tag balanced">Balanced</span>
+      <span *ngIf="balanceState === 'near'" class="prod-balance-tag near">Off by {{ balanceDelta | number:'1.2-2' }} kg</span>
+      <span *ngIf="balanceState === 'off'" class="prod-balance-tag off">Off by {{ balanceDelta | number:'1.2-2' }} kg</span>
     </div>
   </div>
 
-  <!-- ── INPUTS ── -->
   <div class="prod-section" (click)="focusSection('input')">
     <div class="prod-sec-hd input-hd">
       <div class="prod-sec-hd-left">
@@ -101,8 +102,10 @@
         <thead>
           <tr>
             <th class="col-num">#</th>
-            <th class="col-account">Vendor</th>
+            <th class="col-account">Category</th>
             <th class="col-account">Material</th>
+            <th class="col-account">Lot</th>
+            <th class="col-lot-info">Lot Info</th>
             <th class="col-bags">Bags</th>
             <th class="col-kg">Kg</th>
             <th class="col-kg">Rate /kg</th>
@@ -114,16 +117,26 @@
           <tr *ngFor="let row of inputs; let i = index">
             <td class="col-num">{{ i + 1 }}</td>
             <td class="col-account">
-              <app-searchable-select [options]="vendorOptions" [compact]="true"
-                [(ngModel)]="row.vendorId" placeholder="Pick vendor…"
-                (ngModelChange)="onInputVendorOrAccountChanged(row)">
+              <app-searchable-select [options]="inputCategoryOptions" [compact]="true"
+                [(ngModel)]="row.categoryId" placeholder="Pick category..."
+                (ngModelChange)="onInputCategoryChanged(row)">
               </app-searchable-select>
             </td>
             <td class="col-account">
-              <app-searchable-select [options]="inputAccountOptions" [compact]="true"
-                [(ngModel)]="row.accountId" placeholder="Pick material…"
-                (ngModelChange)="onLineChanged(); onInputVendorOrAccountChanged(row)">
+              <app-searchable-select [options]="getFilteredInputAccountOptions(row.categoryId)" [compact]="true"
+                [(ngModel)]="row.accountId" placeholder="Pick material..."
+                [disabled]="!row.categoryId"
+                (ngModelChange)="onInputAccountChanged(row)">
               </app-searchable-select>
+            </td>
+            <td class="col-account">
+              <app-searchable-select [options]="getFilteredLotOptions(row)" [compact]="true"
+                [(ngModel)]="row.selectedLotId" placeholder="Pick lot..."
+                (ngModelChange)="onInputLotChanged(row)">
+              </app-searchable-select>
+            </td>
+            <td class="col-lot-info">
+              <small>{{ row.rateSource || '-' }}</small>
             </td>
             <td class="col-bags">
               <input type="number" min="0" step="1" class="form-control form-control-sm prod-num-input"
@@ -131,11 +144,11 @@
             </td>
             <td class="col-kg">
               <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
-                     [(ngModel)]="row.weightKg" (ngModelChange)="onLineChanged()" />
+                     [(ngModel)]="row.weightKg" [max]="getMaxInputWeight(row)" (ngModelChange)="onInputWeightChanged(row)" />
             </td>
             <td class="col-kg">
               <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
-                     [(ngModel)]="row.rate" [title]="row.rateSource || ''" placeholder="Rate" />
+                     [(ngModel)]="row.rate" placeholder="Rate" />
             </td>
             <td class="col-kg">
               {{ ((row.weightKg || 0) * (row.rate || 0)) | number:'1.2-2' }}
@@ -156,12 +169,11 @@
     </div>
   </div>
 
-  <!-- ── OUTPUTS ── -->
   <div class="prod-section" (click)="focusSection('output')">
     <div class="prod-sec-hd output-hd">
       <div class="prod-sec-hd-left">
         <span class="prod-sec-dot"></span>
-        <span class="prod-sec-title">Outputs · Finished Goods</span>
+        <span class="prod-sec-title">Outputs · Raw Materials</span>
         <span class="prod-sec-count">{{ outputs.length }}</span>
       </div>
       <button type="button" class="pv-btn pv-btn-ghost" (click)="addOutput()">+ Add Output</button>
@@ -171,7 +183,8 @@
         <thead>
           <tr>
             <th class="col-num">#</th>
-            <th class="col-account-wide">Account</th>
+            <th class="col-account">Category</th>
+            <th class="col-account-wide">Raw Material</th>
             <th class="col-bags">Bags</th>
             <th class="col-kg">Kg</th>
             <th class="col-act"></th>
@@ -180,9 +193,15 @@
         <tbody>
           <tr *ngFor="let row of outputs; let i = index">
             <td class="col-num">{{ i + 1 }}</td>
+            <td class="col-account">
+              <app-searchable-select [options]="outputCategoryOptions" [compact]="true"
+                [(ngModel)]="row.categoryId" placeholder="Pick category..."
+                (ngModelChange)="onRowCategoryChanged(row)">
+              </app-searchable-select>
+            </td>
             <td class="col-account-wide">
-              <app-searchable-select [options]="outputAccountOptions" [compact]="true"
-                [(ngModel)]="row.accountId" placeholder="Pick output product…"
+              <app-searchable-select [options]="getFilteredAccountOptions(AccountType.RawMaterial, row.categoryId)" [compact]="true"
+                [(ngModel)]="row.accountId" [disabled]="!row.categoryId" placeholder="Pick output raw material..."
                 (ngModelChange)="onLineChanged()">
               </app-searchable-select>
             </td>
@@ -192,7 +211,7 @@
             </td>
             <td class="col-kg">
               <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
-                     [(ngModel)]="row.weightKg" (ngModelChange)="onLineChanged()" />
+                     [(ngModel)]="row.weightKg" [max]="getMaxOutputWeight(row)" (ngModelChange)="onOutputWeightChanged(row)" />
             </td>
             <td class="col-act">
               <button type="button" class="btn-remove" title="Remove row" (click)="removeOutput(i)">
@@ -209,7 +228,6 @@
     </div>
   </div>
 
-  <!-- ── BYPRODUCTS ── -->
   <div class="prod-section" (click)="focusSection('byproduct')">
     <div class="prod-sec-hd byproduct-hd">
       <div class="prod-sec-hd-left">
@@ -224,7 +242,8 @@
         <thead>
           <tr>
             <th class="col-num">#</th>
-            <th class="col-account-wide">Account</th>
+            <th class="col-account">Category</th>
+            <th class="col-account-wide">Raw Material</th>
             <th class="col-bags">Bags</th>
             <th class="col-kg">Kg</th>
             <th class="col-act"></th>
@@ -233,9 +252,15 @@
         <tbody>
           <tr *ngFor="let row of byproducts; let i = index">
             <td class="col-num">{{ i + 1 }}</td>
+            <td class="col-account">
+              <app-searchable-select [options]="byproductCategoryOptions" [compact]="true"
+                [(ngModel)]="row.categoryId" placeholder="Pick category..."
+                (ngModelChange)="onRowCategoryChanged(row)">
+              </app-searchable-select>
+            </td>
             <td class="col-account-wide">
-              <app-searchable-select [options]="outputAccountOptions" [compact]="true"
-                [(ngModel)]="row.accountId" placeholder="Pick byproduct…"
+              <app-searchable-select [options]="getFilteredAccountOptions(AccountType.RawMaterial, row.categoryId)" [compact]="true"
+                [(ngModel)]="row.accountId" [disabled]="!row.categoryId" placeholder="Pick byproduct raw material..."
                 (ngModelChange)="onLineChanged()">
               </app-searchable-select>
             </td>
@@ -245,7 +270,7 @@
             </td>
             <td class="col-kg">
               <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
-                     [(ngModel)]="row.weightKg" (ngModelChange)="onLineChanged()" />
+                     [(ngModel)]="row.weightKg" [max]="getMaxByproductWeight(row)" (ngModelChange)="onByproductWeightChanged(row)" />
             </td>
             <td class="col-act">
               <button type="button" class="btn-remove" title="Remove row" (click)="removeByproduct(i)">
@@ -265,7 +290,6 @@
     </div>
   </div>
 
-  <!-- ── SHORTAGE ── -->
   <div class="prod-section">
     <div class="prod-sec-hd shortage-hd">
       <div class="prod-sec-hd-left">
@@ -278,36 +302,45 @@
     </div>
     <div class="prod-shortage-row">
       <div>
+        <label class="prod-label">Expense Category</label>
+        <app-searchable-select
+          [options]="shortageCategoryOptions"
+          [(ngModel)]="shortageCategoryId"
+          placeholder="Pick expense category..."
+          (ngModelChange)="onShortageCategoryChanged()">
+        </app-searchable-select>
+      </div>
+      <div>
         <label class="prod-label">Production Loss Account</label>
         <app-searchable-select
-          [options]="expenseAccountOptions"
+          [options]="shortageExpenseOptions"
           [(ngModel)]="shortageAccountId"
-          placeholder="Pick a Production Loss / Scrap expense account…">
+          [disabled]="!shortageCategoryId"
+          placeholder="Pick a Production Loss / Scrap expense account...">
         </app-searchable-select>
       </div>
       <div>
         <label class="prod-label">Kg</label>
         <input type="number" min="0" step="0.01" class="form-control prod-num-input"
+               [max]="getMaxShortageWeight()"
                [(ngModel)]="shortageWeightKg"
                (ngModelChange)="onShortageChanged()" />
       </div>
     </div>
     <p class="prod-shortage-hint" *ngIf="!shortageUserEdited">
-      Auto-suggested as input − (output + byproduct). Edit to override; click ↻ Auto-suggest to reset.
+      Auto-suggested as input - (output + byproduct). Edit to override; click ↻ Auto-suggest to reset.
     </p>
   </div>
 
-  <!-- ── Footer actions ── -->
   <footer class="prod-footer">
     <button type="button" class="pv-btn pv-btn-outline" (click)="discard()">Discard</button>
     <button type="button" class="pv-btn pv-btn-primary"
             [disabled]="!canSave"
             [title]="canSave ? '' : balanceErrorTooltip"
             (click)="save()">
-      {{ saving ? 'Saving…' : (isEditMode ? 'Update Voucher' : 'Save Voucher') }}
+      {{ saving ? 'Saving...' : (isEditMode ? 'Update Voucher' : 'Save Voucher') }}
     </button>
   </footer>
-
 </div>
 
-<div class="prod-loading" *ngIf="loading">Loading…</div>
+<div class="prod-loading" *ngIf="loading">Loading...</div>

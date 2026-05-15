@@ -1,0 +1,196 @@
+<section class="card invoice-header">
+  <div class="header-row">
+    <div>
+      <h1 class="invoice-title">Raw Material Lot Report</h1>
+      <p class="invoice-subtitle">Lot-wise balances for raw materials and unwashed materials with full movement drilldown</p>
+    </div>
+  </div>
+</section>
+
+<section class="card filter-card" *ngIf="filtersLoaded">
+  <div class="filter-mobile-head">
+    <span>Filters</span>
+    <button type="button" class="btn btn-secondary filter-toggle-btn" (click)="toggleFilters()">
+      {{ filtersExpanded ? 'Hide' : 'Show' }}
+    </button>
+  </div>
+  <div class="filter-row" [class.filters-collapsed]="!filtersExpanded">
+    <div class="filter-field">
+      <label>From</label>
+      <input type="text" bsDatepicker [(ngModel)]="fromDate" class="filter-input" autocomplete="off" placeholder="DD-MM-YYYY" />
+    </div>
+    <div class="filter-field">
+      <label>To</label>
+      <input type="text" bsDatepicker [(ngModel)]="toDate" class="filter-input" autocomplete="off" placeholder="DD-MM-YYYY" />
+    </div>
+    <div class="filter-field filter-field-wide">
+      <label>Vendor</label>
+      <app-searchable-select [options]="vendorOptions" [(ngModel)]="selectedVendorId" placeholder="All Vendors"></app-searchable-select>
+    </div>
+    <div class="filter-field filter-field-xwide">
+      <label>Material</label>
+      <app-searchable-select [options]="productOptions" [(ngModel)]="selectedProductId" placeholder="All Materials"></app-searchable-select>
+    </div>
+    <div class="filter-field filter-search">
+      <label>Lot Number</label>
+      <input type="text" [(ngModel)]="lotNumber" class="filter-input" placeholder="Search lot..." />
+    </div>
+    <div class="filter-field checkbox-field">
+      <label>Open Only</label>
+      <input type="checkbox" [(ngModel)]="openOnly" />
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadReport()">Apply</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+</section>
+
+<section class="report-stats" *ngIf="report && !loading">
+  <article class="stat-card">
+    <span class="stat-label">Lots</span>
+    <strong class="stat-value">{{ report.lots.length }}</strong>
+    <span class="stat-hint">{{ openLotCount }} open</span>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Original Kg</span>
+    <strong class="stat-value">{{ totalOriginalKg | number:'1.2-2' }}</strong>
+    <span class="stat-hint">Purchased and created</span>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Consumed Kg</span>
+    <strong class="stat-value stat-warn">{{ totalConsumedKg | number:'1.2-2' }}</strong>
+    <span class="stat-hint">Issued or returned</span>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Available Kg</span>
+    <strong class="stat-value stat-ok">{{ totalAvailableKg | number:'1.2-2' }}</strong>
+    <span class="stat-hint">Current lot balance</span>
+  </article>
+</section>
+
+<section class="card grid-card" *ngIf="report && !loading">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Lot Summary</span>
+      <span class="line-count">{{ report.lots.length }} lot(s)</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table lot-summary-table" *ngIf="report.lots.length > 0">
+      <thead>
+        <tr>
+          <th class="sticky-col sticky-col-primary">Product</th>
+          <th>Lot</th>
+          <th>Vendor</th>
+          <th>Source Voucher</th>
+          <th>Source Date</th>
+          <th>Original Kg</th>
+          <th>Consumed Kg</th>
+          <th>Available Kg</th>
+          <th>Base Rate</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lot of report.lots" (click)="selectLot(lot.lotId)" [class.row-selected]="selectedLotId === lot.lotId">
+          <td class="sticky-col sticky-col-primary lot-product-col">
+            <div class="lot-product-name">{{ lot.productName }}</div>
+            <div class="lot-product-sub">{{ lot.sourceVoucherNumber }}</div>
+          </td>
+          <td><span class="lot-pill">{{ lot.lotNumber }}</span></td>
+          <td>{{ lot.vendorName || '-' }}</td>
+          <td>{{ lot.sourceVoucherNumber }}</td>
+          <td>{{ formatDate(lot.sourceDate) }}</td>
+          <td>{{ lot.originalWeightKg | number:'1.2-2' }}</td>
+          <td class="metric-warn">{{ lot.consumedWeightKg | number:'1.2-2' }}</td>
+          <td class="metric-ok">{{ lot.availableWeightKg | number:'1.2-2' }}</td>
+          <td>{{ lot.baseRate | number:'1.2-2' }}</td>
+          <td>
+            <span class="status-badge" [class.status-open]="lot.status === 'Open'" [class.status-voided]="lot.status !== 'Open'">
+              {{ lot.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="report.lots.length === 0">
+    <p>No lots matched the selected filters.</p>
+  </div>
+</section>
+
+<section class="card grid-card" *ngIf="selectedLot">
+  <div class="card-header">
+    <div class="card-header-left">
+      <span class="card-header-title">Movement Drilldown</span>
+      <span class="line-count">{{ selectedMovements.length }} movement(s) for {{ selectedLot.lotNumber }}</span>
+    </div>
+  </div>
+
+  <div class="drilldown-heading">
+    <div class="drilldown-heading-main">
+      <div>
+        <h3>{{ selectedLot.productName }}</h3>
+        <span>{{ selectedLot.vendorName || 'No vendor linked' }}</span>
+      </div>
+      <div class="drilldown-stats">
+        <div class="drilldown-stat">
+          <span>Original Kg</span>
+          <strong>{{ selectedLot.originalWeightKg | number:'1.2-2' }}</strong>
+        </div>
+        <div class="drilldown-stat">
+          <span>Available Kg</span>
+          <strong>{{ selectedLot.availableWeightKg | number:'1.2-2' }}</strong>
+        </div>
+        <div class="drilldown-stat">
+          <span>Base Rate</span>
+          <strong>{{ selectedLot.baseRate | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="grid-table drilldown-table" *ngIf="selectedMovements.length > 0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Voucher</th>
+          <th>Type</th>
+          <th>Transaction</th>
+          <th>Kg In</th>
+          <th>Kg Out</th>
+          <th>Running Available</th>
+          <th>Rate</th>
+          <th>Value</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let movement of selectedMovements">
+          <td>{{ formatDate(movement.transactionDate) }}</td>
+          <td><span class="voucher-pill">{{ movement.voucherNumber }}</span></td>
+          <td>{{ movement.voucherType }}</td>
+          <td>{{ movement.transactionType }}</td>
+          <td class="metric-ok">{{ movement.weightKgIn | number:'1.2-2' }}</td>
+          <td class="metric-warn">{{ movement.weightKgOut | number:'1.2-2' }}</td>
+          <td class="metric-emphasis">{{ movement.runningAvailableKg | number:'1.2-2' }}</td>
+          <td>{{ movement.rate | number:'1.2-2' }}</td>
+          <td>{{ movement.valueDelta | number:'1.2-2' }}</td>
+          <td class="drilldown-notes">{{ movement.notes || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="selectedMovements.length === 0">
+    <p>No movements available for the selected lot.</p>
+  </div>
+</section>
+
+<div class="loading-state" *ngIf="loading">
+  <p>Loading raw material lot report...</p>
+</div>

@@ -14,11 +14,13 @@ public class PurchaseReturnService : IPurchaseReturnService
 {
     private readonly AppDbContext _db;
     private readonly IVoucherNumberService _voucherNumberService;
+    private readonly IInventoryLotService _inventoryLotService;
 
-    public PurchaseReturnService(AppDbContext db, IVoucherNumberService voucherNumberService)
+    public PurchaseReturnService(AppDbContext db, IVoucherNumberService voucherNumberService, IInventoryLotService inventoryLotService)
     {
         _db = db;
         _voucherNumberService = voucherNumberService;
+        _inventoryLotService = inventoryLotService;
     }
 
     public async Task<List<PurchaseReturnDto>> GetAllAsync()
@@ -30,7 +32,8 @@ public class PurchaseReturnService : IPurchaseReturnService
             .OrderByDescending(j => j.CreatedAt)
             .ToListAsync();
 
-        return prJvs.Select(MapToDto).ToList();
+        var selectedLots = await LoadSelectedLotsAsync(prJvs.Select(x => x.Id).ToArray());
+        return prJvs.Select(v => MapToDto(v, selectedLots.GetValueOrDefault(v.Id))).ToList();
     }
 
     public async Task<PurchaseReturnDto?> GetByIdAsync(int id)
@@ -149,6 +152,8 @@ public class PurchaseReturnService : IPurchaseReturnService
 
         _db.JournalVouchers.Add(prJv);
         await _db.SaveChangesAsync();
+        await RebuildInventoryAsync(prJv, request, validation);
+        await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
         return (await GetByIdAsync(prJv.Id))!;
@@ -163,9 +168,10 @@ public class PurchaseReturnService : IPurchaseReturnService
 
         if (prJv == null) return null;
 
-        var validation = await ValidateRequestAsync(request);
-
         await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        await EnsureExistingSourceLotsUsableAsync(prJv.Id);
+        var validation = await ValidateRequestAsync(request, id);
 
         prJv.Date = request.Date;
         prJv.VehicleNumber = request.VehicleNumber;
@@ -173,6 +179,7 @@ public class PurchaseReturnService : IPurchaseReturnService
         prJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
         prJv.UpdatedAt = DateTime.UtcNow;
 
+        await RemoveVoucherInventoryAsync(prJv.Id);
         _db.JournalEntries.RemoveRange(prJv.Entries);
         prJv.Entries.Clear();
 
@@ -214,6 +221,8 @@ public class PurchaseReturnService : IPurchaseReturnService
         vendorEntry.Debit = totalProductAmount;
 
         await _db.SaveChangesAsync();
+        await RebuildInventoryAsync(prJv, request, validation);
+        await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
         return (await GetByIdAsync(prJv.Id))!;
@@ -250,6 +259,10 @@ public class PurchaseReturnService : IPurchaseReturnService
         prJv.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        var updateRequest = await BuildUpdateRequestAsync(prJv);
+        var validation = await ValidateRequestAsync(updateRequest, id);
+        await RebuildInventoryAsync(prJv, updateRequest, validation);
+        await _db.SaveChangesAsync();
         return true;
     }
 
@@ -260,17 +273,48 @@ public class PurchaseReturnService : IPurchaseReturnService
 
         if (prJv == null) return (false, null);
 
-        if (prJv.RatesAdded)
-            return (false, "Cannot delete a rated purchase return. Only pending returns can be deleted.");
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var voidedLotNumbers = await _db.InventoryVoucherLinks
+            .Where(x => x.VoucherId == prJv.Id && x.VoucherType == VoucherType.PurchaseReturnVoucher)
+            .Join(_db.InventoryLots, link => link.LotId, lot => lot.Id, (link, lot) => lot)
+            .Where(lot => lot.Status != InventoryLotStatus.Open)
+            .Select(lot => lot.LotNumber)
+            .Distinct()
+            .ToListAsync();
+
+        if (voidedLotNumbers.Count > 0)
+        {
+            return (false, $"Cannot delete this purchase return because its source lot(s) are not open: {string.Join(", ", voidedLotNumbers)}.");
+        }
 
         prJv.IsDeleted = true;
         prJv.UpdatedAt = DateTime.UtcNow;
 
+        await RemoveVoucherInventoryAsync(prJv.Id);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return (true, null);
     }
 
-    private async Task<ValidatedPurchaseReturnRequest> ValidateRequestAsync(CreatePurchaseReturnRequest request)
+    private async Task EnsureExistingSourceLotsUsableAsync(int prVoucherId)
+    {
+        var problematicLotNumbers = await _db.InventoryVoucherLinks
+            .Where(x => x.VoucherId == prVoucherId && x.VoucherType == VoucherType.PurchaseReturnVoucher)
+            .Join(_db.InventoryLots, link => link.LotId, lot => lot.Id, (link, lot) => lot)
+            .Where(lot => lot.Status != InventoryLotStatus.Open)
+            .Select(lot => lot.LotNumber)
+            .Distinct()
+            .ToListAsync();
+
+        if (problematicLotNumbers.Count > 0)
+        {
+            throw new ConflictException(
+                $"Cannot edit this purchase return because its source lot(s) are not open: {string.Join(", ", problematicLotNumbers)}.");
+        }
+    }
+
+    private async Task<ValidatedPurchaseReturnRequest> ValidateRequestAsync(CreatePurchaseReturnRequest request, int? existingVoucherId = null)
     {
         if (request == null)
             throw new RequestValidationException("Request payload is required.");
@@ -286,6 +330,9 @@ public class PurchaseReturnService : IPurchaseReturnService
 
         foreach (var line in request.Lines)
         {
+            if (line.SelectedLotId <= 0)
+                throw new RequestValidationException("Each line must select a source lot.");
+
             if (line.ProductId <= 0)
                 throw new RequestValidationException("Each line must reference a valid product.");
 
@@ -321,13 +368,62 @@ public class PurchaseReturnService : IPurchaseReturnService
         {
             if (!accountsById.TryGetValue(productId, out var productAccount)
                 || !IsInventoryAccount(productAccount)
-                || productAccount.ProductDetail == null)
+                || !HasValidPurchaseInventorySetup(productAccount))
                 throw new RequestValidationException("One or more selected inventory items are invalid.");
 
             productAccounts[productId] = productAccount;
         }
 
-        return new ValidatedPurchaseReturnRequest(productAccounts, partyAccount);
+        var lotIds = request.Lines.Select(line => line.SelectedLotId).Distinct().ToArray();
+        var selectedLots = await _db.InventoryLots
+            .Include(x => x.VendorAccount)
+            .Include(x => x.ProductAccount)
+            .Where(x => lotIds.Contains(x.Id) && x.Status == InventoryLotStatus.Open)
+            .ToDictionaryAsync(x => x.Id);
+
+        var availableByLot = await _inventoryLotService.GetAvailableWeightByLotIdsAsync(lotIds);
+        if (existingVoucherId.HasValue)
+        {
+            var currentVoucherLoads = await _db.InventoryTransactions
+                .Where(x => x.VoucherId == existingVoucherId.Value
+                    && x.VoucherType == VoucherType.PurchaseReturnVoucher
+                    && x.TransactionType == InventoryTransactionType.PurchaseReturnOut)
+                .GroupBy(x => x.LotId)
+                .Select(g => new
+                {
+                    g.Key,
+                    Kg = g.Sum(x => x.WeightKgDelta < 0 ? -x.WeightKgDelta : x.WeightKgDelta)
+                })
+                .ToListAsync();
+
+            foreach (var row in currentVoucherLoads)
+            {
+                availableByLot[row.Key] = VoucherHelpers.Round2(availableByLot.GetValueOrDefault(row.Key) + row.Kg);
+            }
+        }
+
+        var requestedByLot = request.Lines
+            .GroupBy(x => x.SelectedLotId)
+            .ToDictionary(g => g.Key, g => VoucherHelpers.Round2(g.Sum(x => x.TotalWeightKg)));
+
+        foreach (var line in request.Lines)
+        {
+            if (!selectedLots.TryGetValue(line.SelectedLotId, out var lot))
+                throw new RequestValidationException("Each line must select a valid source lot.");
+            if (lot.ProductAccountId != line.ProductId)
+                throw new RequestValidationException("Selected lot does not match the chosen purchase return product.");
+            if (lot.VendorAccountId != request.VendorId)
+                throw new RequestValidationException("Selected lot does not belong to the chosen vendor.");
+        }
+
+        foreach (var pair in requestedByLot)
+        {
+            var available = VoucherHelpers.Round2(availableByLot.GetValueOrDefault(pair.Key));
+            if (pair.Value > available)
+                throw new RequestValidationException($"Requested return exceeds available lot balance of {available:0.##} kg.");
+        }
+
+        return new ValidatedPurchaseReturnRequest(productAccounts, partyAccount, selectedLots);
     }
 
     private static void EnsurePartyAccount(Account account, PartyRole requiredRole, string partyLabel)
@@ -348,10 +444,13 @@ public class PurchaseReturnService : IPurchaseReturnService
     private static bool IsInventoryAccount(Account account) =>
         VoucherHelpers.IsInventoryAccount(account);
 
+    private static bool HasValidPurchaseInventorySetup(Account account) =>
+        account.AccountType == AccountType.UnwashedMaterial || account.ProductDetail != null;
+
     private static decimal CalculateLineAmt(decimal totalWeightKg, decimal rate) =>
         VoucherHelpers.Round2(totalWeightKg * rate);
 
-    private static PurchaseReturnDto MapToDto(JournalVoucher prJv)
+    private static PurchaseReturnDto MapToDto(JournalVoucher prJv, IReadOnlyDictionary<string, InventoryLot>? selectedLots)
     {
         var vendorEntry = prJv.Entries.FirstOrDefault(e => e.SortOrder == 0);
         var productEntries = prJv.Entries.Where(e => e.SortOrder > 0).OrderBy(e => e.SortOrder).ToList();
@@ -370,6 +469,8 @@ public class PurchaseReturnService : IPurchaseReturnService
             Lines = productEntries.Select(e => new PurchaseReturnLineDto
             {
                 Id = e.Id,
+                SelectedLotId = selectedLots?.GetValueOrDefault($"purchase-return-line-{e.SortOrder}")?.Id,
+                SelectedLotNumber = selectedLots?.GetValueOrDefault($"purchase-return-line-{e.SortOrder}")?.LotNumber,
                 ProductId = e.AccountId,
                 ProductName = e.Account?.Name,
                 Packing = e.Account?.ProductDetail?.Packing,
@@ -413,7 +514,129 @@ public class PurchaseReturnService : IPurchaseReturnService
 
     private sealed record ValidatedPurchaseReturnRequest(
         IReadOnlyDictionary<int, Account> ProductAccounts,
-        Account PartyAccount);
+        Account PartyAccount,
+        IReadOnlyDictionary<int, InventoryLot> SelectedLots);
+
+    private async Task<CreatePurchaseReturnRequest> BuildUpdateRequestAsync(JournalVoucher voucher)
+    {
+        var selectedLots = await LoadSelectedLotsAsync([voucher.Id]);
+        var byLineKey = selectedLots.GetValueOrDefault(voucher.Id) ?? new Dictionary<string, InventoryLot>();
+
+        return new CreatePurchaseReturnRequest
+        {
+            Date = voucher.Date,
+            VendorId = voucher.Entries.FirstOrDefault(e => e.SortOrder == 0)?.AccountId ?? 0,
+            VehicleNumber = voucher.VehicleNumber,
+            Description = voucher.Description,
+            Lines = voucher.Entries
+                .Where(e => e.SortOrder > 0)
+                .OrderBy(e => e.SortOrder)
+                .Select(e => new CreatePurchaseReturnLineRequest
+                {
+                    LineId = e.Id,
+                    SelectedLotId = byLineKey.GetValueOrDefault($"purchase-return-line-{e.SortOrder}")?.Id ?? 0,
+                    ProductId = e.AccountId,
+                    Qty = e.Qty ?? 0,
+                    TotalWeightKg = e.ActualWeightKg ?? 0m,
+                    Rate = e.Rate ?? 0m,
+                    SortOrder = e.SortOrder
+                })
+                .ToList()
+        };
+    }
+
+    private async Task RebuildInventoryAsync(JournalVoucher voucher, CreatePurchaseReturnRequest request, ValidatedPurchaseReturnRequest validation)
+    {
+        await RemoveVoucherInventoryAsync(voucher.Id);
+
+        var productEntries = voucher.Entries
+            .Where(x => x.SortOrder > 0)
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+        var requestLines = request.Lines
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+
+        for (var index = 0; index < productEntries.Count; index++)
+        {
+            var entry = productEntries[index];
+            var line = requestLines[index];
+            var lot = validation.SelectedLots[line.SelectedLotId];
+
+            var tx = new InventoryTransaction
+            {
+                VoucherId = voucher.Id,
+                VoucherType = VoucherType.PurchaseReturnVoucher,
+                VoucherLineKey = $"purchase-return-line-{entry.SortOrder}",
+                TransactionType = InventoryTransactionType.PurchaseReturnOut,
+                ProductAccountId = entry.AccountId,
+                LotId = lot.Id,
+                QtyDelta = entry.Qty > 0 ? -entry.Qty : null,
+                WeightKgDelta = -(entry.ActualWeightKg ?? 0m),
+                Rate = entry.Rate ?? 0m,
+                ValueDelta = -entry.Credit,
+                TransactionDate = voucher.Date,
+                Notes = entry.Description
+            };
+            _db.InventoryTransactions.Add(tx);
+            await _db.SaveChangesAsync();
+
+            _db.InventoryVoucherLinks.Add(new InventoryVoucherLink
+            {
+                VoucherId = voucher.Id,
+                VoucherType = VoucherType.PurchaseReturnVoucher,
+                VoucherLineKey = $"purchase-return-line-{entry.SortOrder}",
+                LotId = lot.Id,
+                TransactionId = tx.Id
+            });
+        }
+    }
+
+    private async Task RemoveVoucherInventoryAsync(int voucherId)
+    {
+        var links = await _db.InventoryVoucherLinks
+            .Where(x => x.VoucherId == voucherId && x.VoucherType == VoucherType.PurchaseReturnVoucher)
+            .ToListAsync();
+        if (links.Count == 0)
+            return;
+
+        var transactionIds = links.Select(x => x.TransactionId).Distinct().ToList();
+        var transactions = await _db.InventoryTransactions
+            .Where(x => transactionIds.Contains(x.Id))
+            .ToListAsync();
+
+        _db.InventoryVoucherLinks.RemoveRange(links);
+        _db.InventoryTransactions.RemoveRange(transactions);
+    }
+
+    private async Task<Dictionary<int, IReadOnlyDictionary<string, InventoryLot>>> LoadSelectedLotsAsync(IReadOnlyCollection<int> voucherIds)
+    {
+        var ids = voucherIds.Where(x => x > 0).Distinct().ToArray();
+        if (ids.Length == 0)
+            return [];
+
+        var links = await _db.InventoryVoucherLinks
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.VoucherId)
+                && x.VoucherType == VoucherType.PurchaseReturnVoucher
+                && x.VoucherLineKey.StartsWith("purchase-return-line-"))
+            .ToListAsync();
+        if (links.Count == 0)
+            return [];
+
+        var lotIds = links.Select(x => x.LotId).Distinct().ToArray();
+        var lots = await _db.InventoryLots
+            .AsNoTracking()
+            .Include(x => x.VendorAccount)
+            .Where(x => lotIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
+
+        return links
+            .GroupBy(x => x.VoucherId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyDictionary<string, InventoryLot>)g.ToDictionary(x => x.VoucherLineKey, x => lots[x.LotId]));
+    }
 
     private async Task<PurchaseReturnDto?> GetVoucherAsync(System.Linq.Expressions.Expression<Func<JournalVoucher, bool>> predicate)
     {
@@ -424,6 +647,9 @@ public class PurchaseReturnService : IPurchaseReturnService
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.PartyDetail)
             .FirstOrDefaultAsync();
 
-        return prJv == null ? null : MapToDto(prJv);
+        if (prJv == null) return null;
+
+        var selectedLots = await LoadSelectedLotsAsync([prJv.Id]);
+        return MapToDto(prJv, selectedLots.GetValueOrDefault(prJv.Id));
     }
 }

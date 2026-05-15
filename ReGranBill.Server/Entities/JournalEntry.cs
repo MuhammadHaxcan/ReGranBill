@@ -17,9 +17,7 @@ public class JournalEntry
     public bool IsEdited { get; set; } = false;
     public int SortOrder { get; set; }
     public ProductionLineKind? LineKind { get; set; }
-    public int? VendorAccountId { get; set; }
 
     public JournalVoucher JournalVoucher { get; set; } = null!;
     public Account Account { get; set; } = null!;
-    public Account? VendorAccount { get; set; }
 }

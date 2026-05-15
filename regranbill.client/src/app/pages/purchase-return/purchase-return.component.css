@@ -433,6 +433,19 @@
 }
 
 @media (max-width: 768px) {
+  .card {
+    padding: 16px 14px;
+    margin-bottom: 14px;
+  }
+
+  .lines-table {
+    min-width: 940px;
+  }
+
+  .card-header {
+    padding: 12px 14px;
+  }
+
   .form-row, .form-row-3, .form-row-4 {
     grid-template-columns: 1fr;
   }
@@ -449,5 +462,11 @@
 
   .invoice-meta {
     text-align: left;
+  }
+
+  .bottom-actions-right {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 }

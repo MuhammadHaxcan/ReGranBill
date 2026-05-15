@@ -18,6 +18,8 @@ export interface PurchaseReturnViewModel {
 
 export interface DeliveryChallanLineViewModel {
   id: number;
+  selectedLotId?: number | null;
+  selectedLotNumber?: string | null;
   productId: number;
   productName?: string | null;
   packing?: string | null;
@@ -54,6 +56,8 @@ export interface PurchaseReturnUpsertRequest {
 }
 
 export interface PurchaseReturnLineRequest {
+  lineId?: number | null;
+  selectedLotId: number;
   productId: number;
   qty: number;
   totalWeightKg: number;

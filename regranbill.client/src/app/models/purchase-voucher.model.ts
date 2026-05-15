@@ -73,6 +73,7 @@ export interface PurchaseVoucherViewModel {
 }
 
 export interface PurchaseVoucherLineRequest {
+  lineId?: number | null;
   productId: number;
   qty: number;
   totalWeightKg: number;

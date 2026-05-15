@@ -4,6 +4,8 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseReturnService } from '../../services/purchase-return.service';
+import { DownstreamUsage, DownstreamUsageService } from '../../services/downstream-usage.service';
+import { InventoryLotService } from '../../services/inventory-lot.service';
 import { CategoryService } from '../../services/category.service';
 import { CompanySettingsService } from '../../services/company-settings.service';
 import { ToastService } from '../../services/toast.service';
@@ -15,6 +17,7 @@ import { VehicleOption } from '../../models/company-settings.model';
 import { formatDateDisplay, parseLocalDate, toDateInputValue } from '../../utils/date-utils';
 import { getPurchaseLineWeight, getPurchaseLineAmount, getPurchaseTotalBags, getPurchaseTotalWeight, getPurchaseTotalAmount } from '../../utils/delivery-calculations';
 import { getApiErrorMessage } from '../../utils/api-error';
+import { AvailableInventoryLot } from '../../models/inventory-lot.model';
 
 @Component({
   selector: 'app-purchase-return',
@@ -37,8 +40,8 @@ export class PurchaseReturnComponent implements OnInit {
   vehicleOptions: VehicleOption[] = [];
   lines: PurchaseReturnLine[] = [];
   loading = true;
+  downstreamUsages: DownstreamUsage[] = [];
   private latestRatesByProductId = new Map<number, number>();
-  isReadOnlyRatedVoucher = false;
 
   vendorOptions: SelectOption[] = [];
   productOptions: SelectOption[] = [];
@@ -60,6 +63,8 @@ export class PurchaseReturnComponent implements OnInit {
     private accountService: AccountService,
     private authService: AuthService,
     private purchaseReturnService: PurchaseReturnService,
+    private downstreamService: DownstreamUsageService,
+    private inventoryLotService: InventoryLotService,
     private categoryService: CategoryService,
     private companySettingsService: CompanySettingsService,
     private route: ActivatedRoute,
@@ -175,6 +180,19 @@ export class PurchaseReturnComponent implements OnInit {
     });
   }
 
+  private loadDownstreamUsage(): void {
+    if (!this.isEditMode || this.purchaseReturnId === null) return;
+    this.downstreamService.forPurchaseReturn(this.purchaseReturnId).subscribe({
+      next: rows => {
+        this.downstreamUsages = rows;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.downstreamUsages = [];
+      }
+    });
+  }
+
   loadPurchaseReturn(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
@@ -191,6 +209,8 @@ export class PurchaseReturnComponent implements OnInit {
             const product = l.productId ? this.products.find(p => p.id === l.productId) : null;
             return {
               id: l.id,
+              selectedLotId: l.selectedLotId ?? null,
+              selectedLotNumber: l.selectedLotNumber ?? null,
               product: l.productId && product ? {
                 id: l.productId,
                 name: l.productName || '',
@@ -200,7 +220,15 @@ export class PurchaseReturnComponent implements OnInit {
               qty: l.qty,
               totalWeightKg: l.totalWeightKg || 0,
               rate: l.rate,
-              sortOrder: l.sortOrder
+              sortOrder: l.sortOrder,
+              lotOptions: l.selectedLotId
+                ? [{
+                    value: l.selectedLotId,
+                    label: l.selectedLotNumber || 'Lot',
+                    sublabel: l.rate ? `${l.rate.toFixed(2)}/kg` : ''
+                  }]
+                : [],
+              availableLots: []
             };
           });
           this.lineCategoryIds = this.lines.map(l => {
@@ -208,9 +236,12 @@ export class PurchaseReturnComponent implements OnInit {
             const product = this.products.find(p => p.id === l.product!.id);
             return product?.categoryId ?? null;
           });
-          this.isReadOnlyRatedVoucher = !!pr.ratesAdded;
+          this.lines
+            .filter(line => !!this.selectedVendorId && !!line.product)
+            .forEach(line => this.loadAvailableLotsForLine(line, false));
           this.loading = false;
           this.cdr.detectChanges();
+          this.loadDownstreamUsage();
         },
         error: () => {
           this.toast.error('Unable to load purchase return.');
@@ -244,7 +275,7 @@ export class PurchaseReturnComponent implements OnInit {
   }
 
   addLine(): void {
-    this.lines.push({ product: null, qty: 0, totalWeightKg: 0, rate: 0 });
+    this.lines.push({ product: null, qty: 0, totalWeightKg: 0, rate: 0, selectedLotId: null, selectedLotNumber: null, lotOptions: [], availableLots: [] });
     this.lineCategoryIds.push(null);
   }
 
@@ -258,6 +289,10 @@ export class PurchaseReturnComponent implements OnInit {
   onCategoryChange(lineIndex: number, categoryId: number): void {
     this.lineCategoryIds[lineIndex] = categoryId;
     this.lines[lineIndex].product = null;
+    this.lines[lineIndex].selectedLotId = null;
+    this.lines[lineIndex].selectedLotNumber = null;
+    this.lines[lineIndex].lotOptions = [];
+    this.lines[lineIndex].availableLots = [];
   }
 
   getFilteredProductOptions(lineIndex: number): SelectOption[] {
@@ -270,6 +305,10 @@ export class PurchaseReturnComponent implements OnInit {
   }
 
   onProductChange(line: PurchaseReturnLine, productId: number): void {
+    line.selectedLotId = null;
+    line.selectedLotNumber = null;
+    line.availableLots = [];
+    line.lotOptions = [];
     const acct = this.products.find(p => p.id === productId);
     if (acct) {
       line.product = {
@@ -281,9 +320,70 @@ export class PurchaseReturnComponent implements OnInit {
       if (this.canSeeRates && (!line.rate || line.rate <= 0)) {
         line.rate = this.latestRatesByProductId.get(acct.id) ?? 0;
       }
+      this.loadAvailableLotsForLine(line);
     } else {
       line.product = null;
     }
+  }
+
+  onSelectedLotChanged(line: PurchaseReturnLine): void {
+    const lot = this.getSelectedLot(line);
+    if (!lot) {
+      line.rate = 0;
+      return;
+    }
+
+    line.selectedLotNumber = lot.lotNumber;
+    line.rate = lot.rate;
+    if (line.totalWeightKg > lot.availableWeightKg) {
+      line.totalWeightKg = lot.availableWeightKg;
+    }
+    this.cdr.detectChanges();
+  }
+
+  onVendorChanged(): void {
+    this.lines.forEach(line => {
+      line.selectedLotId = null;
+      line.selectedLotNumber = null;
+      line.availableLots = [];
+      line.lotOptions = [];
+      if (line.product) {
+        this.loadAvailableLotsForLine(line);
+      }
+    });
+  }
+
+  getSelectedLot(line: PurchaseReturnLine): AvailableInventoryLot | null {
+    return line.availableLots?.find(lot => lot.lotId === line.selectedLotId) ?? null;
+  }
+
+  private loadAvailableLotsForLine(line: PurchaseReturnLine, resetSelectedLot = true): void {
+    if (!this.selectedVendorId || !line.product) {
+      line.availableLots = [];
+      line.lotOptions = [];
+      return;
+    }
+
+    if (resetSelectedLot) {
+      line.selectedLotId = null;
+      line.selectedLotNumber = null;
+    }
+
+    this.inventoryLotService.getAvailableForPurchaseReturn(this.selectedVendorId, line.product.id, this.purchaseReturnId).subscribe({
+      next: lots => {
+        line.availableLots = lots;
+        line.lotOptions = lots.map(lot => ({
+          value: lot.lotId,
+          label: `${lot.lotNumber} - ${lot.availableWeightKg.toFixed(2)} kg`,
+          sublabel: `${lot.sourceVoucherNumber} - ${lot.rate.toFixed(2)}/kg`
+        }));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        line.availableLots = [];
+        line.lotOptions = [];
+      }
+    });
   }
 
   getLineTotalWeight(line: PurchaseReturnLine): number {
@@ -319,6 +419,8 @@ export class PurchaseReturnComponent implements OnInit {
       lines: this.lines
         .filter(l => l.product)
         .map((l, i) => ({
+          lineId: l.id ?? null,
+          selectedLotId: l.selectedLotId!,
           productId: l.product!.id,
           qty: l.qty,
           totalWeightKg: l.totalWeightKg,
@@ -333,7 +435,7 @@ export class PurchaseReturnComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !this.isReadOnlyRatedVoucher && !!this.selectedVendorId && this.validLines.length > 0;
+    return !!this.selectedVendorId && this.validLines.length > 0 && this.validLines.every(l => !!l.selectedLotId);
   }
 
   private validate(): boolean {
@@ -350,8 +452,19 @@ export class PurchaseReturnComponent implements OnInit {
       this.toast.error('All line items must have a quantity greater than zero.');
       return false;
     }
+    if (linesWithProduct.some(l => !l.selectedLotId)) {
+      this.toast.error('Select a source lot for each return line.');
+      return false;
+    }
     if (linesWithProduct.some(l => !l.totalWeightKg || l.totalWeightKg <= 0)) {
       this.toast.error('All line items must have total kg greater than zero.');
+      return false;
+    }
+    if (linesWithProduct.some(l => {
+      const lot = this.getSelectedLot(l);
+      return !!lot && l.totalWeightKg > lot.availableWeightKg;
+    })) {
+      this.toast.error('One or more return lines exceed lot availability.');
       return false;
     }
     return true;
@@ -415,7 +528,6 @@ export class PurchaseReturnComponent implements OnInit {
     this.vehicleNumber = '';
     this.description = '';
     this.purchaseReturnDate = new Date();
-    this.isReadOnlyRatedVoucher = false;
     this.lines = [];
     this.addLine();
     this.purchaseReturnService.getNextNumber().subscribe({
@@ -432,9 +544,13 @@ export class PurchaseReturnComponent implements OnInit {
 
 interface PurchaseReturnLine {
   id?: number;
+  selectedLotId?: number | null;
+  selectedLotNumber?: string | null;
   product: { id: number; name: string; packing: string; packingWeightKg: number } | null;
   qty: number;
   totalWeightKg: number;
   rate: number;
   sortOrder?: number;
+  lotOptions?: SelectOption[];
+  availableLots?: AvailableInventoryLot[];
 }

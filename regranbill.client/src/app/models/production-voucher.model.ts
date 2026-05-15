@@ -3,6 +3,8 @@ export type ProductionLineKind = 'Input' | 'Output' | 'Byproduct' | 'Shortage';
 export interface ProductionLineDto {
   id: number;
   accountId: number;
+  selectedLotId?: number | null;
+  selectedLotNumber?: string | null;
   accountName?: string | null;
   packing?: string | null;
   packingWeightKg?: number | null;
@@ -24,7 +26,12 @@ export interface ProductionShortageDto {
 }
 
 export interface LatestPurchaseRateDto {
+  lotId: number;
+  lotNumber: string;
   accountId: number;
+  vendorId?: number | null;
+  vendorName?: string | null;
+  availableWeightKg: number;
   rate: number;
   sourceVoucherNumber: string;
   sourceDate: string;
@@ -65,11 +72,11 @@ export interface ProductionVoucherListDto {
 
 export interface ProductionLineRequest {
   accountId: number;
+  selectedLotId?: number | null;
   qty: number;
   weightKg: number;
   description?: string | null;
   sortOrder: number;
-  vendorId?: number | null;
   rate?: number | null;
 }
 

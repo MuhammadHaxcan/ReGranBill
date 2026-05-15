@@ -19,6 +19,7 @@ import { SearchableSelectComponent } from './components/searchable-select/search
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
 import { ProductStockReportComponent } from './pages/product-stock-report/product-stock-report.component';
+import { RawMaterialLotReportComponent } from './pages/raw-material-lot-report/raw-material-lot-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
 import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.component';
@@ -57,6 +58,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { SelectOnFocusDirective } from './directives/select-on-focus.directive';
 import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewer-shell.component';
 import { AddAccountModalComponent } from './components/add-account-modal/add-account-modal.component';
+import { DownstreamUsageBannerComponent } from './components/downstream-usage-banner/downstream-usage-banner.component';
 
 @NgModule({
   declarations: [
@@ -87,6 +89,7 @@ import { AddAccountModalComponent } from './components/add-account-modal/add-acc
     SoaComponent,
     MasterReportComponent,
     ProductStockReportComponent,
+    RawMaterialLotReportComponent,
     PdfViewerShellComponent,
     AddAccountModalComponent,
     PkCurrencyPipe,
@@ -110,6 +113,7 @@ import { AddAccountModalComponent } from './components/add-account-modal/add-acc
     PendingProductionsComponent,
     PrintProdComponent,
     PrintWshComponent,
+    DownstreamUsageBannerComponent,
       ],
   imports: [
     BrowserModule,

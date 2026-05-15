@@ -16,11 +16,21 @@ public class PurchaseReturnsController : ControllerBase
 {
     private readonly IPurchaseReturnService _prService;
     private readonly IPdfService _pdfService;
+    private readonly IDownstreamUsageService _downstreamService;
 
-    public PurchaseReturnsController(IPurchaseReturnService prService, IPdfService pdfService)
+    public PurchaseReturnsController(IPurchaseReturnService prService, IPdfService pdfService, IDownstreamUsageService downstreamService)
     {
         _prService = prService;
         _pdfService = pdfService;
+        _downstreamService = downstreamService;
+    }
+
+    [HttpGet("{id}/downstream")]
+    public async Task<IActionResult> GetDownstreamUsage(int id)
+    {
+        var pr = await _prService.GetByIdAsync(id);
+        if (pr == null) return NotFound();
+        return Ok(await _downstreamService.GetForPurchaseReturnAsync(id));
     }
 
     [HttpGet]

@@ -1,4 +1,4 @@
-export type PageGroup = 'vouchers' | 'review' | 'reports' | 'masters' | 'admin' | 'permissions';
+export type PageGroup = 'vouchers' | 'production' | 'review' | 'reports' | 'masters' | 'admin' | 'permissions';
 
 export interface PageDefinition {
   key: string;
@@ -34,9 +34,9 @@ export const PAGES: PageDefinition[] = [
   { key: 'receipt-voucher',        label: 'Receipt Voucher',          group: 'vouchers', groupLabel: 'Vouchers', route: '/receipt-voucher' },
   { key: 'payment-voucher',        label: 'Payment Voucher',          group: 'vouchers', groupLabel: 'Vouchers', route: '/payment-voucher' },
   { key: 'journal-voucher',        label: 'Journal Voucher',          group: 'vouchers', groupLabel: 'Vouchers', route: '/journal-voucher' },
-  { key: 'production-voucher',     label: 'Production Voucher',       group: 'vouchers', groupLabel: 'Vouchers', route: '/production-voucher' },
-  { key: 'formulations',           label: 'Formulations',             group: 'vouchers', groupLabel: 'Vouchers', route: '/formulations' },
-  { key: 'washing-room',           label: 'Washing Room',             group: 'vouchers', groupLabel: 'Vouchers', route: '/washing-voucher' },
+  { key: 'production-voucher',     label: 'Production Voucher',       group: 'production', groupLabel: 'Production', route: '/production-voucher' },
+  { key: 'formulations',           label: 'Formulations',             group: 'production', groupLabel: 'Production', route: '/formulations' },
+  { key: 'washing-room',           label: 'Washing Room',             group: 'production', groupLabel: 'Production', route: '/washing-voucher' },
   { key: 'pending',                label: 'Pending Review',           group: 'review',   groupLabel: 'Review',   route: '/pending' },
   { key: 'rated-vouchers',         label: 'Rated Vouchers',           group: 'review',   groupLabel: 'Review',   route: '/rated-vouchers' },
   { key: 'voucher-editor',         label: 'Voucher Editor',           group: 'review',   groupLabel: 'Review',   route: '/voucher-editor' },
@@ -46,6 +46,7 @@ export const PAGES: PageDefinition[] = [
   { key: 'account-closing-report', label: 'Account Closing',          group: 'reports',  groupLabel: 'Reports',  route: '/account-closing-report' },
   { key: 'sale-purchase-report',   label: 'Sale / Purchase Register', group: 'reports',  groupLabel: 'Reports',  route: '/sale-purchase-report' },
   { key: 'product-stock-report',   label: 'Product Stock',            group: 'reports',  groupLabel: 'Reports',  route: '/product-stock-report' },
+  { key: 'raw-material-lot-report',label: 'Raw Material Lots',        group: 'reports',  groupLabel: 'Reports',  route: '/raw-material-lot-report' },
   { key: 'metadata',               label: 'Categories & Accounts',    group: 'masters',  groupLabel: 'Masters',  route: '/metadata' },
   { key: 'users',                  label: 'Users',                    group: 'admin',    groupLabel: 'Admin',    route: '/users' },
   { key: 'roles',                  label: 'Roles',                    group: 'admin',    groupLabel: 'Admin',    route: '/roles' },
@@ -57,11 +58,12 @@ export const PAGES: PageDefinition[] = [
 
 export const PAGE_GROUPS: PageGroupDefinition[] = [
   { group: 'vouchers',    label: 'Vouchers',    order: 1 },
-  { group: 'review',      label: 'Review',      order: 2 },
-  { group: 'reports',     label: 'Reports',     order: 3 },
-  { group: 'masters',     label: 'Masters',     order: 4 },
-  { group: 'admin',       label: 'Admin',       order: 5 },
-  { group: 'permissions', label: 'Permissions', order: 6 },
+  { group: 'production',  label: 'Production',  order: 2 },
+  { group: 'review',      label: 'Review',      order: 3 },
+  { group: 'reports',     label: 'Reports',     order: 4 },
+  { group: 'masters',     label: 'Masters',     order: 5 },
+  { group: 'admin',       label: 'Admin',       order: 6 },
+  { group: 'permissions', label: 'Permissions', order: 7 },
 ];
 
 const PAGE_BY_KEY = new Map(PAGES.map(p => [p.key, p]));

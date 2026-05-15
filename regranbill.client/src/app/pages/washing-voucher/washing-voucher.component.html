@@ -1,9 +1,14 @@
 <div class="prod-page" *ngIf="!loading">
+  <app-downstream-usage-banner
+    *ngIf="isEditMode"
+    [usages]="downstreamUsages"
+    [sourceLabel]="'washing voucher'">
+  </app-downstream-usage-banner>
   <div class="prod-header">
     <div class="prod-header-row">
       <div>
         <div class="prod-eyebrow">Vouchers</div>
-        <h1 class="prod-title">New Washing Voucher</h1>
+        <h1 class="prod-title">{{ isEditMode ? 'Edit Washing Voucher' : 'New Washing Voucher' }}</h1>
       </div>
       <span class="prod-voucher-num">{{ voucherNumber }}</span>
     </div>
@@ -11,9 +16,12 @@
     <div class="prod-header-fields wash-header-grid">
       <div class="prod-field">
         <label class="prod-label">Date</label>
-        <input type="text" class="form-control"
-               bsDatepicker [(ngModel)]="voucherDate"
-               [bsConfig]="{ dateInputFormat: 'DD-MM-YYYY', containerClass: 'theme-default' }" />
+        <input
+          type="text"
+          class="form-control"
+          bsDatepicker
+          [(ngModel)]="voucherDate"
+          [bsConfig]="{ dateInputFormat: 'DD-MM-YYYY', containerClass: 'theme-default' }" />
       </div>
       <div class="prod-field prod-field-wide">
         <label class="prod-label">Description (optional)</label>
@@ -30,33 +38,69 @@
       </div>
     </div>
     <div class="wash-section-body">
-      <div class="wash-grid-3">
+      <div class="wash-grid-4">
         <div class="prod-field">
           <label class="prod-label">Source vendor</label>
-          <app-searchable-select [options]="vendorOptions"
+          <app-searchable-select
+            [options]="vendorOptions"
             [(ngModel)]="sourceVendorId"
             placeholder="Pick vendor..."
             (ngModelChange)="onVendorOrUnwashedChanged()">
           </app-searchable-select>
         </div>
         <div class="prod-field">
+          <label class="prod-label">Input category</label>
+          <app-searchable-select
+            [options]="sourceCategoryOptions"
+            [(ngModel)]="sourceCategoryId"
+            placeholder="Pick category..."
+            (ngModelChange)="onSourceCategoryChanged()">
+          </app-searchable-select>
+        </div>
+        <div class="prod-field">
           <label class="prod-label">Unwashed material</label>
-          <app-searchable-select [options]="unwashedAccountOptions"
+          <app-searchable-select
+            [options]="unwashedAccountOptions"
             [(ngModel)]="unwashedAccountId"
+            [disabled]="!sourceCategoryId"
             placeholder="Pick unwashed account..."
             (ngModelChange)="onVendorOrUnwashedChanged()">
           </app-searchable-select>
         </div>
         <div class="prod-field">
+          <label class="prod-label">Source lot</label>
+          <app-searchable-select
+            [options]="lotOptions"
+            [(ngModel)]="selectedLotId"
+            placeholder="Pick lot..."
+            (ngModelChange)="onSelectedLotChanged()">
+          </app-searchable-select>
+        </div>
+      </div>
+
+      <div class="wash-grid-3">
+        <div class="prod-field">
           <label class="prod-label">Input weight (kg)</label>
-          <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="inputWeightKg" />
+          <input type="number" min="0" step="0.01" class="form-control" [max]="getMaxInputWeight()" [(ngModel)]="inputWeightKg" (ngModelChange)="onInputWeightChanged()" />
+        </div>
+        <div class="prod-field">
+          <label class="prod-label">Available kg</label>
+          <input
+            type="text"
+            class="form-control wash-readonly"
+            [value]="selectedLot ? (selectedLot.availableWeightKg | number:'1.2-2') + ' kg' : '-'"
+            readonly />
+        </div>
+        <div class="prod-field">
+          <label class="prod-label">Lot rate</label>
+          <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="rate" />
         </div>
       </div>
 
       <div class="wash-rate-strip" *ngIf="rateSource">
-        <span class="wash-rate-pill">Rate</span>
+        <span class="wash-rate-pill">Lot</span>
         <span class="wash-rate-value">{{ rate | number:'1.2-2' }} / kg</span>
-        <span class="wash-rate-source">From {{ rateSource }}</span>
+        <span class="wash-rate-source">{{ rateSource }}</span>
       </div>
     </div>
   </div>
@@ -65,7 +109,7 @@
     <div class="prod-sec-hd output-hd">
       <div class="prod-sec-hd-left">
         <span class="prod-sec-dot"></span>
-        <span class="prod-sec-title">Outputs · Washed molds received</span>
+        <span class="prod-sec-title">Outputs · Washed raw materials received</span>
       </div>
       <button type="button" class="wash-add-line-btn" (click)="addOutputLine()">+ Add Output</button>
     </div>
@@ -77,30 +121,38 @@
         </div>
         <div class="prod-field">
           <label class="prod-label">Derived washed rate</label>
-          <input type="text" class="form-control wash-readonly"
-                 [value]="(washedRate | number:'1.2-2') + ' / kg'"
-                 readonly />
+          <input type="text" class="form-control wash-readonly" [value]="(washedRate | number:'1.2-2') + ' / kg'" readonly />
         </div>
       </div>
 
       <div class="wash-output-table">
-        <div class="wash-output-head">
-          <span>Mold / Raw Material</span>
+        <div class="wash-output-head wash-output-head-5">
+          <span>Category</span>
+          <span>Raw Material</span>
           <span>Weight (kg)</span>
           <span>Amount</span>
           <span></span>
         </div>
 
-        <div class="wash-output-row" *ngFor="let line of outputLines; let i = index">
+        <div class="wash-output-row wash-output-row-5" *ngFor="let line of outputLines; let i = index">
           <div class="prod-field">
             <app-searchable-select
-              [options]="outputAccountOptions"
-              [(ngModel)]="line.accountId"
-              placeholder="Pick output mold...">
+              [options]="outputCategoryOptions"
+              [(ngModel)]="line.categoryId"
+              placeholder="Pick category..."
+              (ngModelChange)="onOutputCategoryChanged(line, $event)">
             </app-searchable-select>
           </div>
           <div class="prod-field">
-            <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="line.weightKg" placeholder="0.00" />
+            <app-searchable-select
+              [options]="getOutputAccountOptions(line)"
+              [(ngModel)]="line.accountId"
+              [disabled]="!line.categoryId"
+              placeholder="Pick output raw material...">
+            </app-searchable-select>
+          </div>
+          <div class="prod-field">
+            <input type="number" min="0" step="0.01" class="form-control" [max]="getMaxOutputWeight(line)" [(ngModel)]="line.weightKg" (ngModelChange)="onOutputWeightChanged(line)" placeholder="0.00" />
           </div>
           <div class="wash-line-amount">
             {{ getOutputLineDebit(i) | number:'1.2-2' }}
@@ -122,9 +174,7 @@
     </div>
   </div>
 
-  <div class="prod-balance"
-       [class.balanced]="!isWastageOverThreshold && wastageKg >= 0"
-       [class.near]="isWastageOverThreshold">
+  <div class="prod-balance" [class.balanced]="!isWastageOverThreshold && wastageKg >= 0" [class.near]="isWastageOverThreshold">
     <div class="prod-balance-cell">
       <span class="prod-balance-label">INPUT</span>
       <span class="prod-balance-value">{{ inputWeightKg || 0 | number:'1.2-2' }} kg</span>
@@ -150,8 +200,8 @@
       <span class="prod-balance-value">{{ washedCost | number:'1.2-2' }}</span>
     </div>
     <div class="prod-balance-status">
-      <span *ngIf="!isWastageOverThreshold && rate > 0" class="prod-balance-tag balanced">✓ Within {{ effectiveThresholdPct }}% threshold</span>
-      <span *ngIf="isWastageOverThreshold" class="prod-balance-tag near">⚠ Excess {{ excessWastageKg | number:'1.2-2' }} kg → vendor (over {{ effectiveThresholdPct }}%)</span>
+      <span *ngIf="!isWastageOverThreshold && rate > 0" class="prod-balance-tag balanced">Within {{ effectiveThresholdPct }}% threshold</span>
+      <span *ngIf="isWastageOverThreshold" class="prod-balance-tag near">Excess {{ excessWastageKg | number:'1.2-2' }} kg → vendor (over {{ effectiveThresholdPct }}%)</span>
     </div>
   </div>
 
@@ -178,10 +228,8 @@
 
   <footer class="prod-footer">
     <span></span>
-    <button type="button" class="pv-btn pv-btn-primary"
-            [disabled]="!canSave"
-            (click)="save()">
-      {{ saving ? 'Saving...' : 'Save Washing Voucher' }}
+    <button type="button" class="pv-btn pv-btn-primary" [disabled]="!canSave" (click)="save()">
+      {{ saving ? 'Saving...' : (isEditMode ? 'Update Washing Voucher' : 'Save Washing Voucher') }}
     </button>
   </footer>
 </div>

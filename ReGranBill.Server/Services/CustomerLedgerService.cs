@@ -87,7 +87,14 @@ public class CustomerLedgerService : ICustomerLedgerService
             var hasItemLinkedRows = orderedVoucherEntries
                 .Any(e => e.SortOrder > 0 && IsItemLinkedEntry(e));
 
-            if (!hasItemLinkedRows)
+            // Washing vouchers have weight/rate on the unwashed-input credit and washed-output debit,
+            // but those are internal inventory transfers — not trade with the queried party.
+            // The only party-relevant line is the vendor entry itself (e.g. excess wastage charged back).
+            // Emit it directly without expanding the internal item-linked rows.
+            var skipItemExpansion = orderedVoucherEntries.Count > 0
+                && orderedVoucherEntries[0].JournalVoucher.VoucherType == VoucherType.WashingVoucher;
+
+            if (!hasItemLinkedRows || skipItemExpansion)
             {
                 foreach (var partyEntry in partyEntries)
                 {

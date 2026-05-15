@@ -15,15 +15,11 @@ public class CreateProductionVoucherRequest
 public class ProductionLineRequest
 {
     public int AccountId { get; set; }
+    public int? SelectedLotId { get; set; }
     public int Qty { get; set; }
     public decimal WeightKg { get; set; }
     public string? Description { get; set; }
     public int SortOrder { get; set; }
-
-    /// Inputs: vendor (Party) whose material this line consumes. Null for outputs/byproducts.
-    public int? VendorId { get; set; }
-
-    /// Inputs: cost rate per kg pulled from latest PurchaseVoucher for (vendor, account); user-editable.
     public decimal? Rate { get; set; }
 }
 

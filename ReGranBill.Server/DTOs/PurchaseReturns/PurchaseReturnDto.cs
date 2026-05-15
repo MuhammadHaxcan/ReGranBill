@@ -20,6 +20,8 @@ public class PurchaseReturnDto
 public class PurchaseReturnLineDto
 {
     public int Id { get; set; }
+    public int? SelectedLotId { get; set; }
+    public string? SelectedLotNumber { get; set; }
     public int ProductId { get; set; }
     public string? ProductName { get; set; }
     public string? Packing { get; set; }

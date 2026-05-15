@@ -16,11 +16,21 @@ public class PurchaseVouchersController : ControllerBase
 {
     private readonly IPurchaseVoucherService _purchaseService;
     private readonly IPdfService _pdfService;
+    private readonly IDownstreamUsageService _downstreamService;
 
-    public PurchaseVouchersController(IPurchaseVoucherService purchaseService, IPdfService pdfService)
+    public PurchaseVouchersController(IPurchaseVoucherService purchaseService, IPdfService pdfService, IDownstreamUsageService downstreamService)
     {
         _purchaseService = purchaseService;
         _pdfService = pdfService;
+        _downstreamService = downstreamService;
+    }
+
+    [HttpGet("{id}/downstream")]
+    public async Task<IActionResult> GetDownstreamUsage(int id)
+    {
+        var voucher = await _purchaseService.GetByIdAsync(id);
+        if (voucher == null) return NotFound();
+        return Ok(await _downstreamService.GetForPurchaseAsync(id));
     }
 
     [HttpGet]

@@ -222,3 +222,29 @@
   transition: background 0.15s var(--ease);
 }
 .perm-chip-on .perm-chip-dot { background: var(--primary); }
+
+@media (max-width: 768px) {
+  .page-header.card {
+    padding: 16px;
+  }
+
+  .header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .header-right .search-input {
+    width: 100%;
+  }
+
+  .card-header {
+    padding: 11px 16px;
+  }
+}

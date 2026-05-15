@@ -12,6 +12,7 @@ public class CreatePurchaseVoucherRequest
 
 public class CreatePurchaseVoucherLineRequest
 {
+    public int? LineId { get; set; }
     public int ProductId { get; set; }
     public int Qty { get; set; }
     public decimal TotalWeightKg { get; set; }

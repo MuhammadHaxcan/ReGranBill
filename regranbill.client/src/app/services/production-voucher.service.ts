@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import {
-  LatestPurchaseRateDto,
   ProductionVoucherApiDto,
   ProductionVoucherListDto,
   ProductionVoucherUpsertRequest
@@ -38,16 +37,5 @@ export class ProductionVoucherService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
-  }
-
-  getLatestPurchaseRates(vendorId: number, accountIds: number[]): Observable<LatestPurchaseRateDto[]> {
-    const ids = accountIds.filter(id => id > 0).join(',');
-    if (!vendorId || !ids) {
-      return new Observable(sub => { sub.next([]); sub.complete(); });
-    }
-    return this.http.get<LatestPurchaseRateDto[]>(
-      `${this.url}/latest-purchase-rates`,
-      { params: { vendorId, accountIds: ids } as any }
-    );
   }
 }

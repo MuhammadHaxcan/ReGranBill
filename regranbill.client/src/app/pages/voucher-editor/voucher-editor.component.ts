@@ -75,15 +75,16 @@ export class VoucherEditorComponent implements OnInit {
   // track in-flight API calls per categoryId
   private categoryAccountRequests = new Map<number, Observable<Account[]>>();
 
+  // Purchase and Purchase Return are intentionally excluded — they must be edited from their
+  // dedicated pages so inventory lots, transactions, and links stay consistent. The server-side
+  // VoucherEditorService.RejectUnsupportedVoucherType also blocks them as a safety net.
   voucherTypeOptions: SelectOption[] = [
     { value: 'JournalVoucher', label: 'Journal Voucher' },
     { value: 'ReceiptVoucher', label: 'Receipt Voucher' },
     { value: 'PaymentVoucher', label: 'Payment Voucher' },
     { value: 'SaleVoucher', label: 'Delivery Challan' },
     { value: 'SaleReturnVoucher', label: 'Sale Return Voucher' },
-    { value: 'CartageVoucher', label: 'Cartage Voucher' },
-    { value: 'PurchaseVoucher', label: 'Purchase Voucher' },
-    { value: 'PurchaseReturnVoucher', label: 'Purchase Return Voucher' }
+    { value: 'CartageVoucher', label: 'Cartage Voucher' }
   ];
 
   rbpOptions: SelectOption[] = [

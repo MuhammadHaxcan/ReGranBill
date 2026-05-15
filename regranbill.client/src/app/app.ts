@@ -29,6 +29,8 @@ export class App implements OnInit, OnDestroy {
   private toastSub!: Subscription;
   private routeSub!: Subscription;
   private userSub!: Subscription;
+  isMobile = false;
+  isDrawerOpen = false;
 
   // Each group is open by default; user can collapse via the chevron.
   private collapsedGroups = new Set<PageGroup>();
@@ -47,6 +49,7 @@ export class App implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.onResize();
     this.updateVisibleGroups();
     this.routeSub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
@@ -73,6 +76,7 @@ export class App implements OnInit, OnDestroy {
     this.routeSub?.unsubscribe();
     this.modalSub?.unsubscribe();
     this.userSub?.unsubscribe();
+    document.body.style.overflow = '';
   }
 
   private showToast(toast: Toast): void {
@@ -105,8 +109,24 @@ export class App implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscapeModal(): void {
+    if (this.isDrawerOpen) {
+      this.closeMobileDrawer();
+    }
     if (this.modalVisible) {
       this.onModalClose();
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    const nextIsMobile = window.innerWidth < 1024;
+    if (this.isMobile !== nextIsMobile) {
+      this.isMobile = nextIsMobile;
+      if (!this.isMobile) {
+        this.closeMobileDrawer();
+      }
+    } else {
+      this.isMobile = nextIsMobile;
     }
   }
 
@@ -167,6 +187,7 @@ export class App implements OnInit, OnDestroy {
 
   navigateTo(route: string): void {
     if (!route) return;
+    this.closeMobileDrawer();
     void this.router.navigateByUrl(route);
   }
 
@@ -178,8 +199,31 @@ export class App implements OnInit, OnDestroy {
   }
 
   logout(): void {
+    this.closeMobileDrawer();
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  toggleMobileDrawer(): void {
+    if (!this.isMobile) return;
+    this.isDrawerOpen = !this.isDrawerOpen;
+    this.syncBodyScrollLock();
+  }
+
+  closeMobileDrawer(): void {
+    if (!this.isDrawerOpen) return;
+    this.isDrawerOpen = false;
+    this.syncBodyScrollLock();
+  }
+
+  get currentPageTitle(): string {
+    const path = this.router.url.split('?')[0].toLowerCase();
+    const page = PAGES.find(p => !!p.route && (path === p.route.toLowerCase() || path.startsWith(`${p.route.toLowerCase()}/`)));
+    return page?.label || 'ReGranBooks';
+  }
+
+  private syncBodyScrollLock(): void {
+    document.body.style.overflow = this.isDrawerOpen ? 'hidden' : '';
   }
 
   private updatePageTitle(): void {
@@ -204,6 +248,7 @@ export class App implements OnInit, OnDestroy {
       { startsWith: '/account-closing-report', title: 'Account Closing Report' },
       { startsWith: '/sale-purchase-report', title: 'Sale Purchase Register' },
       { startsWith: '/product-stock-report', title: 'Product Stock Report' },
+      { startsWith: '/raw-material-lot-report', title: 'Raw Material Lot Report' },
       { startsWith: '/metadata', title: 'Metadata' },
       { startsWith: '/company-settings', title: 'Company Settings' },
       { startsWith: '/users', title: 'User Management' },
@@ -216,5 +261,8 @@ export class App implements OnInit, OnDestroy {
 
     const matched = routeTitles.find(r => path.startsWith(r.startsWith));
     document.title = matched ? `${projectName} - ${matched.title}` : projectName;
+    if (this.isMobile) {
+      this.closeMobileDrawer();
+    }
   }
 }

@@ -20,6 +20,10 @@ public class VoucherEditorService : IVoucherEditorService
             throw new RequestValidationException("Production vouchers can only be edited from the Production Voucher page.");
         if (voucherType == VoucherType.WashingVoucher)
             throw new RequestValidationException("Washing vouchers are auto-generated and cannot be edited here. Soft-delete and recreate if a correction is needed.");
+        if (voucherType == VoucherType.PurchaseVoucher)
+            throw new RequestValidationException("Purchase vouchers must be edited from the Purchase Voucher page so inventory lots stay consistent.");
+        if (voucherType == VoucherType.PurchaseReturnVoucher)
+            throw new RequestValidationException("Purchase return vouchers must be edited from the Purchase Return page so source lot balances stay consistent.");
     }
 
     public async Task<VoucherLedgerDto?> FindByTypeAndNumberAsync(string voucherType, string voucherNumber)

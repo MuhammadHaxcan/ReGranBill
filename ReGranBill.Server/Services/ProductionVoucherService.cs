@@ -14,11 +14,16 @@ public class ProductionVoucherService : IProductionVoucherService
 
     private readonly AppDbContext _db;
     private readonly IVoucherNumberService _voucherNumberService;
+    private readonly IInventoryLotService _inventoryLotService;
 
-    public ProductionVoucherService(AppDbContext db, IVoucherNumberService voucherNumberService)
+    public ProductionVoucherService(
+        AppDbContext db,
+        IVoucherNumberService voucherNumberService,
+        IInventoryLotService inventoryLotService)
     {
         _db = db;
         _voucherNumberService = voucherNumberService;
+        _inventoryLotService = inventoryLotService;
     }
 
     public async Task<List<ProductionVoucherListDto>> GetAllAsync()
@@ -53,12 +58,11 @@ public class ProductionVoucherService : IProductionVoucherService
         var voucher = await _db.JournalVouchers
             .Where(j => j.Id == id && j.VoucherType == VoucherType.ProductionVoucher)
             .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
-            .Include(j => j.Entries).ThenInclude(e => e.VendorAccount)
             .FirstOrDefaultAsync();
 
         if (voucher == null) return null;
-
-        return MapToDto(voucher);
+        var selectedLots = await LoadSelectedLotsAsync(voucher.Id);
+        return MapToDto(voucher, selectedLots);
     }
 
     public Task<string> GetNextNumberAsync() =>
@@ -69,7 +73,6 @@ public class ProductionVoucherService : IProductionVoucherService
         var validation = await ValidateRequestAsync(request);
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
-
         var voucherNumber = await _voucherNumberService.ReserveNextNumberAsync(VoucherSequenceKeys.ProductionVoucher, "PRD-");
 
         var voucher = new JournalVoucher
@@ -84,8 +87,10 @@ public class ProductionVoucherService : IProductionVoucherService
         };
 
         AppendEntries(voucher, request, validation, isEdited: false);
-
         _db.JournalVouchers.Add(voucher);
+        await _db.SaveChangesAsync();
+
+        await ApplyInventoryAsync(voucher, request, validation);
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
@@ -100,21 +105,26 @@ public class ProductionVoucherService : IProductionVoucherService
             .FirstOrDefaultAsync();
 
         if (voucher == null) return null;
+        if (await HasDownstreamConsumptionAsync(id))
+            throw new ConflictException("This production voucher cannot be changed because one or more output lots have already been consumed.");
 
-        var validation = await ValidateRequestAsync(request);
+        var validation = await ValidateRequestAsync(request, id);
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
-
         voucher.Date = request.Date;
         voucher.VehicleNumber = VoucherHelpers.ToNullIfWhiteSpace(request.LotNumber);
         voucher.Description = BuildDescription(request, validation);
         voucher.UpdatedAt = DateTime.UtcNow;
 
+        await RemoveVoucherInventoryAsync(id);
+        await _db.SaveChangesAsync();
+
         _db.JournalEntries.RemoveRange(voucher.Entries);
         voucher.Entries.Clear();
-
         AppendEntries(voucher, request, validation, isEdited: true);
+        await _db.SaveChangesAsync();
 
+        await ApplyInventoryAsync(voucher, request, validation);
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
@@ -127,218 +137,26 @@ public class ProductionVoucherService : IProductionVoucherService
             .FirstOrDefaultAsync(j => j.Id == id && j.VoucherType == VoucherType.ProductionVoucher);
 
         if (voucher == null) return (false, null);
+        if (await HasDownstreamConsumptionAsync(id))
+            return (false, "Cannot delete a production voucher after its output lots have been consumed.");
 
         voucher.IsDeleted = true;
         voucher.UpdatedAt = DateTime.UtcNow;
+        await RemoveVoucherInventoryAsync(id);
         await _db.SaveChangesAsync();
         return (true, null);
     }
 
-    public async Task<List<LatestPurchaseRateDto>> GetLatestPurchaseRatesAsync(int vendorId, IReadOnlyCollection<int> accountIds)
-    {
-        if (vendorId <= 0) return [];
-
-        var ids = accountIds
-            .Where(id => id > 0)
-            .Distinct()
-            .ToArray();
-
-        if (ids.Length == 0) return [];
-
-        // Source 1: direct PurchaseVoucher of this account from this vendor.
-        // PurchaseVoucher convention: party (vendor) line has SortOrder=0; product lines have SortOrder>0.
-        var purchaseRates = await _db.JournalEntries
-            .AsNoTracking()
-            .Where(e =>
-                e.SortOrder > 0 &&
-                ids.Contains(e.AccountId) &&
-                e.Rate.HasValue &&
-                e.Rate.Value > 0 &&
-                e.JournalVoucher.VoucherType == VoucherType.PurchaseVoucher &&
-                e.JournalVoucher.Entries.Any(p => p.SortOrder == 0 && p.AccountId == vendorId))
-            .Select(e => new RateCandidate
-            {
-                AccountId = e.AccountId,
-                Rate = e.Rate!.Value,
-                EntryId = e.Id,
-                VoucherId = e.VoucherId,
-                VoucherNumber = e.JournalVoucher.VoucherNumber,
-                VoucherDate = e.JournalVoucher.Date
-            })
-            .ToListAsync();
-
-        // Source 2: WashingVoucher Dr Washed lines stamped with this vendor (lineage).
-        // This lets a washed RawMaterial bought-as-unwashed-from-vendor-A show up under (A, washed)
-        // even though A never directly sold the washed account.
-        var washingRates = await _db.JournalEntries
-            .AsNoTracking()
-            .Where(e =>
-                ids.Contains(e.AccountId) &&
-                e.Debit > 0 &&
-                e.VendorAccountId == vendorId &&
-                e.Rate.HasValue &&
-                e.Rate.Value > 0 &&
-                e.JournalVoucher.VoucherType == VoucherType.WashingVoucher)
-            .Select(e => new RateCandidate
-            {
-                AccountId = e.AccountId,
-                Rate = e.Rate!.Value,
-                EntryId = e.Id,
-                VoucherId = e.VoucherId,
-                VoucherNumber = e.JournalVoucher.VoucherNumber,
-                VoucherDate = e.JournalVoucher.Date
-            })
-            .ToListAsync();
-
-        return purchaseRates
-            .Concat(washingRates)
-            .OrderByDescending(c => c.VoucherDate)
-            .ThenByDescending(c => c.VoucherId)
-            .ThenByDescending(c => c.EntryId)
-            .GroupBy(c => c.AccountId)
-            .Select(g => g.First())
-            .Select(c => new LatestPurchaseRateDto
-            {
-                AccountId = c.AccountId,
-                Rate = c.Rate,
-                SourceVoucherNumber = c.VoucherNumber,
-                SourceDate = c.VoucherDate
-            })
-            .ToList();
-    }
-
-    private sealed class RateCandidate
-    {
-        public int AccountId { get; set; }
-        public decimal Rate { get; set; }
-        public int EntryId { get; set; }
-        public int VoucherId { get; set; }
-        public string VoucherNumber { get; set; } = string.Empty;
-        public DateOnly VoucherDate { get; set; }
-    }
-
-    private static void AppendEntries(JournalVoucher voucher, CreateProductionVoucherRequest request, ValidatedRequest validation, bool isEdited)
-    {
-        var sortOrder = 0;
-
-        foreach (var line in request.Inputs.OrderBy(l => l.SortOrder))
-        {
-            var account = validation.Accounts[line.AccountId];
-            var weight = VoucherHelpers.Round2(line.WeightKg);
-            var rate = line.Rate!.Value;
-            var amount = VoucherHelpers.Round2(weight * rate);
-            voucher.Entries.Add(new JournalEntry
-            {
-                AccountId = line.AccountId,
-                Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description)
-                    ?? $"{account.Name} - {line.Qty} bags / {weight:0.##} kg (vendor: {validation.VendorAccounts[line.VendorId!.Value].Name})",
-                Debit = 0,
-                Credit = amount,
-                Qty = line.Qty,
-                ActualWeightKg = weight,
-                Rbp = "Yes",
-                Rate = rate,
-                IsEdited = isEdited,
-                LineKind = ProductionLineKind.Input,
-                VendorAccountId = line.VendorId,
-                SortOrder = ++sortOrder
-            });
-        }
-
-        var derivedRate = validation.DerivedRate;
-
-        foreach (var line in request.Outputs.OrderBy(l => l.SortOrder))
-        {
-            var account = validation.Accounts[line.AccountId];
-            var weight = VoucherHelpers.Round2(line.WeightKg);
-            var amount = VoucherHelpers.Round2(weight * derivedRate);
-            voucher.Entries.Add(new JournalEntry
-            {
-                AccountId = line.AccountId,
-                Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description)
-                    ?? $"{account.Name} - {line.Qty} bags / {weight:0.##} kg",
-                Debit = amount,
-                Credit = 0,
-                Qty = line.Qty,
-                ActualWeightKg = weight,
-                Rbp = "Yes",
-                Rate = derivedRate,
-                IsEdited = isEdited,
-                LineKind = ProductionLineKind.Output,
-                SortOrder = ++sortOrder
-            });
-        }
-
-        foreach (var line in request.Byproducts.OrderBy(l => l.SortOrder))
-        {
-            var account = validation.Accounts[line.AccountId];
-            var weight = VoucherHelpers.Round2(line.WeightKg);
-            var amount = VoucherHelpers.Round2(weight * derivedRate);
-            voucher.Entries.Add(new JournalEntry
-            {
-                AccountId = line.AccountId,
-                Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description)
-                    ?? $"{account.Name} - {line.Qty} bags / {weight:0.##} kg",
-                Debit = amount,
-                Credit = 0,
-                Qty = line.Qty,
-                ActualWeightKg = weight,
-                Rbp = "Yes",
-                Rate = derivedRate,
-                IsEdited = isEdited,
-                LineKind = ProductionLineKind.Byproduct,
-                SortOrder = ++sortOrder
-            });
-        }
-
-        if (request.Shortage != null && request.Shortage.WeightKg > 0)
-        {
-            var shortageAccount = validation.Accounts[request.Shortage.AccountId];
-            var shortageKg = VoucherHelpers.Round2(request.Shortage.WeightKg);
-            var shortageAmount = VoucherHelpers.Round2(shortageKg * derivedRate);
-            voucher.Entries.Add(new JournalEntry
-            {
-                AccountId = shortageAccount.Id,
-                Description = $"Production shortage / loss - {shortageKg:0.##} kg",
-                Debit = shortageAmount,
-                Credit = 0,
-                Qty = null,
-                ActualWeightKg = shortageKg,
-                Rbp = "Yes",
-                Rate = derivedRate,
-                IsEdited = isEdited,
-                LineKind = ProductionLineKind.Shortage,
-                SortOrder = ++sortOrder
-            });
-        }
-    }
-
-    private static string? BuildDescription(CreateProductionVoucherRequest request, ValidatedRequest validation)
-    {
-        var trimmed = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
-        if (trimmed != null) return trimmed;
-
-        var inputNames = string.Join(", ", request.Inputs
-            .OrderBy(l => l.SortOrder)
-            .Select(l => validation.Accounts.TryGetValue(l.AccountId, out var a) ? a.Name : $"#{l.AccountId}"));
-        var outputNames = string.Join(", ", request.Outputs
-            .OrderBy(l => l.SortOrder)
-            .Select(l => validation.Accounts.TryGetValue(l.AccountId, out var a) ? a.Name : $"#{l.AccountId}"));
-
-        if (string.IsNullOrEmpty(inputNames) && string.IsNullOrEmpty(outputNames)) return null;
-        return $"Production: {inputNames} -> {outputNames}";
-    }
-
-    private async Task<ValidatedRequest> ValidateRequestAsync(CreateProductionVoucherRequest request)
+    private async Task<ValidatedRequest> ValidateRequestAsync(CreateProductionVoucherRequest request, int? existingVoucherId = null)
     {
         if (request.Inputs.Count == 0)
             throw new RequestValidationException("Add at least one input line.");
         if (request.Outputs.Count == 0)
             throw new RequestValidationException("Add at least one output line.");
 
-        ValidateLines(request.Inputs, "input", requireVendorAndRate: true);
-        ValidateLines(request.Outputs, "output", requireVendorAndRate: false);
-        ValidateLines(request.Byproducts, "byproduct", requireVendorAndRate: false);
+        ValidateLines(request.Inputs, "input", requireSelectedLot: true, requireRate: true);
+        ValidateLines(request.Outputs, "output", requireSelectedLot: false, requireRate: false);
+        ValidateLines(request.Byproducts, "byproduct", requireSelectedLot: false, requireRate: false);
 
         var shortageKg = 0m;
         if (request.Shortage != null)
@@ -364,7 +182,7 @@ public class ProductionVoucherService : IProductionVoucherService
         var accountIds = request.Inputs.Select(l => l.AccountId)
             .Concat(request.Outputs.Select(l => l.AccountId))
             .Concat(request.Byproducts.Select(l => l.AccountId))
-            .Concat(request.Shortage != null && request.Shortage.WeightKg > 0 ? new[] { request.Shortage.AccountId } : Array.Empty<int>())
+            .Concat(request.Shortage != null && request.Shortage.WeightKg > 0 ? [request.Shortage.AccountId] : [])
             .Where(id => id > 0)
             .Distinct()
             .ToList();
@@ -383,12 +201,21 @@ public class ProductionVoucherService : IProductionVoucherService
             }
         }
 
-        foreach (var line in request.Outputs.Concat(request.Byproducts))
+        foreach (var line in request.Outputs)
         {
             if (!accounts.TryGetValue(line.AccountId, out var account)
-                || account.AccountType != AccountType.Product)
+                || account.AccountType != AccountType.RawMaterial)
             {
-                throw new RequestValidationException("Each output / byproduct must be a valid Product account.");
+                throw new RequestValidationException("Each output must be a valid Raw Material account.");
+            }
+        }
+
+        foreach (var line in request.Byproducts)
+        {
+            if (!accounts.TryGetValue(line.AccountId, out var account)
+                || account.AccountType != AccountType.RawMaterial)
+            {
+                throw new RequestValidationException("Each byproduct must be a valid Raw Material account.");
             }
         }
 
@@ -401,38 +228,349 @@ public class ProductionVoucherService : IProductionVoucherService
             }
         }
 
-        var vendorIds = request.Inputs
-            .Where(l => l.VendorId.HasValue && l.VendorId.Value > 0)
-            .Select(l => l.VendorId!.Value)
+        var selectedLotIds = request.Inputs
+            .Where(l => l.SelectedLotId.HasValue && l.SelectedLotId.Value > 0)
+            .Select(l => l.SelectedLotId!.Value)
             .Distinct()
             .ToList();
+        var selectedLots = await _db.InventoryLots
+            .Include(x => x.ProductAccount)
+            .Include(x => x.VendorAccount)
+            .Where(x => selectedLotIds.Contains(x.Id) && x.Status == InventoryLotStatus.Open)
+            .ToDictionaryAsync(x => x.Id);
 
-        var vendorAccounts = await _db.Accounts
-            .Where(a => vendorIds.Contains(a.Id))
-            .ToDictionaryAsync(a => a.Id);
-
-        foreach (var line in request.Inputs)
+        var availableByLot = await _inventoryLotService.GetAvailableWeightByLotIdsAsync(selectedLotIds);
+        if (existingVoucherId.HasValue)
         {
-            if (!vendorAccounts.TryGetValue(line.VendorId!.Value, out var vendor)
-                || vendor.AccountType != AccountType.Party)
+            var currentVoucherLoads = await _db.InventoryTransactions
+                .Where(x => x.VoucherId == existingVoucherId.Value
+                    && x.VoucherType == VoucherType.ProductionVoucher
+                    && x.TransactionType == InventoryTransactionType.ProductionConsume)
+                .GroupBy(x => x.LotId)
+                .Select(g => new { g.Key, Kg = Math.Abs(g.Sum(x => x.WeightKgDelta)) })
+                .ToListAsync();
+
+            foreach (var row in currentVoucherLoads)
             {
-                throw new RequestValidationException("Each input line must specify a valid vendor (Party) account.");
+                availableByLot[row.Key] = availableByLot.GetValueOrDefault(row.Key) + row.Kg;
             }
         }
 
-        // Cost basis: total input cost = Σ(input.weight × input.rate).
-        // Derived per-kg rate distributes that cost uniformly across all physical mass leaving the
-        // production (outputs + byproducts + shortage), so Σ Debit == Σ Credit by construction.
+        var requestedByLot = request.Inputs
+            .GroupBy(x => x.SelectedLotId!.Value)
+            .ToDictionary(g => g.Key, g => VoucherHelpers.Round2(g.Sum(x => x.WeightKg)));
+
+        foreach (var line in request.Inputs)
+        {
+            var lotId = line.SelectedLotId!.Value;
+            if (!selectedLots.TryGetValue(lotId, out var lot))
+                throw new RequestValidationException("Each input line must select a valid lot.");
+            if (lot.ProductAccountId != line.AccountId)
+                throw new RequestValidationException("Selected lot does not match the chosen input material.");
+        }
+
+        foreach (var pair in requestedByLot)
+        {
+            var available = VoucherHelpers.Round2(availableByLot.GetValueOrDefault(pair.Key));
+            if (pair.Value - available > MassBalanceTolerance)
+                throw new RequestValidationException($"Requested input exceeds available lot balance of {available:0.##} kg.");
+        }
+
         var totalInputCost = request.Inputs.Sum(l => VoucherHelpers.Round2(l.WeightKg) * l.Rate!.Value);
         var totalPhysicalOutKg = VoucherHelpers.Round2(totalOutputKg + totalByproductKg + shortageKg);
         var derivedRate = totalPhysicalOutKg > 0
             ? VoucherHelpers.Round2(totalInputCost / totalPhysicalOutKg)
             : 0m;
 
-        return new ValidatedRequest(accounts, vendorAccounts, derivedRate, VoucherHelpers.Round2(totalInputCost));
+        return new ValidatedRequest(accounts, selectedLots, derivedRate, VoucherHelpers.Round2(totalInputCost));
     }
 
-    private static void ValidateLines(IList<ProductionLineRequest> lines, string label, bool requireVendorAndRate)
+    private static void AppendEntries(JournalVoucher voucher, CreateProductionVoucherRequest request, ValidatedRequest validation, bool isEdited)
+    {
+        var sortOrder = 0;
+
+        foreach (var line in request.Inputs.OrderBy(l => l.SortOrder))
+        {
+            var account = validation.Accounts[line.AccountId];
+            var lot = validation.SelectedLots[line.SelectedLotId!.Value];
+            var weight = VoucherHelpers.Round2(line.WeightKg);
+            var rate = line.Rate!.Value;
+            var amount = VoucherHelpers.Round2(weight * rate);
+            voucher.Entries.Add(new JournalEntry
+            {
+                AccountId = line.AccountId,
+                Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description)
+                    ?? $"{account.Name} - {line.Qty} bags / {weight:0.##} kg from lot {lot.LotNumber}",
+                Debit = 0,
+                Credit = amount,
+                Qty = line.Qty,
+                ActualWeightKg = weight,
+                Rbp = "Yes",
+                Rate = rate,
+                IsEdited = isEdited,
+                LineKind = ProductionLineKind.Input,
+                SortOrder = ++sortOrder
+            });
+        }
+
+        var derivedRate = validation.DerivedRate;
+
+        foreach (var line in request.Outputs.OrderBy(l => l.SortOrder))
+        {
+            var account = validation.Accounts[line.AccountId];
+            var weight = VoucherHelpers.Round2(line.WeightKg);
+            var amount = VoucherHelpers.Round2(weight * derivedRate);
+            voucher.Entries.Add(new JournalEntry
+            {
+                AccountId = line.AccountId,
+                Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description) ?? $"{account.Name} - {line.Qty} bags / {weight:0.##} kg",
+                Debit = amount,
+                Credit = 0,
+                Qty = line.Qty,
+                ActualWeightKg = weight,
+                Rbp = "Yes",
+                Rate = derivedRate,
+                IsEdited = isEdited,
+                LineKind = ProductionLineKind.Output,
+                SortOrder = ++sortOrder
+            });
+        }
+
+        foreach (var line in request.Byproducts.OrderBy(l => l.SortOrder))
+        {
+            var account = validation.Accounts[line.AccountId];
+            var weight = VoucherHelpers.Round2(line.WeightKg);
+            var amount = VoucherHelpers.Round2(weight * derivedRate);
+            voucher.Entries.Add(new JournalEntry
+            {
+                AccountId = line.AccountId,
+                Description = VoucherHelpers.ToNullIfWhiteSpace(line.Description) ?? $"{account.Name} - {line.Qty} bags / {weight:0.##} kg",
+                Debit = amount,
+                Credit = 0,
+                Qty = line.Qty,
+                ActualWeightKg = weight,
+                Rbp = "Yes",
+                Rate = derivedRate,
+                IsEdited = isEdited,
+                LineKind = ProductionLineKind.Byproduct,
+                SortOrder = ++sortOrder
+            });
+        }
+
+        if (request.Shortage != null && request.Shortage.WeightKg > 0)
+        {
+            var shortageAccount = validation.Accounts[request.Shortage.AccountId];
+            var shortageKg = VoucherHelpers.Round2(request.Shortage.WeightKg);
+            var shortageAmount = VoucherHelpers.Round2(shortageKg * derivedRate);
+            voucher.Entries.Add(new JournalEntry
+            {
+                AccountId = shortageAccount.Id,
+                Description = $"Production shortage / loss - {shortageKg:0.##} kg",
+                Debit = shortageAmount,
+                Credit = 0,
+                ActualWeightKg = shortageKg,
+                Rbp = "Yes",
+                Rate = derivedRate,
+                IsEdited = isEdited,
+                LineKind = ProductionLineKind.Shortage,
+                SortOrder = ++sortOrder
+            });
+        }
+    }
+
+    private async Task ApplyInventoryAsync(JournalVoucher voucher, CreateProductionVoucherRequest request, ValidatedRequest validation)
+    {
+        var inputEntries = voucher.Entries.Where(x => x.LineKind == ProductionLineKind.Input).OrderBy(x => x.SortOrder).ToList();
+        for (var index = 0; index < inputEntries.Count; index++)
+        {
+            var entry = inputEntries[index];
+            var input = request.Inputs.OrderBy(x => x.SortOrder).ElementAt(index);
+            var lot = validation.SelectedLots[input.SelectedLotId!.Value];
+
+            var tx = new InventoryTransaction
+            {
+                VoucherId = voucher.Id,
+                VoucherType = VoucherType.ProductionVoucher,
+                VoucherLineKey = $"production-input-{entry.SortOrder}",
+                TransactionType = InventoryTransactionType.ProductionConsume,
+                ProductAccountId = entry.AccountId,
+                LotId = lot.Id,
+                QtyDelta = entry.Qty > 0 ? -entry.Qty : null,
+                WeightKgDelta = -(entry.ActualWeightKg ?? 0m),
+                Rate = entry.Rate ?? 0m,
+                ValueDelta = -entry.Credit,
+                TransactionDate = voucher.Date,
+                Notes = entry.Description
+            };
+            _db.InventoryTransactions.Add(tx);
+            await _db.SaveChangesAsync();
+
+            _db.InventoryVoucherLinks.Add(new InventoryVoucherLink
+            {
+                VoucherId = voucher.Id,
+                VoucherType = VoucherType.ProductionVoucher,
+                VoucherLineKey = $"production-input-{entry.SortOrder}",
+                LotId = lot.Id,
+                TransactionId = tx.Id
+            });
+        }
+
+        var uniqueVendorIds = validation.SelectedLots.Values
+            .Select(x => x.VendorAccountId)
+            .Where(x => x.HasValue)
+            .Select(x => x!.Value)
+            .Distinct()
+            .ToList();
+        var outputVendorId = uniqueVendorIds.Count == 1 ? uniqueVendorIds[0] : (int?)null;
+
+        var outputEntries = voucher.Entries
+            .Where(x => x.LineKind == ProductionLineKind.Output || x.LineKind == ProductionLineKind.Byproduct)
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+
+        foreach (var entry in outputEntries)
+        {
+            var prefix = entry.LineKind == ProductionLineKind.Output ? "O" : "B";
+            var ordinal = outputEntries.Count(x => x.SortOrder <= entry.SortOrder && x.LineKind == entry.LineKind);
+            var lineKey = entry.LineKind == ProductionLineKind.Output
+                ? $"production-output-{ordinal}"
+                : $"production-byproduct-{ordinal}";
+
+            var lot = new InventoryLot
+            {
+                LotNumber = $"{voucher.VoucherNumber}-{prefix}{ordinal:00}",
+                ProductAccountId = entry.AccountId,
+                VendorAccountId = outputVendorId,
+                SourceVoucherId = voucher.Id,
+                SourceVoucherType = VoucherType.ProductionVoucher,
+                SourceEntryId = entry.Id,
+                ParentLotId = null,
+                OriginalQty = entry.Qty > 0 ? entry.Qty : null,
+                OriginalWeightKg = entry.ActualWeightKg ?? 0m,
+                BaseRate = entry.Rate ?? 0m,
+                Status = InventoryLotStatus.Open
+            };
+            _db.InventoryLots.Add(lot);
+            await _db.SaveChangesAsync();
+
+            var tx = new InventoryTransaction
+            {
+                VoucherId = voucher.Id,
+                VoucherType = VoucherType.ProductionVoucher,
+                VoucherLineKey = lineKey,
+                TransactionType = InventoryTransactionType.ProductionOutput,
+                ProductAccountId = entry.AccountId,
+                LotId = lot.Id,
+                QtyDelta = entry.Qty > 0 ? entry.Qty : null,
+                WeightKgDelta = entry.ActualWeightKg ?? 0m,
+                Rate = entry.Rate ?? 0m,
+                ValueDelta = entry.Debit,
+                TransactionDate = voucher.Date,
+                Notes = entry.Description
+            };
+            _db.InventoryTransactions.Add(tx);
+            await _db.SaveChangesAsync();
+
+            _db.InventoryVoucherLinks.Add(new InventoryVoucherLink
+            {
+                VoucherId = voucher.Id,
+                VoucherType = VoucherType.ProductionVoucher,
+                VoucherLineKey = lineKey,
+                LotId = lot.Id,
+                TransactionId = tx.Id
+            });
+        }
+    }
+
+    private async Task<Dictionary<string, InventoryLot>> LoadSelectedLotsAsync(int voucherId)
+    {
+        var links = await _db.InventoryVoucherLinks
+            .AsNoTracking()
+            .Where(x => x.VoucherId == voucherId && x.VoucherType == VoucherType.ProductionVoucher && x.VoucherLineKey.StartsWith("production-input-"))
+            .ToListAsync();
+        if (links.Count == 0)
+            return [];
+
+        var lots = await _db.InventoryLots
+            .AsNoTracking()
+            .Include(x => x.VendorAccount)
+            .Where(x => links.Select(l => l.LotId).Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
+
+        return links.ToDictionary(x => x.VoucherLineKey, x => lots[x.LotId]);
+    }
+
+    private async Task<bool> HasDownstreamConsumptionAsync(int voucherId)
+    {
+        var outputLotIds = await _db.InventoryVoucherLinks
+            .Where(x => x.VoucherId == voucherId && x.VoucherType == VoucherType.ProductionVoucher)
+            .Join(_db.InventoryTransactions, link => link.TransactionId, tx => tx.Id, (link, tx) => new { link.LotId, tx.TransactionType })
+            .Where(x => x.TransactionType == InventoryTransactionType.ProductionOutput)
+            .Select(x => x.LotId)
+            .Distinct()
+            .ToListAsync();
+
+        if (outputLotIds.Count == 0)
+            return false;
+
+        var directlyConsumed = await _db.InventoryTransactions
+            .AnyAsync(x => outputLotIds.Contains(x.LotId) && x.TransactionType != InventoryTransactionType.ProductionOutput);
+        if (directlyConsumed)
+            return true;
+
+        // Defense in depth: also walk ChildLots so a descendant lot still alive
+        // (parent transaction removed in a prior rebuild) blocks the edit/delete.
+        var childLotIds = await _db.InventoryLots
+            .Where(x => x.ParentLotId.HasValue && outputLotIds.Contains(x.ParentLotId!.Value)
+                && x.Status != InventoryLotStatus.Voided)
+            .Select(x => x.Id)
+            .ToListAsync();
+        if (childLotIds.Count == 0)
+            return false;
+
+        return await _db.InventoryTransactions.AnyAsync(x => childLotIds.Contains(x.LotId));
+    }
+
+    private async Task RemoveVoucherInventoryAsync(int voucherId)
+    {
+        var links = await _db.InventoryVoucherLinks
+            .Where(x => x.VoucherId == voucherId && x.VoucherType == VoucherType.ProductionVoucher)
+            .ToListAsync();
+        if (links.Count == 0)
+            return;
+
+        var transactionIds = links.Select(x => x.TransactionId).Distinct().ToList();
+        var createdLotIds = await _db.InventoryTransactions
+            .Where(x => transactionIds.Contains(x.Id) && x.TransactionType == InventoryTransactionType.ProductionOutput)
+            .Select(x => x.LotId)
+            .Distinct()
+            .ToListAsync();
+
+        var transactions = await _db.InventoryTransactions.Where(x => transactionIds.Contains(x.Id)).ToListAsync();
+        var createdLots = await _db.InventoryLots.Where(x => createdLotIds.Contains(x.Id)).ToListAsync();
+
+        _db.InventoryVoucherLinks.RemoveRange(links);
+        _db.InventoryTransactions.RemoveRange(transactions);
+        foreach (var lot in createdLots)
+        {
+            lot.Status = InventoryLotStatus.Voided;
+            lot.SourceEntryId = null;
+            lot.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    private static string? BuildDescription(CreateProductionVoucherRequest request, ValidatedRequest validation)
+    {
+        var trimmed = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
+        if (trimmed != null) return trimmed;
+
+        var inputNames = string.Join(", ", request.Inputs.OrderBy(l => l.SortOrder).Select(l => validation.Accounts[l.AccountId].Name));
+        var outputNames = string.Join(", ", request.Outputs.OrderBy(l => l.SortOrder).Select(l => validation.Accounts[l.AccountId].Name));
+        if (string.IsNullOrEmpty(inputNames) && string.IsNullOrEmpty(outputNames)) return null;
+        return $"Production: {inputNames} -> {outputNames}";
+    }
+
+    private static void ValidateLines(IList<ProductionLineRequest> lines, string label, bool requireSelectedLot, bool requireRate)
     {
         foreach (var line in lines)
         {
@@ -442,21 +580,17 @@ public class ProductionVoucherService : IProductionVoucherService
                 throw new RequestValidationException($"{label} bags cannot be negative.");
             if (line.WeightKg <= 0)
                 throw new RequestValidationException($"{label} weight must be greater than zero.");
-
-            if (requireVendorAndRate)
-            {
-                if (!line.VendorId.HasValue || line.VendorId.Value <= 0)
-                    throw new RequestValidationException($"Each {label} line must select a vendor.");
-                if (!line.Rate.HasValue || line.Rate.Value <= 0)
-                    throw new RequestValidationException($"Each {label} line must have a rate greater than zero.");
-            }
+            if (requireSelectedLot && (!line.SelectedLotId.HasValue || line.SelectedLotId.Value <= 0))
+                throw new RequestValidationException($"Each {label} line must select a lot.");
+            if (requireRate && (!line.Rate.HasValue || line.Rate.Value <= 0))
+                throw new RequestValidationException($"Each {label} line must have a rate greater than zero.");
         }
     }
 
     private static decimal SumKg(IEnumerable<JournalEntry> entries, ProductionLineKind kind) =>
         VoucherHelpers.Round2(entries.Where(e => e.LineKind == kind).Sum(e => e.ActualWeightKg ?? 0m));
 
-    private static ProductionVoucherDto MapToDto(JournalVoucher voucher)
+    private static ProductionVoucherDto MapToDto(JournalVoucher voucher, IReadOnlyDictionary<string, InventoryLot> selectedLots)
     {
         var entries = voucher.Entries.OrderBy(e => e.SortOrder).ToList();
 
@@ -464,6 +598,8 @@ public class ProductionVoucherService : IProductionVoucherService
         {
             Id = e.Id,
             AccountId = e.AccountId,
+            SelectedLotId = e.LineKind == ProductionLineKind.Input ? selectedLots.GetValueOrDefault($"production-input-{e.SortOrder}")?.Id : null,
+            SelectedLotNumber = e.LineKind == ProductionLineKind.Input ? selectedLots.GetValueOrDefault($"production-input-{e.SortOrder}")?.LotNumber : null,
             AccountName = e.Account?.Name,
             Packing = e.Account?.ProductDetail?.Packing,
             PackingWeightKg = e.Account?.ProductDetail?.PackingWeightKg,
@@ -471,8 +607,8 @@ public class ProductionVoucherService : IProductionVoucherService
             WeightKg = e.ActualWeightKg ?? 0,
             Description = e.Description,
             SortOrder = e.SortOrder,
-            VendorId = e.VendorAccountId,
-            VendorName = e.VendorAccount?.Name,
+            VendorId = e.LineKind == ProductionLineKind.Input ? selectedLots.GetValueOrDefault($"production-input-{e.SortOrder}")?.VendorAccountId : null,
+            VendorName = e.LineKind == ProductionLineKind.Input ? selectedLots.GetValueOrDefault($"production-input-{e.SortOrder}")?.VendorAccount?.Name : null,
             Rate = e.Rate
         };
 
@@ -514,7 +650,7 @@ public class ProductionVoucherService : IProductionVoucherService
 
     private sealed record ValidatedRequest(
         IReadOnlyDictionary<int, Account> Accounts,
-        IReadOnlyDictionary<int, Account> VendorAccounts,
+        IReadOnlyDictionary<int, InventoryLot> SelectedLots,
         decimal DerivedRate,
         decimal TotalInputCost);
 }

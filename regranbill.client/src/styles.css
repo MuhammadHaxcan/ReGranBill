@@ -419,3 +419,34 @@ a {
   background: rgba(79, 70, 229, 0.15);
   color: var(--text-primary);
 }
+
+@media (max-width: 1023px) {
+  .main-content .card,
+  .main-content .prod-section,
+  .main-content .prod-header {
+    border-radius: 12px !important;
+  }
+
+  .main-content .card {
+    padding: 18px 16px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .main-content .bottom-actions,
+  .main-content .prod-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 18;
+    background: rgba(246, 248, 251, 0.96);
+    backdrop-filter: blur(4px);
+    border-top: 1px solid var(--border);
+    margin-top: 10px !important;
+    padding: 10px 2px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .main-content .bottom-actions .btn,
+  .main-content .prod-footer .pv-btn {
+    min-height: 42px;
+  }
+}

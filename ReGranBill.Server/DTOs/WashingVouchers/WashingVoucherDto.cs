@@ -6,7 +6,9 @@ public class CreateWashingVoucherRequest
     public string? Description { get; set; }
     public int SourceVendorId { get; set; }
     public int UnwashedAccountId { get; set; }
+    public int SelectedLotId { get; set; }
     public decimal InputWeightKg { get; set; }
+    public decimal InputRate { get; set; }
     public decimal OutputWeightKg { get; set; }
     public List<CreateWashingVoucherOutputLineRequest> OutputLines { get; set; } = [];
 
@@ -31,6 +33,8 @@ public class WashingVoucherDto
     public string? SourceVendorName { get; set; }
     public int UnwashedAccountId { get; set; }
     public string? UnwashedAccountName { get; set; }
+    public int SelectedLotId { get; set; }
+    public string? SelectedLotNumber { get; set; }
     public int? WashedAccountId { get; set; }
     public string? WashedAccountName { get; set; }
     public decimal InputWeightKg { get; set; }
@@ -58,6 +62,8 @@ public class WashingVoucherListDto
     public string? SourceVendorName { get; set; }
     public int UnwashedAccountId { get; set; }
     public string? UnwashedAccountName { get; set; }
+    public int SelectedLotId { get; set; }
+    public string? SelectedLotNumber { get; set; }
     public decimal InputWeightKg { get; set; }
     public decimal OutputWeightKg { get; set; }
     public int OutputLineCount { get; set; }
@@ -72,6 +78,7 @@ public class WashingVoucherListDto
 
 public class LatestUnwashedRateDto
 {
+    public int LotId { get; set; }
     public int AccountId { get; set; }
     public decimal Rate { get; set; }
     public string SourceVoucherNumber { get; set; } = string.Empty;

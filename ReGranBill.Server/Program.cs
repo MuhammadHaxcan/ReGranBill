@@ -77,6 +77,8 @@ builder.Services.AddScoped<IAccountClosingReportService, AccountClosingReportSer
 builder.Services.AddScoped<ICompanySettingsService, CompanySettingsService>();
 builder.Services.AddScoped<ISalePurchaseReportService, SalePurchaseReportService>();
 builder.Services.AddScoped<IProductStockReportService, ProductStockReportService>();
+builder.Services.AddScoped<IInventoryLotService, InventoryLotService>();
+builder.Services.AddScoped<IDownstreamUsageService, DownstreamUsageService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IVoucherNumberService, VoucherNumberService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();

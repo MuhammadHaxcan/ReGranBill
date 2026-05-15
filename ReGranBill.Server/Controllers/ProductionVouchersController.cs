@@ -13,10 +13,20 @@ namespace ReGranBill.Server.Controllers;
 public class ProductionVouchersController : ControllerBase
 {
     private readonly IProductionVoucherService _service;
+    private readonly IDownstreamUsageService _downstreamService;
 
-    public ProductionVouchersController(IProductionVoucherService service)
+    public ProductionVouchersController(IProductionVoucherService service, IDownstreamUsageService downstreamService)
     {
         _service = service;
+        _downstreamService = downstreamService;
+    }
+
+    [HttpGet("{id}/downstream")]
+    public async Task<IActionResult> GetDownstreamUsage(int id)
+    {
+        var voucher = await _service.GetByIdAsync(id);
+        if (voucher == null) return NotFound();
+        return Ok(await _downstreamService.GetForProductionAsync(id));
     }
 
     [HttpGet]
@@ -35,19 +45,6 @@ public class ProductionVouchersController : ControllerBase
     {
         var voucherNumber = await _service.GetNextNumberAsync();
         return Ok(new { voucherNumber });
-    }
-
-    [HttpGet("latest-purchase-rates")]
-    public async Task<IActionResult> GetLatestPurchaseRates([FromQuery] int vendorId, [FromQuery] string accountIds)
-    {
-        var ids = (accountIds ?? string.Empty)
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(s => int.TryParse(s, out var id) ? id : 0)
-            .Where(id => id > 0)
-            .ToList();
-
-        var rates = await _service.GetLatestPurchaseRatesAsync(vendorId, ids);
-        return Ok(rates);
     }
 
     [HttpPost]

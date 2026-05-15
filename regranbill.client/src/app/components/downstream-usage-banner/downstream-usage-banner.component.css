@@ -1,0 +1,67 @@
+.downstream-banner {
+  border: 1px solid #f5c97a;
+  background: #fff7e6;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  color: #5a3e00;
+}
+
+.downstream-banner__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.downstream-banner__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f0ad4e;
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.downstream-banner__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.downstream-banner__sub {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.downstream-banner__list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.downstream-banner__item {
+  margin: 2px 0;
+}
+
+.downstream-banner__link {
+  color: #0d5aa7;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.downstream-banner__link:hover {
+  text-decoration: underline;
+}
+
+.downstream-banner__voucher {
+  font-weight: 600;
+}
+
+.downstream-banner__meta {
+  color: #6c573a;
+  margin-left: 6px;
+}

@@ -11,6 +11,7 @@ import { AddPurchaseRateComponent } from './pages/add-purchase-rate/add-purchase
 import { SoaComponent } from './pages/soa/soa.component';
 import { MasterReportComponent } from './pages/master-report/master-report.component';
 import { ProductStockReportComponent } from './pages/product-stock-report/product-stock-report.component';
+import { RawMaterialLotReportComponent } from './pages/raw-material-lot-report/raw-material-lot-report.component';
 import { PrintDcComponent } from './pages/print-dc/print-dc.component';
 import { JournalVoucherComponent } from './pages/journal-voucher/journal-voucher.component';
 import { CashVoucherComponent } from './pages/cash-voucher/cash-voucher.component';
@@ -95,6 +96,7 @@ const routes: Routes = [
   { path: 'pending-productions',       component: PendingProductionsComponent, canActivate: guarded, data: { pageKey: 'production-voucher' } },
   { path: 'formulations',              component: FormulationsComponent,       canActivate: guarded, data: { pageKey: 'formulations' } },
   { path: 'washing-voucher',           component: WashingVoucherComponent,     canActivate: guarded, data: { pageKey: 'washing-room' } },
+  { path: 'washing-voucher/:id',       component: WashingVoucherComponent,     canActivate: guarded, data: { pageKey: 'washing-room' } },
   { path: 'print-prod/:id',            component: PrintProdComponent,          canActivate: guarded, data: { pageKey: 'production-voucher' } },
   { path: 'print-wsh/:voucherKey',     component: PrintWshComponent,           canActivate: guarded, data: { pageKey: 'washing-room' } },
 
@@ -115,6 +117,7 @@ const routes: Routes = [
   { path: 'print-account-closing-report', component: PrintAccountClosingReportComponent, canActivate: guarded, data: { pageKey: 'account-closing-report' } },
   { path: 'sale-purchase-report',      component: SalePurchaseReportComponent, canActivate: guarded, data: { pageKey: 'sale-purchase-report' } },
   { path: 'product-stock-report',      component: ProductStockReportComponent, canActivate: guarded, data: { pageKey: 'product-stock-report' } },
+  { path: 'raw-material-lot-report',   component: RawMaterialLotReportComponent, canActivate: guarded, data: { pageKey: 'raw-material-lot-report' } },
   { path: 'print-product-stock-report', component: PrintProductStockReportComponent, canActivate: guarded, data: { pageKey: 'product-stock-report' } },
 
   // Masters

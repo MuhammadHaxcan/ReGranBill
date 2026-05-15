@@ -10,5 +10,4 @@ public interface IProductionVoucherService
     Task<ProductionVoucherDto> CreateAsync(CreateProductionVoucherRequest request, int userId);
     Task<ProductionVoucherDto?> UpdateAsync(int id, CreateProductionVoucherRequest request);
     Task<(bool Success, string? Error)> SoftDeleteAsync(int id);
-    Task<List<LatestPurchaseRateDto>> GetLatestPurchaseRatesAsync(int vendorId, IReadOnlyCollection<int> accountIds);
 }

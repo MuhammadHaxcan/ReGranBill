@@ -1,0 +1,30 @@
+@if (hasUsage) {
+  <div class="downstream-banner">
+    <div class="downstream-banner__head">
+      <span class="downstream-banner__icon" aria-hidden="true">!</span>
+      <div>
+        <div class="downstream-banner__title">This {{ sourceLabel }} has downstream movements</div>
+        <div class="downstream-banner__sub">
+          Editing or deleting may be restricted because the lots created or affected by this {{ sourceLabel }} are referenced by other vouchers.
+        </div>
+      </div>
+    </div>
+    <ul class="downstream-banner__list">
+      @for (u of usages; track u.voucherId + '-' + u.lotId + '-' + u.transactionType) {
+        <li class="downstream-banner__item">
+          @if (routeFor(u); as link) {
+            <a [routerLink]="link" class="downstream-banner__link">
+              {{ prettyType(u.voucherType) }} {{ u.voucherNumber }}
+            </a>
+          } @else {
+            <span class="downstream-banner__voucher">{{ prettyType(u.voucherType) }} {{ u.voucherNumber }}</span>
+          }
+          <span class="downstream-banner__meta">
+            on {{ u.date }} &middot; lot {{ u.lotNumber }} &middot; {{ prettyTxType(u.transactionType) }}
+            &middot; {{ u.weightKgDelta | number: '1.0-2' }} kg
+          </span>
+        </li>
+      }
+    </ul>
+  </div>
+}

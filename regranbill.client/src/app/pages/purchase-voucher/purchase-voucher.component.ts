@@ -4,6 +4,7 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseVoucherService } from '../../services/purchase-voucher.service';
+import { DownstreamUsage, DownstreamUsageService } from '../../services/downstream-usage.service';
 import { CompanySettingsService } from '../../services/company-settings.service';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
@@ -52,6 +53,7 @@ export class PurchaseVoucherComponent implements OnInit {
   vehicleOptions: VehicleOption[] = [];
   lines: ProductLine[] = [];
   loading = true;
+  downstreamUsages: DownstreamUsage[] = [];
   private latestRatesByProductId = new Map<number, number>();
 
   // Dropdown options
@@ -69,7 +71,6 @@ export class PurchaseVoucherComponent implements OnInit {
   showCartageForm = false;
   cartageTransporterId: number | null = null;
   cartageAmount: number = 0;
-  isReadOnlyRatedVoucher = false;
 
   // Add account modal
   showAddAccountModal = false;
@@ -84,6 +85,7 @@ export class PurchaseVoucherComponent implements OnInit {
     private accountService: AccountService,
     private authService: AuthService,
     private purchaseService: PurchaseVoucherService,
+    private downstreamService: DownstreamUsageService,
     private companySettingsService: CompanySettingsService,
     private categoryService: CategoryService,
     private route: ActivatedRoute,
@@ -216,6 +218,19 @@ export class PurchaseVoucherComponent implements OnInit {
     });
   }
 
+  private loadDownstreamUsage(): void {
+    if (!this.isEditMode || this.challanId === null) return;
+    this.downstreamService.forPurchase(this.challanId).subscribe({
+      next: rows => {
+        this.downstreamUsages = rows;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.downstreamUsages = [];
+      }
+    });
+  }
+
   loadChallan(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
@@ -256,9 +271,9 @@ export class PurchaseVoucherComponent implements OnInit {
             city: voucher.cartage.city || '',
             amount: voucher.cartage.amount
           } : null;
-          this.isReadOnlyRatedVoucher = !!voucher.ratesAdded;
           this.loading = false;
           this.cdr.detectChanges();
+          this.loadDownstreamUsage();
         },
         error: () => {
           this.toast.error('Unable to load purchase voucher.');
@@ -413,6 +428,7 @@ export class PurchaseVoucherComponent implements OnInit {
       lines: this.lines
         .filter(l => l.product)
         .map((l, i) => ({
+          lineId: l.id ?? null,
           productId: l.product!.id,
           qty: toNumber(l.qty),
           totalWeightKg: toNumber(l.totalWeightKg),
@@ -431,7 +447,7 @@ export class PurchaseVoucherComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !this.isReadOnlyRatedVoucher && !!this.selectedVendorId && this.validLines.length > 0;
+    return !!this.selectedVendorId && this.validLines.length > 0;
   }
 
   private validate(): boolean {
@@ -515,7 +531,6 @@ export class PurchaseVoucherComponent implements OnInit {
     this.voucherDate = new Date();
     this.cartage = null;
     this.showCartageForm = false;
-    this.isReadOnlyRatedVoucher = false;
     this.lines = [];
     this.addLine();
     this.purchaseService.getNextNumber().subscribe({

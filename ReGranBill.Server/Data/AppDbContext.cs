@@ -24,6 +24,9 @@ public class AppDbContext : DbContext
     public DbSet<VehicleOption> VehicleOptions => Set<VehicleOption>();
     public DbSet<Formulation> Formulations => Set<Formulation>();
     public DbSet<FormulationLine> FormulationLines => Set<FormulationLine>();
+    public DbSet<InventoryLot> InventoryLots => Set<InventoryLot>();
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+    public DbSet<InventoryVoucherLink> InventoryVoucherLinks => Set<InventoryVoucherLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -147,8 +150,55 @@ public class AppDbContext : DbContext
                 .HasConversion(v => v == null ? null : v.Value.ToString(), v => v == null ? null : Enum.Parse<ProductionLineKind>(v));
             e.HasOne(je => je.JournalVoucher).WithMany(j => j.Entries).HasForeignKey(je => je.VoucherId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(je => je.Account).WithMany().HasForeignKey(je => je.AccountId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(je => je.VendorAccount).WithMany().HasForeignKey(je => je.VendorAccountId).OnDelete(DeleteBehavior.Restrict);
             e.HasQueryFilter(je => !je.JournalVoucher.IsDeleted);
+        });
+
+        modelBuilder.Entity<InventoryLot>(e =>
+        {
+            e.ToTable("inventory_lots");
+            e.HasIndex(x => x.LotNumber);
+            e.Property(x => x.LotNumber).HasMaxLength(50);
+            e.Property(x => x.SourceVoucherType).HasMaxLength(50)
+                .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
+            e.Property(x => x.OriginalWeightKg).HasColumnType("decimal(14,2)");
+            e.Property(x => x.BaseRate).HasColumnType("decimal(12,2)");
+            e.Property(x => x.Status).HasMaxLength(20)
+                .HasConversion(v => v.ToString(), v => Enum.Parse<InventoryLotStatus>(v));
+            e.HasOne(x => x.ProductAccount).WithMany().HasForeignKey(x => x.ProductAccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.VendorAccount).WithMany().HasForeignKey(x => x.VendorAccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.SourceVoucher).WithMany().HasForeignKey(x => x.SourceVoucherId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.SourceEntry).WithMany().HasForeignKey(x => x.SourceEntryId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ParentLot).WithMany(x => x.ChildLots).HasForeignKey(x => x.ParentLotId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InventoryTransaction>(e =>
+        {
+            e.ToTable("inventory_transactions");
+            e.Property(x => x.VoucherType).HasMaxLength(50)
+                .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
+            e.Property(x => x.VoucherLineKey).HasMaxLength(80);
+            e.Property(x => x.TransactionType).HasMaxLength(30)
+                .HasConversion(v => v.ToString(), v => Enum.Parse<InventoryTransactionType>(v));
+            e.Property(x => x.WeightKgDelta).HasColumnType("decimal(14,2)");
+            e.Property(x => x.Rate).HasColumnType("decimal(12,2)");
+            e.Property(x => x.ValueDelta).HasColumnType("decimal(14,2)");
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => new { x.LotId, x.TransactionDate, x.Id });
+            e.HasOne(x => x.Voucher).WithMany().HasForeignKey(x => x.VoucherId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.ProductAccount).WithMany().HasForeignKey(x => x.ProductAccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Lot).WithMany(x => x.Transactions).HasForeignKey(x => x.LotId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InventoryVoucherLink>(e =>
+        {
+            e.ToTable("inventory_voucher_links");
+            e.Property(x => x.VoucherType).HasMaxLength(50)
+                .HasConversion(v => v.ToString(), v => Enum.Parse<VoucherType>(v));
+            e.Property(x => x.VoucherLineKey).HasMaxLength(80);
+            e.HasIndex(x => new { x.VoucherId, x.VoucherType, x.VoucherLineKey });
+            e.HasOne(x => x.Voucher).WithMany().HasForeignKey(x => x.VoucherId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Lot).WithMany().HasForeignKey(x => x.LotId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Transaction).WithMany().HasForeignKey(x => x.TransactionId).OnDelete(DeleteBehavior.Cascade);
         });
 
         // Formulation

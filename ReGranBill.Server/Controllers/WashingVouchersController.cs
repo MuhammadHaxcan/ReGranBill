@@ -15,11 +15,21 @@ public class WashingVouchersController : ControllerBase
 {
     private readonly IWashingVoucherService _service;
     private readonly IPdfService _pdfService;
+    private readonly IDownstreamUsageService _downstreamService;
 
-    public WashingVouchersController(IWashingVoucherService service, IPdfService pdfService)
+    public WashingVouchersController(IWashingVoucherService service, IPdfService pdfService, IDownstreamUsageService downstreamService)
     {
         _service = service;
         _pdfService = pdfService;
+        _downstreamService = downstreamService;
+    }
+
+    [HttpGet("{id}/downstream")]
+    public async Task<IActionResult> GetDownstreamUsage(int id)
+    {
+        var voucher = await _service.GetByIdAsync(id);
+        if (voucher == null) return NotFound();
+        return Ok(await _downstreamService.GetForWashingAsync(id));
     }
 
     [HttpGet]
@@ -60,14 +70,6 @@ public class WashingVouchersController : ControllerBase
         return Ok(new { voucherNumber });
     }
 
-    [HttpGet("latest-unwashed-rate")]
-    public async Task<IActionResult> GetLatestUnwashedRate([FromQuery] int vendorId, [FromQuery] int accountId)
-    {
-        var rate = await _service.GetLatestUnwashedRateAsync(vendorId, accountId);
-        if (rate == null) return Ok(new { rate = (decimal?)null });
-        return Ok(rate);
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateWashingVoucherRequest request)
     {
@@ -76,6 +78,16 @@ public class WashingVouchersController : ControllerBase
 
         var result = await _service.CreateAsync(request, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateWashingVoucherRequest request)
+    {
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null) return NotFound();
+
+        var result = await _service.UpdateAsync(id, request);
+        return Ok(result);
     }
 
     [HttpDelete("{id}")]

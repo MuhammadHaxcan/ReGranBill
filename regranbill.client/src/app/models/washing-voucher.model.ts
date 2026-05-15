@@ -3,7 +3,9 @@ export interface CreateWashingVoucherRequest {
   description: string | null;
   sourceVendorId: number;
   unwashedAccountId: number;
+  selectedLotId: number;
   inputWeightKg: number;
+  inputRate: number;
   outputWeightKg: number;
   outputLines: CreateWashingVoucherOutputLineRequest[];
   thresholdPct: number;
@@ -23,6 +25,8 @@ export interface WashingVoucherDto {
   sourceVendorName?: string | null;
   unwashedAccountId: number;
   unwashedAccountName?: string | null;
+  selectedLotId: number;
+  selectedLotNumber?: string | null;
   washedAccountId?: number | null;
   washedAccountName?: string | null;
   inputWeightKg: number;
@@ -49,6 +53,8 @@ export interface WashingVoucherListDto {
   sourceVendorName?: string | null;
   unwashedAccountId: number;
   unwashedAccountName?: string | null;
+  selectedLotId: number;
+  selectedLotNumber?: string | null;
   inputWeightKg: number;
   outputWeightKg: number;
   outputLineCount: number;
@@ -62,6 +68,7 @@ export interface WashingVoucherListDto {
 }
 
 export interface LatestUnwashedRateDto {
+  lotId: number;
   accountId: number;
   rate: number;
   sourceVoucherNumber: string;

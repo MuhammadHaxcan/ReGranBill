@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import {
   CreateWashingVoucherRequest,
-  LatestUnwashedRateDto,
   WashingVoucherDto,
   WashingVoucherListDto
 } from '../models/washing-voucher.model';
@@ -28,17 +27,12 @@ export class WashingVoucherService {
     );
   }
 
-  getLatestUnwashedRate(vendorId: number, accountId: number): Observable<LatestUnwashedRateDto | null> {
-    return this.http.get<LatestUnwashedRateDto | { rate: null }>(
-      `${this.url}/latest-unwashed-rate`,
-      { params: { vendorId, accountId } as any }
-    ).pipe(
-      map(res => 'accountId' in res ? res as LatestUnwashedRateDto : null)
-    );
-  }
-
   create(request: CreateWashingVoucherRequest): Observable<WashingVoucherDto> {
     return this.http.post<WashingVoucherDto>(this.url, request);
+  }
+
+  update(id: number, request: CreateWashingVoucherRequest): Observable<WashingVoucherDto> {
+    return this.http.put<WashingVoucherDto>(`${this.url}/${id}`, request);
   }
 
   openPrintInNewTab(id: number, voucherNumber?: string | null): void {

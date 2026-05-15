@@ -11,6 +11,8 @@ public class CreatePurchaseReturnRequest
 
 public class CreatePurchaseReturnLineRequest
 {
+    public int? LineId { get; set; }
+    public int SelectedLotId { get; set; }
     public int ProductId { get; set; }
     public int Qty { get; set; }
     public decimal TotalWeightKg { get; set; }

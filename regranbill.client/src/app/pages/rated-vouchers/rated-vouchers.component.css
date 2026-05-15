@@ -158,3 +158,25 @@
   color: var(--text-muted);
   font-size: 14px;
 }
+
+@media (max-width: 768px) {
+  .invoice-header.card,
+  .tab-card {
+    padding: 16px;
+  }
+
+  .invoice-header .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .invoice-meta {
+    text-align: left;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

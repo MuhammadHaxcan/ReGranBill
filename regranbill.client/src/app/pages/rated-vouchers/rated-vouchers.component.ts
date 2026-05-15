@@ -11,8 +11,10 @@ import { PurchaseVoucherViewModel } from '../../models/purchase-voucher.model';
 import { PurchaseReturnService, PurchaseReturnViewModel } from '../../services/purchase-return.service';
 import { WashingVoucherService } from '../../services/washing-voucher.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { WashingVoucherListDto } from '../../models/washing-voucher.model';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
+import { getApiErrorMessage } from '../../utils/api-error';
 import {
   getDeliveryTotalAmount,
   getDeliveryTotalBags,
@@ -53,6 +55,7 @@ export class RatedVouchersComponent implements OnInit {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
+    private confirmModal: ConfirmModalService,
     public authService: AuthService
   ) {}
 
@@ -171,7 +174,7 @@ export class RatedVouchersComponent implements OnInit {
       case 'sr': this.router.navigate(['/sale-return', row.id]); break;
       case 'pv': this.router.navigate(['/purchase-voucher', row.id]); break;
       case 'pr': this.router.navigate(['/purchase-return', row.id]); break;
-      case 'wsh': this.washingService.openPrintInNewTab(row.id, row.number); break;
+      case 'wsh': this.router.navigate(['/washing-voucher', row.id]); break;
     }
   }
 
@@ -182,6 +185,44 @@ export class RatedVouchersComponent implements OnInit {
       case 'pv': this.pvService.openPdfInNewTab(row.id, row.number); break;
       case 'pr': this.prService.openPdfInNewTab(row.id, row.number); break;
       case 'wsh': this.washingService.openPrintInNewTab(row.id, row.number); break;
+    }
+  }
+
+  async delete(row: RatedRow): Promise<void> {
+    const labels: Record<RatedRow['type'], string> = {
+      dc: 'Delivery Challan',
+      sr: 'Sale Return',
+      pv: 'Purchase Voucher',
+      pr: 'Purchase Return',
+      wsh: 'Washing Voucher'
+    };
+
+    const confirmed = await this.confirmModal.confirm({
+      title: `Delete ${labels[row.type]}`,
+      message: `Delete "${row.number}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+    if (!confirmed) return;
+
+    this.getDeleteService(row.type).delete(row.id).subscribe({
+      next: () => {
+        this.toast.success(`${row.number} deleted.`);
+        this.loadAll();
+      },
+      error: (err: any) => {
+        this.toast.error(getApiErrorMessage(err, 'Unable to delete voucher.'));
+      }
+    });
+  }
+
+  private getDeleteService(type: RatedRow['type']): { delete(id: number): any } {
+    switch (type) {
+      case 'dc': return this.dcService;
+      case 'sr': return this.srService;
+      case 'pv': return this.pvService;
+      case 'pr': return this.prService;
+      case 'wsh': return this.washingService;
     }
   }
 }

@@ -31,10 +31,10 @@
       <div class="prod-list-num">{{ v.voucherNumber }}</div>
       <div>{{ formatDate(v.date) }}</div>
       <div class="prod-list-desc">{{ v.description || '—' }}</div>
-      <div class="ralign mono">{{ v.totalInputKg | number:'1.2-2' }}</div>
-      <div class="ralign mono">{{ v.totalOutputKg | number:'1.2-2' }}</div>
-      <div class="ralign mono">{{ v.totalByproductKg | number:'1.2-2' }}</div>
-      <div class="ralign mono short">{{ v.shortageKg | number:'1.2-2' }}</div>
+      <div class="ralign mono" data-label="Inputs (kg)">{{ v.totalInputKg | number:'1.2-2' }}</div>
+      <div class="ralign mono" data-label="Outputs (kg)">{{ v.totalOutputKg | number:'1.2-2' }}</div>
+      <div class="ralign mono" data-label="Lumps (kg)">{{ v.totalByproductKg | number:'1.2-2' }}</div>
+      <div class="ralign mono short" data-label="Shortage (kg)">{{ v.shortageKg | number:'1.2-2' }}</div>
       <div class="prod-list-actions">
         <button type="button" class="prod-list-icon" title="Edit" (click)="open(v)">✎</button>
         <button type="button" class="prod-list-icon" title="Delete" (click)="delete(v, $event)">×</button>

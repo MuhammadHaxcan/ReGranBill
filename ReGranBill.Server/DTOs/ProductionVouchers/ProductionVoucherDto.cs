@@ -25,6 +25,8 @@ public class ProductionLineDto
 {
     public int Id { get; set; }
     public int AccountId { get; set; }
+    public int? SelectedLotId { get; set; }
+    public string? SelectedLotNumber { get; set; }
     public string? AccountName { get; set; }
     public string? Packing { get; set; }
     public decimal? PackingWeightKg { get; set; }
@@ -62,7 +64,12 @@ public class ProductionVoucherListDto
 
 public class LatestPurchaseRateDto
 {
+    public int LotId { get; set; }
+    public string LotNumber { get; set; } = string.Empty;
     public int AccountId { get; set; }
+    public int? VendorId { get; set; }
+    public string? VendorName { get; set; }
+    public decimal AvailableWeightKg { get; set; }
     public decimal Rate { get; set; }
     public string SourceVoucherNumber { get; set; } = string.Empty;
     public DateOnly SourceDate { get; set; }

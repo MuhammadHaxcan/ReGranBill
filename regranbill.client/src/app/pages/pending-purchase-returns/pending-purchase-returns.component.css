@@ -259,3 +259,29 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
 }
+
+@media (max-width: 768px) {
+  .invoice-header.card,
+  .grid-card {
+    padding: 16px;
+  }
+
+  .invoice-header .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .invoice-meta {
+    text-align: left;
+  }
+
+  .card-header {
+    padding: 11px 16px;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

@@ -1,3 +1,9 @@
+<app-downstream-usage-banner
+  *ngIf="!loading && isEditMode"
+  [usages]="downstreamUsages"
+  [sourceLabel]="'purchase voucher'">
+</app-downstream-usage-banner>
+
 <!-- DC Header Card -->
 <section class="card invoice-header" *ngIf="!loading">
   <div class="header-row">
