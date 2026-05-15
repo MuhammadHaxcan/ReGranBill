@@ -16,15 +16,18 @@ public class WashingVoucherService : IWashingVoucherService
     private readonly AppDbContext _db;
     private readonly IVoucherNumberService _voucherNumberService;
     private readonly IInventoryLotService _inventoryLotService;
+    private readonly IDownstreamUsageService _downstreamUsageService;
 
     public WashingVoucherService(
         AppDbContext db,
         IVoucherNumberService voucherNumberService,
-        IInventoryLotService inventoryLotService)
+        IInventoryLotService inventoryLotService,
+        IDownstreamUsageService downstreamUsageService)
     {
         _db = db;
         _voucherNumberService = voucherNumberService;
         _inventoryLotService = inventoryLotService;
+        _downstreamUsageService = downstreamUsageService;
     }
 
     public Task<string> GetNextNumberAsync() =>
@@ -445,38 +448,8 @@ public class WashingVoucherService : IWashingVoucherService
         }
     }
 
-    private async Task<bool> HasDownstreamConsumptionAsync(int voucherId, VoucherType voucherType, InventoryTransactionType outputType)
-    {
-        var outputLotIds = await _db.InventoryVoucherLinks
-            .Where(x => x.VoucherId == voucherId && x.VoucherType == voucherType)
-            .Join(
-                _db.InventoryTransactions,
-                link => link.TransactionId,
-                tx => tx.Id,
-                (link, tx) => new { link.LotId, tx.TransactionType })
-            .Where(x => x.TransactionType == outputType)
-            .Select(x => x.LotId)
-            .Distinct()
-            .ToListAsync();
-
-        if (outputLotIds.Count == 0)
-            return false;
-
-        var directlyConsumed = await _db.InventoryTransactions
-            .AnyAsync(x => outputLotIds.Contains(x.LotId) && x.TransactionType != outputType);
-        if (directlyConsumed)
-            return true;
-
-        var childLotIds = await _db.InventoryLots
-            .Where(x => x.ParentLotId.HasValue && outputLotIds.Contains(x.ParentLotId!.Value)
-                && x.Status != InventoryLotStatus.Voided)
-            .Select(x => x.Id)
-            .ToListAsync();
-        if (childLotIds.Count == 0)
-            return false;
-
-        return await _db.InventoryTransactions.AnyAsync(x => childLotIds.Contains(x.LotId));
-    }
+    private Task<bool> HasDownstreamConsumptionAsync(int voucherId, VoucherType voucherType, InventoryTransactionType outputType) =>
+        _downstreamUsageService.HasAnyForWashingAsync(voucherId);
 
     private static WashingVoucherDto MapToDto(JournalVoucher voucher, InventoryLot? inputLot)
     {

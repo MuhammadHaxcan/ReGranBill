@@ -15,15 +15,18 @@ public class ProductionVoucherService : IProductionVoucherService
     private readonly AppDbContext _db;
     private readonly IVoucherNumberService _voucherNumberService;
     private readonly IInventoryLotService _inventoryLotService;
+    private readonly IDownstreamUsageService _downstreamUsageService;
 
     public ProductionVoucherService(
         AppDbContext db,
         IVoucherNumberService voucherNumberService,
-        IInventoryLotService inventoryLotService)
+        IInventoryLotService inventoryLotService,
+        IDownstreamUsageService downstreamUsageService)
     {
         _db = db;
         _voucherNumberService = voucherNumberService;
         _inventoryLotService = inventoryLotService;
+        _downstreamUsageService = downstreamUsageService;
     }
 
     public async Task<List<ProductionVoucherListDto>> GetAllAsync()
@@ -204,18 +207,18 @@ public class ProductionVoucherService : IProductionVoucherService
         foreach (var line in request.Outputs)
         {
             if (!accounts.TryGetValue(line.AccountId, out var account)
-                || account.AccountType != AccountType.RawMaterial)
+                || account.AccountType != AccountType.Product)
             {
-                throw new RequestValidationException("Each output must be a valid Raw Material account.");
+                throw new RequestValidationException("Each output must be a valid Product account.");
             }
         }
 
         foreach (var line in request.Byproducts)
         {
             if (!accounts.TryGetValue(line.AccountId, out var account)
-                || account.AccountType != AccountType.RawMaterial)
+                || (account.AccountType != AccountType.RawMaterial && account.AccountType != AccountType.Product))
             {
-                throw new RequestValidationException("Each byproduct must be a valid Raw Material account.");
+                throw new RequestValidationException("Each byproduct must be a valid Raw Material or Product account.");
             }
         }
 
@@ -500,36 +503,8 @@ public class ProductionVoucherService : IProductionVoucherService
         return links.ToDictionary(x => x.VoucherLineKey, x => lots[x.LotId]);
     }
 
-    private async Task<bool> HasDownstreamConsumptionAsync(int voucherId)
-    {
-        var outputLotIds = await _db.InventoryVoucherLinks
-            .Where(x => x.VoucherId == voucherId && x.VoucherType == VoucherType.ProductionVoucher)
-            .Join(_db.InventoryTransactions, link => link.TransactionId, tx => tx.Id, (link, tx) => new { link.LotId, tx.TransactionType })
-            .Where(x => x.TransactionType == InventoryTransactionType.ProductionOutput)
-            .Select(x => x.LotId)
-            .Distinct()
-            .ToListAsync();
-
-        if (outputLotIds.Count == 0)
-            return false;
-
-        var directlyConsumed = await _db.InventoryTransactions
-            .AnyAsync(x => outputLotIds.Contains(x.LotId) && x.TransactionType != InventoryTransactionType.ProductionOutput);
-        if (directlyConsumed)
-            return true;
-
-        // Defense in depth: also walk ChildLots so a descendant lot still alive
-        // (parent transaction removed in a prior rebuild) blocks the edit/delete.
-        var childLotIds = await _db.InventoryLots
-            .Where(x => x.ParentLotId.HasValue && outputLotIds.Contains(x.ParentLotId!.Value)
-                && x.Status != InventoryLotStatus.Voided)
-            .Select(x => x.Id)
-            .ToListAsync();
-        if (childLotIds.Count == 0)
-            return false;
-
-        return await _db.InventoryTransactions.AnyAsync(x => childLotIds.Contains(x.LotId));
-    }
+    private Task<bool> HasDownstreamConsumptionAsync(int voucherId) =>
+        _downstreamUsageService.HasAnyForProductionAsync(voucherId);
 
     private async Task RemoveVoucherInventoryAsync(int voucherId)
     {

@@ -41,32 +41,16 @@ export class CustomerLedgerComponent implements OnInit {
   }
 
   loadCategories(): void {
-    this.categoryService.getAll().subscribe({
+    // Server-side filter: only categories with at least one Customer/Vendor/Both party account.
+    this.categoryService.getFiltered(
+      [AccountType.Party],
+      [PartyRole.Customer, PartyRole.Vendor, PartyRole.Both]
+    ).subscribe({
       next: (categories) => {
         const sorted = [...categories].sort((a, b) => a.name.localeCompare(b.name));
         this.categories = sorted;
-        // Restrict the category dropdown to categories that actually contain at least one
-        // Customer/Vendor/Both party account — anything else has nothing to show in a ledger.
-        this.accountService.getAll().subscribe({
-          next: (accounts) => {
-            const partyCategoryIds = new Set(
-              accounts
-                .filter(account =>
-                  account.accountType === AccountType.Party
-                  && (account.partyRole === PartyRole.Customer
-                    || account.partyRole === PartyRole.Vendor
-                    || account.partyRole === PartyRole.Both))
-                .map(account => account.categoryId)
-            );
-            this.categoryOptions = sorted
-              .filter(c => partyCategoryIds.has(c.id))
-              .map(c => ({ value: c.id, label: c.name }));
-            this.cdr.detectChanges();
-          },
-          error: () => {
-            this.toast.error('Unable to load accounts.');
-          }
-        });
+        this.categoryOptions = sorted.map(c => ({ value: c.id, label: c.name }));
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast.error('Unable to load categories.');

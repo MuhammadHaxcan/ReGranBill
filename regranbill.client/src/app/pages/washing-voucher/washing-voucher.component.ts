@@ -80,14 +80,16 @@ export class WashingVoucherComponent implements OnInit {
     this.loading = true;
     forkJoin({
       accounts: this.accountService.getAll(),
-      categories: this.categoryService.getAll()
+      categories: this.categoryService.getAll(),
+      sourceCategories: this.categoryService.getFiltered([AccountType.UnwashedMaterial]),
+      outputCategories: this.categoryService.getFiltered([AccountType.RawMaterial])
     }).subscribe({
-      next: ({ accounts, categories }) => {
+      next: ({ accounts, categories, sourceCategories, outputCategories }) => {
         this.accountsById = new Map(accounts.map(a => [a.id, a]));
         this.categories = categories;
         this.categoryOptions = categories.map(category => ({ value: category.id, label: category.name }));
-        this.sourceCategoryOptions = this.buildCategoryOptionsForType(AccountType.UnwashedMaterial);
-        this.outputCategoryOptions = this.buildCategoryOptionsForType(AccountType.RawMaterial);
+        this.sourceCategoryOptions = sourceCategories.map(c => ({ value: c.id, label: c.name }));
+        this.outputCategoryOptions = outputCategories.map(c => ({ value: c.id, label: c.name }));
         this.vendorOptions = accounts
           .filter(a => a.accountType === AccountType.Party)
           .map(a => ({ value: a.id, label: a.name }));
@@ -491,18 +493,6 @@ export class WashingVoucherComponent implements OnInit {
     return [...this.accountsById.values()]
       .filter(account => account.accountType === accountType && account.categoryId === categoryId)
       .map(account => ({ value: account.id, label: account.name }));
-  }
-
-  private buildCategoryOptionsForType(accountType: AccountType): SelectOption[] {
-    const allowedCategoryIds = new Set(
-      [...this.accountsById.values()]
-        .filter(account => account.accountType === accountType)
-        .map(account => account.categoryId)
-    );
-
-    return this.categories
-      .filter(category => allowedCategoryIds.has(category.id))
-      .map(category => ({ value: category.id, label: category.name }));
   }
 
   private enforceAllWeightLimits(): void {

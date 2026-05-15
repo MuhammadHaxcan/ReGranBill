@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.Categories;
 using ReGranBill.Server.Entities;
+using ReGranBill.Server.Enums;
 
 namespace ReGranBill.Server.Services;
 
@@ -14,6 +15,37 @@ public class CategoryService : ICategoryService
     public async Task<List<CategoryDto>> GetAllAsync()
     {
         return await _db.Categories
+            .OrderBy(c => c.Name)
+            .Select(c => new CategoryDto { Id = c.Id, Name = c.Name })
+            .ToListAsync();
+    }
+
+    public async Task<List<CategoryDto>> GetFilteredAsync(
+        IReadOnlyCollection<AccountType> accountTypes,
+        IReadOnlyCollection<PartyRole>? partyRoles)
+    {
+        if (accountTypes == null || accountTypes.Count == 0)
+            return await GetAllAsync();
+
+        var accountQuery = _db.Accounts.AsQueryable()
+            .Where(a => accountTypes.Contains(a.AccountType));
+
+        if (partyRoles != null && partyRoles.Count > 0)
+        {
+            accountQuery = accountQuery.Where(a =>
+                a.PartyDetail != null && partyRoles.Contains(a.PartyDetail.PartyRole));
+        }
+
+        var categoryIds = await accountQuery
+            .Select(a => a.CategoryId)
+            .Distinct()
+            .ToListAsync();
+
+        if (categoryIds.Count == 0)
+            return [];
+
+        return await _db.Categories
+            .Where(c => categoryIds.Contains(c.Id))
             .OrderBy(c => c.Name)
             .Select(c => new CategoryDto { Id = c.Id, Name = c.Name })
             .ToListAsync();

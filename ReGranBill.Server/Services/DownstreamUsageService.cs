@@ -21,6 +21,49 @@ public class DownstreamUsageService : IDownstreamUsageService
     public Task<List<DownstreamUsageDto>> GetForProductionAsync(int productionVoucherId) =>
         GetConsumersOfLotsCreatedByAsync(productionVoucherId, VoucherType.ProductionVoucher, InventoryTransactionType.ProductionOutput);
 
+    public Task<bool> HasAnyForPurchaseAsync(int purchaseVoucherId) =>
+        HasAnyConsumerAsync(purchaseVoucherId, VoucherType.PurchaseVoucher, InventoryTransactionType.PurchaseIn);
+
+    public Task<bool> HasAnyForWashingAsync(int washingVoucherId) =>
+        HasAnyConsumerAsync(washingVoucherId, VoucherType.WashingVoucher, InventoryTransactionType.WashOutput);
+
+    public Task<bool> HasAnyForProductionAsync(int productionVoucherId) =>
+        HasAnyConsumerAsync(productionVoucherId, VoucherType.ProductionVoucher, InventoryTransactionType.ProductionOutput);
+
+    private async Task<bool> HasAnyConsumerAsync(
+        int sourceVoucherId,
+        VoucherType sourceVoucherType,
+        InventoryTransactionType outputType)
+    {
+        var outputLotIds = await _db.InventoryVoucherLinks
+            .AsNoTracking()
+            .Where(x => x.VoucherId == sourceVoucherId && x.VoucherType == sourceVoucherType)
+            .Join(_db.InventoryTransactions, link => link.TransactionId, tx => tx.Id, (link, tx) => new { link.LotId, tx.TransactionType })
+            .Where(x => x.TransactionType == outputType)
+            .Select(x => x.LotId)
+            .Distinct()
+            .ToListAsync();
+
+        if (outputLotIds.Count == 0) return false;
+
+        var directlyConsumed = await _db.InventoryTransactions
+            .AsNoTracking()
+            .AnyAsync(x => outputLotIds.Contains(x.LotId) && x.TransactionType != outputType);
+        if (directlyConsumed) return true;
+
+        // Phase A.3 defense-in-depth: child lots derived from this voucher's outputs.
+        var childLotIds = await _db.InventoryLots
+            .AsNoTracking()
+            .Where(x => x.ParentLotId.HasValue && outputLotIds.Contains(x.ParentLotId!.Value)
+                && x.Status != InventoryLotStatus.Voided)
+            .Select(x => x.Id)
+            .ToListAsync();
+        if (childLotIds.Count == 0) return false;
+
+        return await _db.InventoryTransactions.AsNoTracking()
+            .AnyAsync(x => childLotIds.Contains(x.LotId));
+    }
+
     public async Task<List<DownstreamUsageDto>> GetForPurchaseReturnAsync(int prVoucherId)
     {
         // A PurchaseReturn does not own lots — it consumes from the source purchase's lot.

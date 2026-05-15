@@ -200,8 +200,8 @@
               </app-searchable-select>
             </td>
             <td class="col-account-wide">
-              <app-searchable-select [options]="getFilteredAccountOptions(AccountType.RawMaterial, row.categoryId)" [compact]="true"
-                [(ngModel)]="row.accountId" [disabled]="!row.categoryId" placeholder="Pick output raw material..."
+              <app-searchable-select [options]="getFilteredAccountOptions(AccountType.Product, row.categoryId)" [compact]="true"
+                [(ngModel)]="row.accountId" [disabled]="!row.categoryId" placeholder="Pick output product..."
                 (ngModelChange)="onLineChanged()">
               </app-searchable-select>
             </td>
@@ -259,8 +259,8 @@
               </app-searchable-select>
             </td>
             <td class="col-account-wide">
-              <app-searchable-select [options]="getFilteredAccountOptions(AccountType.RawMaterial, row.categoryId)" [compact]="true"
-                [(ngModel)]="row.accountId" [disabled]="!row.categoryId" placeholder="Pick byproduct raw material..."
+              <app-searchable-select [options]="getFilteredByproductAccountOptions(row.categoryId)" [compact]="true"
+                [(ngModel)]="row.accountId" [disabled]="!row.categoryId" placeholder="Pick byproduct account..."
                 (ngModelChange)="onLineChanged()">
               </app-searchable-select>
             </td>

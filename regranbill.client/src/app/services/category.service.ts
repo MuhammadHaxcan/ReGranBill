@@ -15,6 +15,22 @@ export class CategoryService {
     return this.http.get<Category[]>(this.url);
   }
 
+  /**
+   * Server-side filtered list. Returns only categories that contain at least one account
+   * whose AccountType is in `accountTypes`, and (if provided) whose PartyRole is in `partyRoles`.
+   */
+  getFiltered(accountTypes: string[], partyRoles?: string[]): Observable<Category[]> {
+    const params: string[] = [];
+    if (accountTypes && accountTypes.length) {
+      params.push('accountTypes=' + encodeURIComponent(accountTypes.join(',')));
+    }
+    if (partyRoles && partyRoles.length) {
+      params.push('partyRoles=' + encodeURIComponent(partyRoles.join(',')));
+    }
+    const query = params.length ? '?' + params.join('&') : '';
+    return this.http.get<Category[]>(`${this.url}/filtered${query}`);
+  }
+
   add(name: string): Observable<Category> {
     return this.http.post<Category>(this.url, { name });
   }

@@ -13,11 +13,16 @@ public class PurchaseVoucherService : IPurchaseVoucherService
 {
     private readonly AppDbContext _db;
     private readonly IVoucherNumberService _voucherNumberService;
+    private readonly IDownstreamUsageService _downstreamUsageService;
 
-    public PurchaseVoucherService(AppDbContext db, IVoucherNumberService voucherNumberService)
+    public PurchaseVoucherService(
+        AppDbContext db,
+        IVoucherNumberService voucherNumberService,
+        IDownstreamUsageService downstreamUsageService)
     {
         _db = db;
         _voucherNumberService = voucherNumberService;
+        _downstreamUsageService = downstreamUsageService;
     }
 
     public async Task<List<PurchaseVoucherDto>> GetAllAsync()
@@ -619,20 +624,8 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         int DownstreamQtyUsed,
         decimal DownstreamWeightKgUsed);
 
-    private async Task<bool> HasPurchaseDownstreamConsumptionAsync(int voucherId)
-    {
-        var lotIds = await _db.InventoryVoucherLinks
-            .Where(x => x.VoucherId == voucherId && x.VoucherType == VoucherType.PurchaseVoucher)
-            .Select(x => x.LotId)
-            .Distinct()
-            .ToListAsync();
-
-        if (lotIds.Count == 0)
-            return false;
-
-        return await _db.InventoryTransactions
-            .AnyAsync(x => lotIds.Contains(x.LotId) && x.TransactionType != InventoryTransactionType.PurchaseIn);
-    }
+    private Task<bool> HasPurchaseDownstreamConsumptionAsync(int voucherId) =>
+        _downstreamUsageService.HasAnyForPurchaseAsync(voucherId);
 
     private static void ValidatePurchaseLineIds(CreatePurchaseVoucherRequest request, IReadOnlyCollection<JournalEntry> productEntries)
     {

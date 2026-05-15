@@ -108,9 +108,13 @@ export class ProductionVoucherComponent implements OnInit {
     forkJoin({
       accounts: this.accountService.getAll(),
       categories: this.categoryService.getAll(),
-      formulations: this.formulationService.getAll().pipe(catchError(() => of([])))
+      formulations: this.formulationService.getAll().pipe(catchError(() => of([]))),
+      inputCats: this.categoryService.getFiltered([AccountType.RawMaterial, AccountType.Product]),
+      outputCats: this.categoryService.getFiltered([AccountType.Product]),
+      byproductCats: this.categoryService.getFiltered([AccountType.RawMaterial, AccountType.Product]),
+      shortageCats: this.categoryService.getFiltered([AccountType.Expense])
     }).subscribe({
-      next: ({ accounts, categories, formulations }) => {
+      next: ({ accounts, categories, formulations, inputCats, outputCats, byproductCats, shortageCats }) => {
         this.accountsById = new Map(accounts.map(account => [account.id, account]));
         this.categories = categories;
         this.categoryOptions = categories.map(category => ({ value: category.id, label: category.name }));
@@ -118,7 +122,9 @@ export class ProductionVoucherComponent implements OnInit {
           a => a.accountType === AccountType.Product || a.accountType === AccountType.RawMaterial
         );
         const outputAccts = accounts.filter(a => a.accountType === AccountType.Product);
-        const byproductAccts = accounts.filter(a => a.accountType === AccountType.RawMaterial);
+        const byproductAccts = accounts.filter(
+          a => a.accountType === AccountType.RawMaterial || a.accountType === AccountType.Product
+        );
         const expenseAccts = accounts.filter(a => a.accountType === AccountType.Expense);
 
         this.inputAccountOptions = inputAccts.map(a => ({
@@ -133,10 +139,10 @@ export class ProductionVoucherComponent implements OnInit {
         this.expenseAccountOptions = expenseAccts.map(a => ({
           value: a.id, label: a.name
         }));
-        this.outputCategoryOptions = this.buildCategoryOptionsForType(AccountType.RawMaterial);
-        this.byproductCategoryOptions = this.buildCategoryOptionsForType(AccountType.RawMaterial);
-        this.shortageCategoryOptions = this.buildCategoryOptionsForType(AccountType.Expense);
-        this.inputCategoryOptions = this.buildCategoryOptionsForTypes([AccountType.RawMaterial, AccountType.Product]);
+        this.inputCategoryOptions = inputCats.map(c => ({ value: c.id, label: c.name }));
+        this.outputCategoryOptions = outputCats.map(c => ({ value: c.id, label: c.name }));
+        this.byproductCategoryOptions = byproductCats.map(c => ({ value: c.id, label: c.name }));
+        this.shortageCategoryOptions = shortageCats.map(c => ({ value: c.id, label: c.name }));
 
         this.formulations = formulations.filter(f => f.isActive);
         this.formulationOptions = this.formulations.map(f => ({
@@ -354,6 +360,11 @@ export class ProductionVoucherComponent implements OnInit {
 
   get shortageExpenseOptions(): SelectOption[] {
     return this.getFilteredAccountOptions(AccountType.Expense, this.shortageCategoryId);
+  }
+
+  getFilteredByproductAccountOptions(categoryId: number | null | undefined): SelectOption[] {
+    // Byproducts can be either RawMaterial or Product (per business rule).
+    return this.getFilteredInputAccountOptions(categoryId);
   }
 
   getFilteredInputAccountOptions(categoryId: number | null | undefined): SelectOption[] {
@@ -720,31 +731,6 @@ export class ProductionVoucherComponent implements OnInit {
   }
   inputKg(rows: Row[]): number {
     return this.round(rows.reduce((s, r) => s + this.numeric(r.weightKg), 0));
-  }
-
-  private buildCategoryOptionsForType(accountType: AccountType): SelectOption[] {
-    const allowedCategoryIds = new Set(
-      [...this.accountsById.values()]
-        .filter(account => account.accountType === accountType)
-        .map(account => account.categoryId)
-    );
-
-    return this.categories
-      .filter(category => allowedCategoryIds.has(category.id))
-      .map(category => ({ value: category.id, label: category.name }));
-  }
-
-  private buildCategoryOptionsForTypes(accountTypes: AccountType[]): SelectOption[] {
-    const allowed = new Set(accountTypes);
-    const allowedCategoryIds = new Set(
-      [...this.accountsById.values()]
-        .filter(account => allowed.has(account.accountType))
-        .map(account => account.categoryId)
-    );
-
-    return this.categories
-      .filter(category => allowedCategoryIds.has(category.id))
-      .map(category => ({ value: category.id, label: category.name }));
   }
 
   getMaxInputWeight(row: Row): number {
