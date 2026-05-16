@@ -367,3 +367,6 @@ FodyWeavers.xsd
 # Entity Framework migrations (local-only in this workflow)
 ReGranBill.Server/Migrations/
 
+
+# Local publish/verification snapshots — never check in (huge).
+_build_verify/
