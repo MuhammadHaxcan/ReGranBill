@@ -14,7 +14,7 @@ Audit of the current pages surfaced concrete clarity problems:
 
 - **Sticky balance bar at the top obscures the table** it's meant to summarize.
 - **Wastage / shortage logic is fragmented** — the threshold input is in one section, the explanation card is at the bottom, the running calculation is in the sticky bar.
-- **Rate auto-fill is inconsistent** — Washing auto-fills the rate from the selected lot; Production does not, even though both flows pick a lot the same way.
+- **Rate provenance is invisible** — Washing shows a small "Lot" pill explaining where the rate came from; Production silently auto-fills the input rate from the lot with no hint, so the accountant can't tell whether the number was typed or derived.
 - **Cost-balance vs mass-balance error messages are generic** — when Save is disabled the accountant doesn't know which balance is off.
 - **No persistent place for totals + Save action** — both live mid-page or at the bottom of long forms.
 
@@ -76,9 +76,9 @@ Top-to-bottom, all monospace numbers:
 ### Production Voucher — left column structure
 
 1. **Header card** — Voucher title + number + Date + Lot number + Description (current fields), with a **Formulation strip embedded at the bottom** of the same card (dashed-border background, less visual weight than a separate section). Contains the formulation picker, batch kg, and Apply button.
-2. **Inputs card** — Existing table. Two structural changes:
+2. **Inputs card** — Existing table. Three structural changes:
    - **Category and Material merge into one column** ("Category · Material" with the secondary value in muted color) — cuts horizontal scroll.
-   - **Rate auto-fills from the selected lot** with a subtle highlight; user can edit. Matches Washing's behavior. (This is the only behaviour change in the spec.)
+   - **Rate cell shows a "↩ from lot" hint** beneath the input when `row.rateSource` is set, so the accountant sees the rate was auto-filled from the lot (the auto-fill behavior already exists in `onInputLotChanged` at production-voucher.component.ts:409; this is purely a visual hint).
    - Explicit `<tfoot>` totals row (Bags / Kg / Cost).
    - Section header shows summary: *"N rows · X kg · Rs Y"*.
 3. **Outputs card** — Existing table, with explicit tfoot totals and summary in section header.
@@ -95,9 +95,8 @@ Top-to-bottom, all monospace numbers:
 
 ### Behavioural changes (the only ones)
 
-1. **Production input rate auto-fills from the selected lot.** Implementation mirrors the existing washing-voucher `onSelectedLotChanged` pattern (washing-voucher.component.ts:228-241): selecting a lot writes the lot's rate into the rate input. If the user wants a different rate, they edit the rate field after the lot pick — same behavior as washing today.
-2. **Save disabled state shows the reason.** Today: button is disabled with a generic tooltip. New: panel shows an inline reason line ("Mass is X kg off" or "Cost is Rs Y off") directly above the Save button.
-3. **Washing gets a Discard button alongside Save.** Today Washing's footer is Save-only; the new right panel includes a Discard ghost button (full-width, beneath Save) matching Production for visual symmetry. Discard navigates away the same as the existing Production Discard.
+1. **Save disabled state shows the reason.** Today: button is disabled with a generic tooltip. New: panel shows an inline reason line ("Mass is X kg off" or "Cost is Rs Y off") directly above the Save button. Source data already exists (`balanceErrorTooltip` and `costBalanceErrorTooltip` getters on Production; equivalent simple check on Washing).
+2. **Washing gets a Discard button alongside Save.** Today Washing's footer is Save-only; the new right panel includes a Discard ghost button (full-width, beneath Save) matching Production for visual symmetry. Discard calls `router.navigate(['/washing-voucher'])` to reset the form to a blank new voucher — matching how Production's Discard already works.
 
 No other behavior, no other endpoint, no other validation rule changes.
 
@@ -117,7 +116,8 @@ No other behavior, no other endpoint, no other validation rule changes.
 - `regranbill.client/src/app/pages/washing-voucher/washing-voucher.component.css` — add two-column grid; restyle/remove sticky balance bar (now lives in panel); add panel styles.
 - `regranbill.client/src/app/pages/production-voucher/production-voucher.component.html` — rewritten for two-column layout, merged Category/Material column, merged Byproducts+Shortage card.
 - `regranbill.client/src/app/pages/production-voucher/production-voucher.component.css` — same panel + grid changes; restyle column widths after Category/Material merge.
-- `regranbill.client/src/app/pages/production-voucher/production-voucher.component.ts` — add `onSelectedLotChanged` rate auto-fill for inputs (copy logic pattern from washing-voucher.component.ts:228-241); add computed property for "Save disabled reason" string.
+- `regranbill.client/src/app/pages/production-voucher/production-voucher.component.ts` — add a single computed getter `saveDisabledReason` that returns the mass-vs-cost reason text (composed from existing `balanceErrorTooltip` and `costBalanceErrorTooltip`). No new behavior — just a string concatenation for the panel to render.
+- `regranbill.client/src/app/pages/washing-voucher/washing-voucher.component.ts` — add a `discard()` method that navigates to `/washing-voucher` to reset the form.
 
 ### Files created
 
@@ -136,7 +136,7 @@ End-to-end on the dev server:
 1. **Washing — new voucher happy path**: open `/washing-voucher`, fill source vendor → category → unwashed material → lot. Confirm lot rate auto-populates in the rate input. Enter input weight, add 2 output lines. Confirm right panel shows IN/OUT/WASTE updating live; "Status" pill is `balanced` when wastage ≤ allowed %, switches to `over threshold` with the excess box appearing when exceeded. Save → success → form resets.
 2. **Washing — over-threshold path**: set allowed wastage to 5%, enter inputs that produce 8% wastage. Confirm excess box (warning yellow) appears in panel showing allowed kg, excess kg, → charged amount. Save still works.
 3. **Washing — edit voucher**: open an existing voucher in edit mode. Confirm right panel reflects loaded state immediately; Save button updates instead of creates.
-4. **Production — input rate auto-fills**: pick a lot in an input row — rate field populates and shows the "↩ from lot" hint. Manually overwrite — change sticks; reload lot to different one — rate updates again.
+4. **Production — input rate hint visible**: pick a lot in an input row — rate populates (existing behavior) and the "↩ from lot" hint appears under the rate cell. Manually overwrite — hint clears (or stays, see implementation).
 5. **Production — mass balance off**: enter inputs totaling 500 kg, outputs totaling 470 kg, no byproducts, shortage 20 kg → Δ = 10. Panel Δ row goes red; Save shows reason text "Mass is 10.00 kg off"; Save button is disabled.
 6. **Production — cost balance off**: balance mass but mismatch rates so output cost differs from input cost. Panel Cost Δ row goes red; reason text shows "Cost is Rs N off"; Save disabled.
 7. **Production — formulation apply**: pick a formulation, enter batch kg, click Apply. Confirm input/output rows populate from the formulation; right panel updates accordingly.
@@ -147,8 +147,8 @@ End-to-end on the dev server:
 - **Risk:** Right panel takes 320 px from main content; line-item tables that already scroll horizontally will scroll more.
   **Mitigation:** The Category/Material column merge in Production cuts ~140 px of horizontal scroll, net win. Washing tables are narrower and unaffected.
 
-- **Risk:** Production rate auto-fill might surprise users who currently type rate first before picking a lot.
-  **Mitigation:** Match Washing's existing behavior exactly — lot pick sets rate, user can edit after. This is the long-established convention on the Washing page so users are already familiar with it; the change makes Production *consistent* rather than introducing novel behavior.
+- **Risk:** Adding the "↩ from lot" hint under the Production rate cell on every row makes the table taller (~12 px per row).
+  **Mitigation:** Hint only renders when `row.rateSource` is truthy (lot picked); rows without a lot keep the existing height. The added height is uniform with rows that already had a hint visually implied by the Lot-Info cell.
 
 - **Risk:** Sticky panel on short pages (e.g., empty new voucher) looks like a giant empty box.
   **Mitigation:** Panel content is dense enough at baseline (status, mass section, cost section, rate, save buttons) that even an empty voucher shows ~280 px of content — never feels empty.
