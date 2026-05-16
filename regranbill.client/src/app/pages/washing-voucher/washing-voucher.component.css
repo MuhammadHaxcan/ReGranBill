@@ -228,9 +228,7 @@
    styles to the component — without these the prod-* classes used in HTML
    would be unstyled. */
 .prod-page {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 16px 24px 80px;
+  padding: 0 0 80px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -253,11 +251,8 @@
 .prod-eyebrow { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
 .prod-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
 .prod-voucher-num {
-  display: inline-flex; align-items: center; padding: 6px 14px;
-  border-radius: 999px; font-weight: 700; font-size: 13px;
-  font-family: 'SF Mono', Menlo, monospace;
-  background: var(--primary-light); color: var(--primary);
-  border: 1px solid rgba(79, 70, 229, 0.2); white-space: nowrap;
+  font-size: 20px; font-weight: 700; color: var(--primary);
+  letter-spacing: -0.01em; white-space: nowrap;
 }
 
 .prod-header-fields { display: grid; gap: 12px; align-items: end; }

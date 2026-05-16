@@ -77,10 +77,10 @@
           <th class="col-num">#</th>
           <th class="col-category">Category</th>
           <th class="col-product">Product</th>
-          <th class="col-product">Lot</th>
+          <th class="col-lot">Lot</th>
           <th class="col-packing">Packing</th>
-          <th class="col-qty">Qty</th>
-          <th class="col-weight">Total Weight (kg)</th>
+          <th class="col-qty">Bags</th>
+          <th class="col-weight">Total Kg</th>
           <th class="col-rate" *ngIf="canSeeRates">Rate</th>
           <th class="col-amount" *ngIf="canSeeRates">Amount</th>
           <th class="col-actions"></th>
@@ -110,7 +110,7 @@
               (addClicked)="onAddProductClicked(i, $event)"
             ></app-searchable-select>
           </td>
-          <td class="col-product">
+          <td class="col-lot">
             <app-searchable-select
               [options]="line.lotOptions || []"
               [placeholder]="'Select lot...'"

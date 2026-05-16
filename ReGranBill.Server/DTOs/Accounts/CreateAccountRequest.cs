@@ -20,7 +20,4 @@ public class CreateAccountRequest
     public string? Phone { get; set; }
     public string? City { get; set; }
     public string? Address { get; set; }
-
-    // Optional legacy field for previously linked UnwashedMaterial accounts.
-    public int? WashedAccountId { get; set; }
 }

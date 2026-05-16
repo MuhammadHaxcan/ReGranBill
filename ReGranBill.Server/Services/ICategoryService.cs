@@ -1,4 +1,5 @@
 using ReGranBill.Server.DTOs.Categories;
+using ReGranBill.Server.DTOs.Common;
 using ReGranBill.Server.Enums;
 
 namespace ReGranBill.Server.Services;
@@ -11,5 +12,5 @@ public interface ICategoryService
         IReadOnlyCollection<PartyRole>? partyRoles);
     Task<CategoryDto> CreateAsync(CreateCategoryRequest request);
     Task<CategoryDto?> UpdateAsync(int id, CreateCategoryRequest request);
-    Task<(bool Success, string? Error)> DeleteAsync(int id);
+    Task<DeleteResult> DeleteAsync(int id);
 }

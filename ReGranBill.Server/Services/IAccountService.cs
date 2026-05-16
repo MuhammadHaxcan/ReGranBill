@@ -1,4 +1,5 @@
 using ReGranBill.Server.DTOs.Accounts;
+using ReGranBill.Server.DTOs.Common;
 
 namespace ReGranBill.Server.Services;
 
@@ -13,5 +14,5 @@ public interface IAccountService
     Task<List<AccountDto>> GetByCategoryAsync(int categoryId);
     Task<AccountDto> CreateAsync(CreateAccountRequest request);
     Task<AccountDto?> UpdateAsync(int id, CreateAccountRequest request);
-    Task<(bool Success, string? Error)> DeleteAsync(int id);
+    Task<DeleteResult> DeleteAsync(int id);
 }

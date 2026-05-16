@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.Categories;
+using ReGranBill.Server.DTOs.Common;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
 
@@ -68,17 +69,38 @@ public class CategoryService : ICategoryService
         return new CategoryDto { Id = cat.Id, Name = cat.Name };
     }
 
-    public async Task<(bool Success, string? Error)> DeleteAsync(int id)
+    public async Task<DeleteResult> DeleteAsync(int id)
     {
         var cat = await _db.Categories.FindAsync(id);
-        if (cat == null) return (false, null);
+        if (cat == null) return new DeleteResult(false, null, null);
 
-        var hasAccounts = await _db.Accounts.AnyAsync(a => a.CategoryId == id);
-        if (hasAccounts)
-            return (false, $"Cannot delete \"{cat.Name}\" because it has accounts associated with it.");
+        var childAccountIds = await _db.Accounts
+            .Where(a => a.CategoryId == id)
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        if (childAccountIds.Count > 0)
+        {
+            var blockingVouchers = await _db.JournalEntries
+                .Where(je => childAccountIds.Contains(je.AccountId))
+                .Select(je => je.JournalVoucher)
+                .Distinct()
+                .OrderByDescending(v => v.Date).ThenByDescending(v => v.Id)
+                .ToListAsync();
+
+            var top = blockingVouchers.Take(20)
+                .Select(v => new VoucherRef(v.Id, v.VoucherNumber, v.Date, v.VoucherType.ToString()))
+                .ToList();
+
+            var msg = blockingVouchers.Count > 0
+                ? $"Cannot delete \"{cat.Name}\": it has {childAccountIds.Count} account(s), used in {blockingVouchers.Count} voucher(s)."
+                : $"Cannot delete \"{cat.Name}\" because it has accounts associated with it.";
+
+            return new DeleteResult(false, null, new DeleteBlockedResult(msg, top, blockingVouchers.Count));
+        }
 
         _db.Categories.Remove(cat);
         await _db.SaveChangesAsync();
-        return (true, null);
+        return new DeleteResult(true, null, null);
     }
 }

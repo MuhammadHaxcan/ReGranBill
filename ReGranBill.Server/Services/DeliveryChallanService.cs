@@ -203,7 +203,7 @@ public class DeliveryChallanService : IDeliveryChallanService
         saleJv.VehicleNumber = request.VehicleNumber;
         saleJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Sale to", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         saleJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
-        saleJv.UpdatedAt = DateTime.UtcNow;
+        saleJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         _db.JournalEntries.RemoveRange(saleJv.Entries);
         saleJv.Entries.Clear();
@@ -279,7 +279,7 @@ public class DeliveryChallanService : IDeliveryChallanService
         }
 
         saleJv.RatesAdded = saleJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
-        saleJv.UpdatedAt = DateTime.UtcNow;
+        saleJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await _db.SaveChangesAsync();
         return true;
@@ -296,7 +296,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             return (false, "Cannot delete a rated challan. Only pending challans can be deleted.");
 
         saleJv.IsDeleted = true;
-        saleJv.UpdatedAt = DateTime.UtcNow;
+        saleJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var cartageRef = await _db.JournalVoucherReferences
             .Where(r => r.MainVoucherId == saleJv.Id)
@@ -306,7 +306,7 @@ public class DeliveryChallanService : IDeliveryChallanService
         if (cartageRef?.ReferenceVoucher != null)
         {
             cartageRef.ReferenceVoucher.IsDeleted = true;
-            cartageRef.ReferenceVoucher.UpdatedAt = DateTime.UtcNow;
+            cartageRef.ReferenceVoucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         }
 
         await _db.SaveChangesAsync();
@@ -355,7 +355,7 @@ public class DeliveryChallanService : IDeliveryChallanService
             cartageJv.Entries.Clear();
             cartageJv.Date = saleJv.Date;
             cartageJv.Description = $"Cartage entries for {saleJv.VoucherNumber}";
-            cartageJv.UpdatedAt = DateTime.UtcNow;
+            cartageJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
             cartageJv.Entries.Add(new JournalEntry
             {

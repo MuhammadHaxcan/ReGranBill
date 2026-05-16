@@ -81,7 +81,7 @@ public class FormulationService : IFormulationService
         formulation.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
         formulation.BaseInputKg = request.BaseInputKg;
         formulation.IsActive = request.IsActive;
-        formulation.UpdatedAt = DateTime.UtcNow;
+        formulation.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         _db.FormulationLines.RemoveRange(formulation.Lines);
         formulation.Lines.Clear();
@@ -109,7 +109,7 @@ public class FormulationService : IFormulationService
         if (formulation == null) return false;
 
         formulation.IsDeleted = true;
-        formulation.UpdatedAt = DateTime.UtcNow;
+        formulation.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         await _db.SaveChangesAsync();
         return true;
     }

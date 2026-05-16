@@ -108,7 +108,10 @@
           <td class="metric-ok">{{ lot.availableWeightKg | number:'1.2-2' }}</td>
           <td>{{ lot.baseRate | number:'1.2-2' }}</td>
           <td>
-            <span class="status-badge" [class.status-open]="lot.status === 'Open'" [class.status-voided]="lot.status !== 'Open'">
+            <span class="status-badge"
+                  [class.status-open]="lot.status === 'Open'"
+                  [class.status-exhausted]="lot.status === 'Exhausted'"
+                  [class.status-voided]="lot.status === 'Voided'">
               {{ lot.status }}
             </span>
           </td>

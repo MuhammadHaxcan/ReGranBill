@@ -97,7 +97,7 @@ const routes: Routes = [
   { path: 'formulations',              component: FormulationsComponent,       canActivate: guarded, data: { pageKey: 'formulations' } },
   { path: 'washing-voucher',           component: WashingVoucherComponent,     canActivate: guarded, data: { pageKey: 'washing-room' } },
   { path: 'washing-voucher/:id',       component: WashingVoucherComponent,     canActivate: guarded, data: { pageKey: 'washing-room' } },
-  { path: 'print-prod/:id',            component: PrintProdComponent,          canActivate: guarded, data: { pageKey: 'production-voucher' } },
+  { path: 'print-prod/:voucherKey',    component: PrintProdComponent,          canActivate: guarded, data: { pageKey: 'production-voucher' } },
   { path: 'print-wsh/:voucherKey',     component: PrintWshComponent,           canActivate: guarded, data: { pageKey: 'washing-room' } },
 
   // Review group

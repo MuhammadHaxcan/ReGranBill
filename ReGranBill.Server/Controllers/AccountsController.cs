@@ -81,9 +81,18 @@ public class AccountsController : ControllerBase
     [RequirePage("metadata")]
     public async Task<IActionResult> Delete(int id)
     {
-        var (success, error) = await _accountService.DeleteAsync(id);
-        if (error != null) return Conflict(new { statusCode = StatusCodes.Status409Conflict, message = error });
-        if (!success) return NotFound();
+        var result = await _accountService.DeleteAsync(id);
+        if (result.Blocked != null)
+            return Conflict(new
+            {
+                statusCode = StatusCodes.Status409Conflict,
+                message = result.Blocked.Message,
+                vouchers = result.Blocked.Vouchers,
+                totalCount = result.Blocked.TotalCount
+            });
+        if (result.Error != null)
+            return Conflict(new { statusCode = StatusCodes.Status409Conflict, message = result.Error });
+        if (!result.Success) return NotFound();
         return NoContent();
     }
 }

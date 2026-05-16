@@ -92,7 +92,7 @@ public class CashVoucherService : ICashVoucherService
         voucher.Date = request.Date;
         voucher.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description);
         voucher.RatesAdded = true;
-        voucher.UpdatedAt = DateTime.UtcNow;
+        voucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         _db.JournalEntries.RemoveRange(voucher.Entries);
         voucher.Entries.Clear();

@@ -49,7 +49,7 @@ public class WashingVoucherDto
     public decimal ThresholdPct { get; set; }
     public decimal ExcessWastageKg { get; set; }
     public decimal ExcessWastageValue { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateOnly CreatedAt { get; set; }
 }
 
 public class WashingVoucherListDto
@@ -73,7 +73,7 @@ public class WashingVoucherListDto
     public decimal WashedRate { get; set; }
     public decimal ExcessWastageKg { get; set; }
     public decimal ExcessWastageValue { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateOnly CreatedAt { get; set; }
 }
 
 public class LatestUnwashedRateDto

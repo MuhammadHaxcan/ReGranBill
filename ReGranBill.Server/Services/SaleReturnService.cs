@@ -171,7 +171,7 @@ public class SaleReturnService : ISaleReturnService
         saleReturnJv.VehicleNumber = null;
         saleReturnJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Return from", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         saleReturnJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
-        saleReturnJv.UpdatedAt = DateTime.UtcNow;
+        saleReturnJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         _db.JournalEntries.RemoveRange(saleReturnJv.Entries);
         saleReturnJv.Entries.Clear();
@@ -245,7 +245,7 @@ public class SaleReturnService : ISaleReturnService
         }
 
         saleReturnJv.RatesAdded = saleReturnJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
-        saleReturnJv.UpdatedAt = DateTime.UtcNow;
+        saleReturnJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await _db.SaveChangesAsync();
         return true;
@@ -262,7 +262,7 @@ public class SaleReturnService : ISaleReturnService
             return (false, "Cannot delete a rated sale return. Only pending returns can be deleted.");
 
         saleReturnJv.IsDeleted = true;
-        saleReturnJv.UpdatedAt = DateTime.UtcNow;
+        saleReturnJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await _db.SaveChangesAsync();
         return (true, null);

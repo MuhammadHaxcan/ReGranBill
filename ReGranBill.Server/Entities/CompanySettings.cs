@@ -7,5 +7,5 @@ public class CompanySettings
     public string? Address { get; set; }
     public byte[]? LogoBytes { get; set; }
     public string? LogoContentType { get; set; }
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateOnly UpdatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 }

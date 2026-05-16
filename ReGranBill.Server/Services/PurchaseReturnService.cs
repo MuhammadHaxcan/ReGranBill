@@ -177,7 +177,7 @@ public class PurchaseReturnService : IPurchaseReturnService
         prJv.VehicleNumber = request.VehicleNumber;
         prJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Return to", validation.PartyAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         prJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
-        prJv.UpdatedAt = DateTime.UtcNow;
+        prJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await RemoveVoucherInventoryAsync(prJv.Id);
         _db.JournalEntries.RemoveRange(prJv.Entries);
@@ -256,7 +256,7 @@ public class PurchaseReturnService : IPurchaseReturnService
         }
 
         prJv.RatesAdded = prJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
-        prJv.UpdatedAt = DateTime.UtcNow;
+        prJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await _db.SaveChangesAsync();
         var updateRequest = await BuildUpdateRequestAsync(prJv);
@@ -289,7 +289,7 @@ public class PurchaseReturnService : IPurchaseReturnService
         }
 
         prJv.IsDeleted = true;
-        prJv.UpdatedAt = DateTime.UtcNow;
+        prJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await RemoveVoucherInventoryAsync(prJv.Id);
         await _db.SaveChangesAsync();

@@ -59,6 +59,7 @@
       <thead>
         <tr>
           <th class="col-num">#</th>
+          <th class="col-category">Category</th>
           <th class="col-account">{{ lineAccountLabel }}</th>
           <th class="col-desc">Description</th>
           <th class="col-amount">Amount</th>
@@ -69,16 +70,26 @@
       <tbody>
         <tr *ngFor="let line of lines; let i = index">
           <td class="col-num">{{ i + 1 }}</td>
+          <td class="col-category">
+            <app-searchable-select
+              [options]="cashCategoryOptions"
+              [placeholder]="'Pick category...'"
+              [compact]="true"
+              [ngModel]="line.categoryId"
+              (ngModelChange)="onLineCategoryChange(line, $event)"
+            ></app-searchable-select>
+          </td>
           <td class="col-account">
             <app-searchable-select
               #accountSelect
-              [options]="cashAccountOptions"
-              [placeholder]="'Select cash/bank account...'"
+              [options]="getCashAccountOptionsForLine(line)"
+              [placeholder]="line.categoryId ? 'Select cash/bank account...' : 'Pick category first'"
               [compact]="true"
               [allowAdd]="true"
+              [disabled]="!line.categoryId"
               [ngModel]="line.accountId"
               (ngModelChange)="onAccountChange(line, $event)"
-              (addClicked)="onAddCashAccountClicked($event)"
+              (addClicked)="onAddCashAccountClicked($event, line)"
             ></app-searchable-select>
           </td>
           <td class="col-desc">
@@ -121,7 +132,7 @@
       </tbody>
       <tfoot>
         <tr class="totals-row">
-          <td colspan="3" class="totals-label">Total Amount</td>
+          <td colspan="4" class="totals-label">Total Amount</td>
           <td class="totals-value">{{ totalAmount | flexNumber }}</td>
           <td></td>
           <td></td>

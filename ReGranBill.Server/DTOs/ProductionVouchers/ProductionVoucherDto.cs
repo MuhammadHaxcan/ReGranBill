@@ -59,7 +59,8 @@ public class ProductionVoucherListDto
     public decimal TotalOutputKg { get; set; }
     public decimal TotalByproductKg { get; set; }
     public decimal ShortageKg { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public decimal TotalInputCost { get; set; }
+    public DateOnly CreatedAt { get; set; }
 }
 
 public class LatestPurchaseRateDto

@@ -17,7 +17,7 @@ public class InventoryTransaction
     public decimal ValueDelta { get; set; }
     public DateOnly TransactionDate { get; set; }
     public string? Notes { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateOnly CreatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     public JournalVoucher Voucher { get; set; } = null!;
     public Account ProductAccount { get; set; } = null!;

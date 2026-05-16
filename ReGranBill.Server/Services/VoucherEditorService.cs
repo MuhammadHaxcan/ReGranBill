@@ -86,7 +86,7 @@ public class VoucherEditorService : IVoucherEditorService
         voucher.VehicleNumber = SupportsVehicleNumber(voucherType)
             ? VoucherHelpers.ToNullIfWhiteSpace(request.VehicleNumber)
             : null;
-        voucher.UpdatedAt = DateTime.UtcNow;
+        voucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         voucher.RatesAdded = ComputeRatesAdded(voucherType, request.Entries, accountsById, voucher.RatesAdded);
 
         _db.JournalEntries.RemoveRange(voucher.Entries);
@@ -611,7 +611,7 @@ public class VoucherEditorService : IVoucherEditorService
 
         cartageVoucher.Date = voucher.Date;
         cartageVoucher.Description = $"Cartage entries for {voucher.VoucherNumber}";
-        cartageVoucher.UpdatedAt = DateTime.UtcNow;
+        cartageVoucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var cartageCustomerLine = cartageVoucher.Entries.FirstOrDefault(entry => entry.Debit > 0);
         if (cartageCustomerLine != null)

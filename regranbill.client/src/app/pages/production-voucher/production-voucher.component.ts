@@ -58,6 +58,7 @@ export class ProductionVoucherComponent implements OnInit {
   byproducts: Row[] = [];
   shortageAccountId: number | null = null;
   shortageWeightKg = 0;
+  shortageRate: number | null = null;
   shortageUserEdited = false;
 
   categoryOptions: SelectOption[] = [];
@@ -219,23 +220,27 @@ export class ProductionVoucherComponent implements OnInit {
       categoryId: this.accountsById.get(l.accountId)?.categoryId ?? null,
       accountId: l.accountId,
       qty: l.qty,
-      weightKg: l.weightKg
+      weightKg: l.weightKg,
+      rate: l.rate ?? null
     }));
     this.byproducts = voucher.byproducts.map(l => ({
       categoryId: this.accountsById.get(l.accountId)?.categoryId ?? null,
       accountId: l.accountId,
       qty: l.qty,
-      weightKg: l.weightKg
+      weightKg: l.weightKg,
+      rate: l.rate ?? null
     }));
     if (voucher.shortage) {
       this.shortageAccountId = voucher.shortage.accountId;
       this.shortageCategoryId = this.accountsById.get(voucher.shortage.accountId)?.categoryId ?? null;
       this.shortageWeightKg = voucher.shortage.weightKg;
+      this.shortageRate = voucher.shortage.rate ?? null;
       this.shortageUserEdited = true;
     } else {
       this.shortageAccountId = null;
       this.shortageCategoryId = null;
       this.shortageWeightKg = 0;
+      this.shortageRate = null;
       this.shortageUserEdited = false;
     }
     if (this.inputs.length === 0) this.inputs = [this.emptyRow()];
@@ -262,6 +267,7 @@ export class ProductionVoucherComponent implements OnInit {
           }
         });
       });
+    this.prefillDerivedRates();
     this.loading = false;
     this.cdr.detectChanges();
     this.loadDownstreamUsage();
@@ -485,6 +491,70 @@ export class ProductionVoucherComponent implements OnInit {
       this.shortageWeightKg = this.suggestedShortage();
       this.enforceAllWeightLimits();
     }
+    this.prefillDerivedRates();
+  }
+
+  /**
+   * Pre-fill output/byproduct/shortage rates with the single derived rate
+   * (totalInputCost ÷ totalPhysicalOutKg). Only overwrites rates that are
+   * empty/zero — once the user types a rate, we leave it alone.
+   */
+  private prefillDerivedRates(): void {
+    const derived = this.derivedRate;
+    if (derived <= 0) return;
+    for (const row of this.outputs) {
+      if (!this.numeric(row.rate)) row.rate = derived;
+    }
+    for (const row of this.byproducts) {
+      if (!this.numeric(row.rate)) row.rate = derived;
+    }
+    if (this.numeric(this.shortageWeightKg) > 0 && !this.numeric(this.shortageRate)) {
+      this.shortageRate = derived;
+    }
+  }
+
+  get derivedRate(): number {
+    const inputCost = this.totalInputCost;
+    const physicalOutKg = this.round(
+      this.totalOutputKg + this.totalByproductKg + this.numeric(this.shortageWeightKg)
+    );
+    return physicalOutKg > 0 ? this.round(inputCost / physicalOutKg) : 0;
+  }
+
+  get totalOutputCost(): number {
+    return this.round(this.outputs.reduce(
+      (s, l) => s + this.numeric(l.weightKg) * this.numeric(l.rate), 0));
+  }
+  get totalByproductCost(): number {
+    return this.round(this.byproducts.reduce(
+      (s, l) => s + this.numeric(l.weightKg) * this.numeric(l.rate), 0));
+  }
+  get shortageCost(): number {
+    return this.round(this.numeric(this.shortageWeightKg) * this.numeric(this.shortageRate));
+  }
+  get totalOutCost(): number {
+    return this.round(this.totalOutputCost + this.totalByproductCost + this.shortageCost);
+  }
+  get costBalanceDelta(): number {
+    return this.round(this.totalInputCost - this.totalOutCost);
+  }
+  get isCostBalanced(): boolean {
+    return Math.abs(this.costBalanceDelta) <= ProductionVoucherComponent.TOLERANCE;
+  }
+  get costBalanceState(): 'balanced' | 'near' | 'off' {
+    const abs = Math.abs(this.costBalanceDelta);
+    if (abs <= ProductionVoucherComponent.TOLERANCE) return 'balanced';
+    if (abs <= 10) return 'near';
+    return 'off';
+  }
+  get costBalanceErrorTooltip(): string {
+    if (this.isCostBalanced) return '';
+    const sign = this.costBalanceDelta > 0 ? 'over' : 'short';
+    return `Cost balance off by Rs ${Math.abs(this.costBalanceDelta).toFixed(2)} (${sign}). Adjust output/byproduct/shortage rates to balance.`;
+  }
+
+  onShortageRateChanged(): void {
+    // Treat as user edit so subsequent prefills don't overwrite.
   }
 
   suggestedShortage(): number {
@@ -572,6 +642,15 @@ export class ProductionVoucherComponent implements OnInit {
     if (this.numeric(this.shortageWeightKg) > 0 && !this.shortageAccountId) return false;
     if (!this.inputsHaveLotsAndRates) return false;
     if (this.hasInputOverconsumption) return false;
+    if (!this.outputsHaveRates) return false;
+    if (!this.isCostBalanced) return false;
+    return true;
+  }
+
+  get outputsHaveRates(): boolean {
+    if (this.validOutputs.some(l => this.numeric(l.rate) <= 0)) return false;
+    if (this.validByproducts.some(l => this.numeric(l.rate) <= 0)) return false;
+    if (this.numeric(this.shortageWeightKg) > 0 && this.numeric(this.shortageRate) < 0) return false;
     return true;
   }
 
@@ -627,6 +706,10 @@ export class ProductionVoucherComponent implements OnInit {
         this.toast.error('Each input line needs a selected lot and a rate > 0.');
       } else if (this.hasInputOverconsumption) {
         this.toast.error('One or more input rows exceed the selected lot availability.');
+      } else if (!this.outputsHaveRates) {
+        this.toast.error('Every output and byproduct line needs a rate > 0.');
+      } else if (!this.isCostBalanced) {
+        this.toast.error(this.costBalanceErrorTooltip);
       }
       return;
     }
@@ -637,10 +720,14 @@ export class ProductionVoucherComponent implements OnInit {
       description: this.description || null,
       formulationId: this.selectedFormulationId,
       inputs: this.toLines(this.validInputs, { includeDescription: true, includeLotRate: true }),
-      outputs: this.toLines(this.validOutputs),
-      byproducts: this.toLines(this.validByproducts),
+      outputs: this.toLines(this.validOutputs, { includeRate: true }),
+      byproducts: this.toLines(this.validByproducts, { includeRate: true }),
       shortage: this.numeric(this.shortageWeightKg) > 0 && this.shortageAccountId
-        ? { accountId: this.shortageAccountId, weightKg: this.numeric(this.shortageWeightKg) } as ProductionShortageRequest
+        ? {
+            accountId: this.shortageAccountId,
+            weightKg: this.numeric(this.shortageWeightKg),
+            rate: this.numeric(this.shortageRate)
+          } as ProductionShortageRequest
         : null
     };
 
@@ -668,7 +755,7 @@ export class ProductionVoucherComponent implements OnInit {
     });
   }
 
-  private toLines(rows: Row[], opts: { includeDescription?: boolean; includeLotRate?: boolean } = {}): ProductionLineRequest[] {
+  private toLines(rows: Row[], opts: { includeDescription?: boolean; includeLotRate?: boolean; includeRate?: boolean } = {}): ProductionLineRequest[] {
     return rows.map((r, i) => ({
       accountId: r.accountId!,
       selectedLotId: opts.includeLotRate ? (r.selectedLotId ?? null) : null,
@@ -676,7 +763,7 @@ export class ProductionVoucherComponent implements OnInit {
       weightKg: this.round(this.numeric(r.weightKg)),
       description: opts.includeDescription ? (r.description?.trim() || null) : null,
       sortOrder: i,
-      rate: opts.includeLotRate ? (r.rate ?? null) : null
+      rate: (opts.includeLotRate || opts.includeRate) ? (r.rate ?? null) : null
     }));
   }
 
@@ -702,6 +789,7 @@ export class ProductionVoucherComponent implements OnInit {
     this.shortageCategoryId = null;
     this.shortageAccountId = null;
     this.shortageWeightKg = 0;
+    this.shortageRate = null;
     this.shortageUserEdited = false;
     if (!this.isEditMode) {
       this.productionService.getNextNumber().subscribe({

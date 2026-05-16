@@ -16,8 +16,8 @@ public class InventoryLot
     public decimal OriginalWeightKg { get; set; }
     public decimal BaseRate { get; set; }
     public InventoryLotStatus Status { get; set; } = InventoryLotStatus.Open;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateOnly CreatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public DateOnly UpdatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     public Account ProductAccount { get; set; } = null!;
     public Account? VendorAccount { get; set; }

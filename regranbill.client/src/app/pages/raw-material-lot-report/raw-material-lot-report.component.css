@@ -259,9 +259,14 @@
   color: #047857;
 }
 
+.status-exhausted {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
 .status-voided {
-  background: rgba(148, 163, 184, 0.18);
-  color: var(--text-secondary);
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
 }
 
 .metric-ok {

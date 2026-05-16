@@ -10,7 +10,7 @@ public class InventoryVoucherLink
     public string VoucherLineKey { get; set; } = string.Empty;
     public int LotId { get; set; }
     public int TransactionId { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateOnly CreatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     public JournalVoucher Voucher { get; set; } = null!;
     public InventoryLot Lot { get; set; } = null!;

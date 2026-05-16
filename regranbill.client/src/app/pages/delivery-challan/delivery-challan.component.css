@@ -258,8 +258,8 @@
 }
 
 .col-packing {
-  width: 6%;
-  min-width: 65px;
+  width: 10%;
+  min-width: 90px;
 }
 
 .packing-label {
@@ -284,8 +284,8 @@
 }
 
 .col-weight {
-  width: 9%;
-  min-width: 85px;
+  width: 11%;
+  min-width: 100px;
   text-align: center;
   font-size: 14px;
   font-weight: 600;
@@ -316,8 +316,8 @@
 }
 
 .col-amount {
-  width: 12%;
-  min-width: 100px;
+  width: 14%;
+  min-width: 110px;
   text-align: right;
   font-weight: 700;
   font-size: 14px;

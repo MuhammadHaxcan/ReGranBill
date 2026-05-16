@@ -78,12 +78,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Account>(e =>
         {
             e.ToTable("accounts");
-            e.HasIndex(a => a.Name).IsUnique();
+            e.HasIndex(a => new { a.CategoryId, a.Name }).IsUnique();
             e.Property(a => a.Name).HasMaxLength(200);
             e.Property(a => a.AccountType).HasMaxLength(20)
                 .HasConversion(v => v.ToString(), v => Enum.Parse<AccountType>(v));
             e.HasOne(a => a.Category).WithMany(c => c.Accounts).HasForeignKey(a => a.CategoryId);
-            e.HasOne(a => a.WashedAccount).WithMany().HasForeignKey(a => a.WashedAccountId).OnDelete(DeleteBehavior.Restrict);
         });
 
         // ProductDetail (1:1)

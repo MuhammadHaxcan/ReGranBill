@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReGranBill.Server.Authorization;
 using ReGranBill.Server.DTOs.ProductionVouchers;
+using ReGranBill.Server.Helpers;
 using ReGranBill.Server.Services;
 
 namespace ReGranBill.Server.Controllers;
@@ -14,11 +15,13 @@ public class ProductionVouchersController : ControllerBase
 {
     private readonly IProductionVoucherService _service;
     private readonly IDownstreamUsageService _downstreamService;
+    private readonly IPdfService _pdfService;
 
-    public ProductionVouchersController(IProductionVoucherService service, IDownstreamUsageService downstreamService)
+    public ProductionVouchersController(IProductionVoucherService service, IDownstreamUsageService downstreamService, IPdfService pdfService)
     {
         _service = service;
         _downstreamService = downstreamService;
+        _pdfService = pdfService;
     }
 
     [HttpGet("{id}/downstream")]
@@ -45,6 +48,28 @@ public class ProductionVouchersController : ControllerBase
     {
         var voucherNumber = await _service.GetNextNumberAsync();
         return Ok(new { voucherNumber });
+    }
+
+    [HttpGet("{id}/pdf")]
+    public async Task<IActionResult> GetPdf(int id)
+    {
+        var voucher = await _service.GetByIdAsync(id);
+        if (voucher == null) return NotFound();
+
+        var pdfBytes = _pdfService.GenerateProductionVoucherPdf(voucher);
+        return File(pdfBytes, "application/pdf",
+            PdfFileNameHelper.BuildVoucherFileName(voucher.LotNumber ?? "production", voucher.VoucherNumber, voucher.Date));
+    }
+
+    [HttpGet("by-number/{voucherNumber}/pdf")]
+    public async Task<IActionResult> GetPdfByNumber(string voucherNumber)
+    {
+        var voucher = await _service.GetByNumberAsync(voucherNumber);
+        if (voucher == null) return NotFound();
+
+        var pdfBytes = _pdfService.GenerateProductionVoucherPdf(voucher);
+        return File(pdfBytes, "application/pdf",
+            PdfFileNameHelper.BuildVoucherFileName(voucher.LotNumber ?? "production", voucher.VoucherNumber, voucher.Date));
     }
 
     [HttpPost]

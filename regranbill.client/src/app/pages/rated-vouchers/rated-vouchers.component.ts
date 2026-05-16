@@ -10,9 +10,11 @@ import { PurchaseVoucherService } from '../../services/purchase-voucher.service'
 import { PurchaseVoucherViewModel } from '../../models/purchase-voucher.model';
 import { PurchaseReturnService, PurchaseReturnViewModel } from '../../services/purchase-return.service';
 import { WashingVoucherService } from '../../services/washing-voucher.service';
+import { ProductionVoucherService } from '../../services/production-voucher.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { WashingVoucherListDto } from '../../models/washing-voucher.model';
+import { ProductionVoucherListDto } from '../../models/production-voucher.model';
 import { formatDateDdMmYyyy } from '../../utils/date-utils';
 import { getApiErrorMessage } from '../../utils/api-error';
 import {
@@ -25,7 +27,7 @@ import {
 } from '../../utils/delivery-calculations';
 
 interface RatedRow {
-  type: 'dc' | 'sr' | 'pv' | 'pr' | 'wsh';
+  type: 'dc' | 'sr' | 'pv' | 'pr' | 'wsh' | 'prod';
   id: number;
   number: string;
   date: string;
@@ -52,6 +54,7 @@ export class RatedVouchersComponent implements OnInit {
     private pvService: PurchaseVoucherService,
     private prService: PurchaseReturnService,
     private washingService: WashingVoucherService,
+    private prodService: ProductionVoucherService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
@@ -74,15 +77,17 @@ export class RatedVouchersComponent implements OnInit {
       srs: this.srService.getAll(),
       pvs: this.pvService.getAll(),
       prs: this.prService.getAll(),
-      wshs: this.washingService.getAll()
+      wshs: this.washingService.getAll(),
+      prods: this.prodService.getAll()
     }).subscribe({
-      next: ({ dcs, srs, pvs, prs, wshs }) => {
+      next: ({ dcs, srs, pvs, prs, wshs, prods }) => {
         this.rows = [
           ...dcs.filter(dc => dc.ratesAdded).map(dc => this.toRowDc(dc)),
           ...srs.filter(sr => sr.ratesAdded).map(sr => this.toRowSr(sr)),
           ...pvs.filter(pv => pv.ratesAdded).map(pv => this.toRowPv(pv)),
           ...prs.filter(pr => pr.ratesAdded).map(pr => this.toRowPr(pr)),
-          ...wshs.map(wsh => this.toRowWsh(wsh))
+          ...wshs.map(wsh => this.toRowWsh(wsh)),
+          ...prods.map(p => this.toRowProd(p))
         ].sort((a, b) => {
           const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
           if (dateDiff !== 0) return dateDiff;
@@ -153,6 +158,20 @@ export class RatedVouchersComponent implements OnInit {
     };
   }
 
+  private toRowProd(p: ProductionVoucherListDto): RatedRow {
+    return {
+      type: 'prod',
+      id: p.id,
+      number: p.voucherNumber,
+      date: p.date,
+      partyName: p.description || (p.lotNumber ? `Lot ${p.lotNumber}` : '-'),
+      productCount: 1,
+      bags: 0,
+      weight: p.totalOutputKg,
+      amount: p.totalInputCost
+    };
+  }
+
   fmt(date: string): string {
     return formatDateDdMmYyyy(date);
   }
@@ -164,6 +183,7 @@ export class RatedVouchersComponent implements OnInit {
       case 'pv': return 'PV';
       case 'pr': return 'PR';
       case 'wsh': return 'WSH';
+      case 'prod': return 'PROD';
       default: return type.toUpperCase();
     }
   }
@@ -175,6 +195,7 @@ export class RatedVouchersComponent implements OnInit {
       case 'pv': this.router.navigate(['/purchase-voucher', row.id]); break;
       case 'pr': this.router.navigate(['/purchase-return', row.id]); break;
       case 'wsh': this.router.navigate(['/washing-voucher', row.id]); break;
+      case 'prod': this.router.navigate(['/production-voucher', row.id]); break;
     }
   }
 
@@ -185,6 +206,7 @@ export class RatedVouchersComponent implements OnInit {
       case 'pv': this.pvService.openPdfInNewTab(row.id, row.number); break;
       case 'pr': this.prService.openPdfInNewTab(row.id, row.number); break;
       case 'wsh': this.washingService.openPrintInNewTab(row.id, row.number); break;
+      case 'prod': this.prodService.openPdfInNewTab(row.id, row.number); break;
     }
   }
 
@@ -194,7 +216,8 @@ export class RatedVouchersComponent implements OnInit {
       sr: 'Sale Return',
       pv: 'Purchase Voucher',
       pr: 'Purchase Return',
-      wsh: 'Washing Voucher'
+      wsh: 'Washing Voucher',
+      prod: 'Production Voucher'
     };
 
     const confirmed = await this.confirmModal.confirm({
@@ -223,6 +246,7 @@ export class RatedVouchersComponent implements OnInit {
       case 'pv': return this.pvService;
       case 'pr': return this.prService;
       case 'wsh': return this.washingService;
+      case 'prod': return this.prodService;
     }
   }
 }

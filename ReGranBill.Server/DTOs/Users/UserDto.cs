@@ -8,5 +8,5 @@ public class UserDto
     public int RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateOnly CreatedAt { get; set; }
 }

@@ -11,6 +11,7 @@ namespace ReGranBill.Server.Services;
 public class ProductionVoucherService : IProductionVoucherService
 {
     private const decimal MassBalanceTolerance = 0.01m;
+    private const decimal CostBalanceTolerance = 0.01m;
 
     private readonly AppDbContext _db;
     private readonly IVoucherNumberService _voucherNumberService;
@@ -40,6 +41,9 @@ public class ProductionVoucherService : IProductionVoucherService
         return vouchers.Select(v =>
         {
             var entries = v.Entries.ToList();
+            var totalInputCost = VoucherHelpers.Round2(entries
+                .Where(e => e.LineKind == ProductionLineKind.Input)
+                .Sum(e => (e.ActualWeightKg ?? 0m) * (e.Rate ?? 0m)));
             return new ProductionVoucherListDto
             {
                 Id = v.Id,
@@ -51,9 +55,25 @@ public class ProductionVoucherService : IProductionVoucherService
                 TotalOutputKg = SumKg(entries, ProductionLineKind.Output),
                 TotalByproductKg = SumKg(entries, ProductionLineKind.Byproduct),
                 ShortageKg = SumKg(entries, ProductionLineKind.Shortage),
+                TotalInputCost = totalInputCost,
                 CreatedAt = v.CreatedAt
             };
         }).ToList();
+    }
+
+    public async Task<ProductionVoucherDto?> GetByNumberAsync(string voucherNumber)
+    {
+        var normalized = voucherNumber?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized)) return null;
+
+        var voucher = await _db.JournalVouchers
+            .Where(j => j.VoucherType == VoucherType.ProductionVoucher && j.VoucherNumber == normalized)
+            .Include(j => j.Entries).ThenInclude(e => e.Account).ThenInclude(a => a.ProductDetail)
+            .FirstOrDefaultAsync();
+
+        if (voucher == null) return null;
+        var selectedLots = await LoadSelectedLotsAsync(voucher.Id);
+        return MapToDto(voucher, selectedLots);
     }
 
     public async Task<ProductionVoucherDto?> GetByIdAsync(int id)
@@ -117,7 +137,7 @@ public class ProductionVoucherService : IProductionVoucherService
         voucher.Date = request.Date;
         voucher.VehicleNumber = VoucherHelpers.ToNullIfWhiteSpace(request.LotNumber);
         voucher.Description = BuildDescription(request, validation);
-        voucher.UpdatedAt = DateTime.UtcNow;
+        voucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await RemoveVoucherInventoryAsync(id);
         await _db.SaveChangesAsync();
@@ -144,7 +164,7 @@ public class ProductionVoucherService : IProductionVoucherService
             return (false, "Cannot delete a production voucher after its output lots have been consumed.");
 
         voucher.IsDeleted = true;
-        voucher.UpdatedAt = DateTime.UtcNow;
+        voucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         await RemoveVoucherInventoryAsync(id);
         await _db.SaveChangesAsync();
         return (true, null);
@@ -158,16 +178,23 @@ public class ProductionVoucherService : IProductionVoucherService
             throw new RequestValidationException("Add at least one output line.");
 
         ValidateLines(request.Inputs, "input", requireSelectedLot: true, requireRate: true);
-        ValidateLines(request.Outputs, "output", requireSelectedLot: false, requireRate: false);
-        ValidateLines(request.Byproducts, "byproduct", requireSelectedLot: false, requireRate: false);
+        ValidateLines(request.Outputs, "output", requireSelectedLot: false, requireRate: true);
+        ValidateLines(request.Byproducts, "byproduct", requireSelectedLot: false, requireRate: true);
 
         var shortageKg = 0m;
+        var shortageRate = 0m;
         if (request.Shortage != null)
         {
             if (request.Shortage.WeightKg < 0)
                 throw new RequestValidationException("Shortage weight cannot be negative.");
             if (request.Shortage.WeightKg > 0 && request.Shortage.AccountId <= 0)
                 throw new RequestValidationException("Select a valid Production Loss account for the shortage.");
+            if (request.Shortage.WeightKg > 0)
+            {
+                if (!request.Shortage.Rate.HasValue || request.Shortage.Rate.Value < 0)
+                    throw new RequestValidationException("Shortage rate must be zero or greater.");
+                shortageRate = request.Shortage.Rate.Value;
+            }
             shortageKg = request.Shortage.WeightKg;
         }
 
@@ -180,6 +207,19 @@ public class ProductionVoucherService : IProductionVoucherService
         {
             throw new RequestValidationException(
                 $"Mass balance failed. Inputs {totalInputKg:0.##} kg must equal outputs + byproducts + shortage ({rhs:0.##} kg). Difference: {diff:0.##} kg.");
+        }
+
+        var totalInputCostCheck = VoucherHelpers.Round2(
+            request.Inputs.Sum(l => VoucherHelpers.Round2(l.WeightKg) * l.Rate!.Value));
+        var totalOutCost = VoucherHelpers.Round2(
+            request.Outputs.Sum(l => VoucherHelpers.Round2(l.WeightKg) * l.Rate!.Value)
+            + request.Byproducts.Sum(l => VoucherHelpers.Round2(l.WeightKg) * l.Rate!.Value)
+            + VoucherHelpers.Round2(shortageKg) * shortageRate);
+        var costDiff = totalInputCostCheck - totalOutCost;
+        if (Math.Abs(costDiff) > CostBalanceTolerance)
+        {
+            throw new RequestValidationException(
+                $"Cost balance failed. Inputs Rs {totalInputCostCheck:0.00} must equal outputs + byproducts + shortage (Rs {totalOutCost:0.00}). Difference: Rs {costDiff:0.00}.");
         }
 
         var accountIds = request.Inputs.Select(l => l.AccountId)
@@ -316,13 +356,12 @@ public class ProductionVoucherService : IProductionVoucherService
             });
         }
 
-        var derivedRate = validation.DerivedRate;
-
         foreach (var line in request.Outputs.OrderBy(l => l.SortOrder))
         {
             var account = validation.Accounts[line.AccountId];
             var weight = VoucherHelpers.Round2(line.WeightKg);
-            var amount = VoucherHelpers.Round2(weight * derivedRate);
+            var rate = line.Rate!.Value;
+            var amount = VoucherHelpers.Round2(weight * rate);
             voucher.Entries.Add(new JournalEntry
             {
                 AccountId = line.AccountId,
@@ -332,7 +371,7 @@ public class ProductionVoucherService : IProductionVoucherService
                 Qty = line.Qty,
                 ActualWeightKg = weight,
                 Rbp = "Yes",
-                Rate = derivedRate,
+                Rate = rate,
                 IsEdited = isEdited,
                 LineKind = ProductionLineKind.Output,
                 SortOrder = ++sortOrder
@@ -343,7 +382,8 @@ public class ProductionVoucherService : IProductionVoucherService
         {
             var account = validation.Accounts[line.AccountId];
             var weight = VoucherHelpers.Round2(line.WeightKg);
-            var amount = VoucherHelpers.Round2(weight * derivedRate);
+            var rate = line.Rate!.Value;
+            var amount = VoucherHelpers.Round2(weight * rate);
             voucher.Entries.Add(new JournalEntry
             {
                 AccountId = line.AccountId,
@@ -353,7 +393,7 @@ public class ProductionVoucherService : IProductionVoucherService
                 Qty = line.Qty,
                 ActualWeightKg = weight,
                 Rbp = "Yes",
-                Rate = derivedRate,
+                Rate = rate,
                 IsEdited = isEdited,
                 LineKind = ProductionLineKind.Byproduct,
                 SortOrder = ++sortOrder
@@ -364,7 +404,8 @@ public class ProductionVoucherService : IProductionVoucherService
         {
             var shortageAccount = validation.Accounts[request.Shortage.AccountId];
             var shortageKg = VoucherHelpers.Round2(request.Shortage.WeightKg);
-            var shortageAmount = VoucherHelpers.Round2(shortageKg * derivedRate);
+            var shortageRate = request.Shortage.Rate ?? 0m;
+            var shortageAmount = VoucherHelpers.Round2(shortageKg * shortageRate);
             voucher.Entries.Add(new JournalEntry
             {
                 AccountId = shortageAccount.Id,
@@ -373,7 +414,7 @@ public class ProductionVoucherService : IProductionVoucherService
                 Credit = 0,
                 ActualWeightKg = shortageKg,
                 Rbp = "Yes",
-                Rate = derivedRate,
+                Rate = shortageRate,
                 IsEdited = isEdited,
                 LineKind = ProductionLineKind.Shortage,
                 SortOrder = ++sortOrder
@@ -530,7 +571,7 @@ public class ProductionVoucherService : IProductionVoucherService
         {
             lot.Status = InventoryLotStatus.Voided;
             lot.SourceEntryId = null;
-            lot.UpdatedAt = DateTime.UtcNow;
+            lot.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         }
     }
 

@@ -59,6 +59,8 @@ import { SelectOnFocusDirective } from './directives/select-on-focus.directive';
 import { PdfViewerShellComponent } from './components/pdf-viewer-shell/pdf-viewer-shell.component';
 import { AddAccountModalComponent } from './components/add-account-modal/add-account-modal.component';
 import { DownstreamUsageBannerComponent } from './components/downstream-usage-banner/downstream-usage-banner.component';
+import { CommandPaletteComponent } from './components/command-palette/command-palette.component';
+import { BlockedDeleteModalComponent } from './components/blocked-delete-modal/blocked-delete-modal.component';
 
 @NgModule({
   declarations: [
@@ -114,6 +116,8 @@ import { DownstreamUsageBannerComponent } from './components/downstream-usage-ba
     PrintProdComponent,
     PrintWshComponent,
     DownstreamUsageBannerComponent,
+    CommandPaletteComponent,
+    BlockedDeleteModalComponent,
       ],
   imports: [
     BrowserModule,

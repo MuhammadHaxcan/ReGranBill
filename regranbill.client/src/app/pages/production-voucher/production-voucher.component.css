@@ -6,9 +6,7 @@
 
 /* Page wrapper */
 .prod-page {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 16px 24px 80px;
+  padding: 0 0 80px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -57,16 +55,10 @@
 }
 
 .prod-voucher-num {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  border-radius: 999px;
+  font-size: 20px;
   font-weight: 700;
-  font-size: 13px;
-  font-family: 'SF Mono', Menlo, monospace;
-  background: var(--primary-light);
   color: var(--primary);
-  border: 1px solid rgba(79, 70, 229, 0.2);
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
@@ -310,16 +302,71 @@
 
 /* Column widths */
 .col-num          { width: 40px;  text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 500; }
-.col-account      { width: 220px; min-width: 180px; }
-.col-account-wide { min-width: 200px; }
+.col-account      { width: 200px; min-width: 160px; }
+.col-account-wide { width: 260px; min-width: 220px; }
 .col-lot-info     { width: 190px; min-width: 160px; }
 .col-desc         { min-width: 200px; }
 .col-bags         { width: 90px;  min-width: 80px;  text-align: right; }
 .col-kg           { width: 110px; min-width: 90px;  text-align: right; }
+.col-rate         { width: 90px;  min-width: 80px;  text-align: right; }
+.col-amount       { width: 110px; min-width: 90px;  text-align: right; font-variant-numeric: tabular-nums; padding-right: 8px; }
 .col-act          { width: 44px;  text-align: center; }
 
 .prod-lines-table th.col-bags,
-.prod-lines-table th.col-kg { text-align: right; }
+.prod-lines-table th.col-kg,
+.prod-lines-table th.col-rate,
+.prod-lines-table th.col-amount { text-align: right; }
+
+.prod-cost-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+}
+
+.prod-cost-balance-off {
+  border-color: var(--danger-border);
+  background: var(--danger-light);
+}
+
+.prod-cost-balance-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.prod-cost-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.prod-cost-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.prod-cost-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.prod-cost-delta-off {
+  color: var(--danger);
+}
+
+.prod-amount-cell {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Override text-align for specific column types — same approach as DC/PV */
 .prod-desc-input { text-align: left; }
@@ -374,7 +421,7 @@
 /* ── Shortage row ─────────────────────────────────────────── */
 .prod-shortage-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.1fr) minmax(280px, 1.3fr) minmax(140px, 180px);
+  grid-template-columns: minmax(180px, 1.1fr) minmax(240px, 1.4fr) minmax(90px, 110px) minmax(90px, 110px) minmax(110px, 130px);
   gap: 16px;
   align-items: end;
   padding: 16px 20px 12px;

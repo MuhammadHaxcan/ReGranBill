@@ -38,13 +38,13 @@
           </svg>
         </button>
         <div class="nav-group-items" *ngIf="isGroupOpen(group.group)">
-          <button *ngFor="let page of group.pages; trackBy: trackSidebarPage"
-             type="button"
-             (click)="navigateTo(page.route)"
+          <a *ngFor="let page of group.pages; trackBy: trackSidebarPage"
+             [routerLink]="page.route"
+             (click)="onSidebarLinkClick()"
              class="nav-item nav-item-button"
              [class.nav-active]="isPageActive(page.route)">
             <span>{{ page.label }}</span>
-          </button>
+          </a>
         </div>
       </div>
     </nav>
@@ -84,13 +84,13 @@
           </svg>
         </button>
         <div class="nav-group-items" *ngIf="isGroupOpen(group.group)">
-          <button *ngFor="let page of group.pages; trackBy: trackSidebarPage"
-                  type="button"
-                  (click)="navigateTo(page.route)"
-                  class="nav-item nav-item-button"
-                  [class.nav-active]="isPageActive(page.route)">
+          <a *ngFor="let page of group.pages; trackBy: trackSidebarPage"
+             [routerLink]="page.route"
+             (click)="onSidebarLinkClick()"
+             class="nav-item nav-item-button"
+             [class.nav-active]="isPageActive(page.route)">
             <span>{{ page.label }}</span>
-          </button>
+          </a>
         </div>
       </div>
     </nav>
@@ -112,8 +112,20 @@
 
   <!-- Main Content -->
   <main class="main-content">
+    <div class="app-topbar" *ngIf="!isMobile">
+      <button type="button" class="app-topbar-search" (click)="openPalette()" aria-label="Search pages">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span class="app-topbar-search-text">Search pages…</span>
+        <span class="app-topbar-kbd">Ctrl + Shift + F</span>
+      </button>
+    </div>
     <router-outlet></router-outlet>
   </main>
+
+  <app-command-palette [open]="paletteOpen" (closed)="closePalette()"></app-command-palette>
 </ng-container>
 
 <!-- Global Toast (sticky: stays until user dismisses or a newer toast replaces it).
@@ -135,6 +147,8 @@
     <button class="toast-close" (click)="dismissToast()">&times;</button>
   </div>
 </div>
+
+<app-blocked-delete-modal></app-blocked-delete-modal>
 
 <!-- Global Confirm / Info Modal -->
 <div class="confirm-overlay" *ngIf="modalVisible" (click)="onModalClose()">

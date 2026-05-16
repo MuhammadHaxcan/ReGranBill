@@ -3,6 +3,7 @@ import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { BlockedDeleteModalService } from '../../services/blocked-delete-modal.service';
 import { Category } from '../../models/category.model';
 import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { SelectOption } from '../../components/searchable-select/searchable-select.component';
@@ -61,8 +62,24 @@ export class CategoriesAccountsComponent implements OnInit {
     private accountService: AccountService,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
-    private confirmModal: ConfirmModalService
+    private confirmModal: ConfirmModalService,
+    private blockedDeleteModal: BlockedDeleteModalService
   ) {}
+
+  private showDeleteError(err: any, fallback: string): void {
+    const body = err?.error;
+    if (body?.vouchers?.length) {
+      this.blockedDeleteModal.show({
+        title: 'Cannot Delete',
+        message: body.message ?? fallback,
+        vouchers: body.vouchers,
+        totalCount: body.totalCount ?? body.vouchers.length
+      });
+    } else {
+      const msg = getApiErrorMessage(err, fallback);
+      this.confirmModal.info({ title: 'Cannot Delete', message: msg });
+    }
+  }
 
   ngOnInit(): void {
     this.loadCategories();
@@ -169,10 +186,7 @@ export class CategoriesAccountsComponent implements OnInit {
         this.toast.success('Category deleted.');
         this.loadCategories();
       },
-      error: err => {
-        const msg = getApiErrorMessage(err, 'Unable to delete category.');
-        this.confirmModal.info({ title: 'Cannot Delete', message: msg });
-      }
+      error: err => this.showDeleteError(err, 'Unable to delete category.')
     });
   }
 
@@ -340,10 +354,7 @@ export class CategoriesAccountsComponent implements OnInit {
         this.toast.success('Account deleted.');
         this.loadAccounts();
       },
-      error: err => {
-        const msg = getApiErrorMessage(err, 'Unable to delete account.');
-        this.confirmModal.info({ title: 'Cannot Delete', message: msg });
-      }
+      error: err => this.showDeleteError(err, 'Unable to delete account.')
     });
   }
 
@@ -357,11 +368,6 @@ export class CategoriesAccountsComponent implements OnInit {
       case AccountType.UnwashedMaterial: return 'badge-unwashed';
     }
     return '';
-  }
-
-  getLinkedWashedAccountName(washedAccountId: number | null | undefined): string {
-    if (!washedAccountId) return '';
-    return this.accounts.find(account => account.id === washedAccountId)?.name ?? '';
   }
 
   accountTypeLabel(t: AccountType): string {

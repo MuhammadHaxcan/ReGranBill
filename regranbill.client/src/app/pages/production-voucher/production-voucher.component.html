@@ -187,6 +187,8 @@
             <th class="col-account-wide">Raw Material</th>
             <th class="col-bags">Bags</th>
             <th class="col-kg">Kg</th>
+            <th class="col-rate">Rate</th>
+            <th class="col-amount">Amount</th>
             <th class="col-act"></th>
           </tr>
         </thead>
@@ -213,6 +215,11 @@
               <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
                      [(ngModel)]="row.weightKg" [max]="getMaxOutputWeight(row)" (ngModelChange)="onOutputWeightChanged(row)" />
             </td>
+            <td class="col-rate">
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.rate" placeholder="0.00" />
+            </td>
+            <td class="col-amount">{{ (row.weightKg || 0) * (row.rate || 0) | number:'1.2-2' }}</td>
             <td class="col-act">
               <button type="button" class="btn-remove" title="Remove row" (click)="removeOutput(i)">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -225,6 +232,7 @@
     <div class="prod-sec-totals">
       <span>Bags: <b>{{ inputBags(outputs) }}</b></span>
       <span>Kg: <b>{{ inputKg(outputs) | number:'1.2-2' }}</b></span>
+      <span>Cost: <b>Rs {{ totalOutputCost | number:'1.2-2' }}</b></span>
     </div>
   </div>
 
@@ -246,6 +254,8 @@
             <th class="col-account-wide">Raw Material</th>
             <th class="col-bags">Bags</th>
             <th class="col-kg">Kg</th>
+            <th class="col-rate">Rate</th>
+            <th class="col-amount">Amount</th>
             <th class="col-act"></th>
           </tr>
         </thead>
@@ -272,6 +282,11 @@
               <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
                      [(ngModel)]="row.weightKg" [max]="getMaxByproductWeight(row)" (ngModelChange)="onByproductWeightChanged(row)" />
             </td>
+            <td class="col-rate">
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm prod-num-input"
+                     [(ngModel)]="row.rate" placeholder="0.00" />
+            </td>
+            <td class="col-amount">{{ (row.weightKg || 0) * (row.rate || 0) | number:'1.2-2' }}</td>
             <td class="col-act">
               <button type="button" class="btn-remove" title="Remove row" (click)="removeByproduct(i)">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -287,6 +302,7 @@
     <div class="prod-sec-totals" *ngIf="byproducts.length > 0">
       <span>Bags: <b>{{ inputBags(byproducts) }}</b></span>
       <span>Kg: <b>{{ inputKg(byproducts) | number:'1.2-2' }}</b></span>
+      <span>Cost: <b>Rs {{ totalByproductCost | number:'1.2-2' }}</b></span>
     </div>
   </div>
 
@@ -326,9 +342,46 @@
                [(ngModel)]="shortageWeightKg"
                (ngModelChange)="onShortageChanged()" />
       </div>
+      <div>
+        <label class="prod-label">Rate</label>
+        <input type="number" min="0" step="0.01" class="form-control prod-num-input"
+               [(ngModel)]="shortageRate"
+               (ngModelChange)="onShortageRateChanged()"
+               placeholder="0.00" />
+      </div>
+      <div>
+        <label class="prod-label">Amount</label>
+        <div class="prod-amount-cell">Rs {{ shortageCost | number:'1.2-2' }}</div>
+      </div>
     </div>
     <p class="prod-shortage-hint" *ngIf="!shortageUserEdited">
       Auto-suggested as input - (output + byproduct). Edit to override; click ↻ Auto-suggest to reset.
+    </p>
+  </div>
+
+  <div class="prod-section prod-cost-balance" [class.prod-cost-balance-off]="!isCostBalanced">
+    <div class="prod-cost-balance-row">
+      <div class="prod-cost-cell">
+        <span class="prod-cost-label">Total Input Cost</span>
+        <span class="prod-cost-value">Rs {{ totalInputCost | number:'1.2-2' }}</span>
+      </div>
+      <div class="prod-cost-cell">
+        <span class="prod-cost-label">Total Output Cost</span>
+        <span class="prod-cost-value">Rs {{ totalOutCost | number:'1.2-2' }}</span>
+      </div>
+      <div class="prod-cost-cell">
+        <span class="prod-cost-label">Δ Cost</span>
+        <span class="prod-cost-value" [class.prod-cost-delta-off]="!isCostBalanced">
+          Rs {{ costBalanceDelta | number:'1.2-2' }}
+        </span>
+      </div>
+      <div class="prod-cost-cell">
+        <span class="prod-cost-label">Derived Rate / kg</span>
+        <span class="prod-cost-value">Rs {{ derivedRate | number:'1.2-2' }}</span>
+      </div>
+    </div>
+    <p class="prod-shortage-hint" *ngIf="!isCostBalanced">
+      {{ costBalanceErrorTooltip }}
     </p>
   </div>
 
@@ -336,7 +389,7 @@
     <button type="button" class="pv-btn pv-btn-outline" (click)="discard()">Discard</button>
     <button type="button" class="pv-btn pv-btn-primary"
             [disabled]="!canSave"
-            [title]="canSave ? '' : balanceErrorTooltip"
+            [title]="canSave ? '' : (isBalanced ? costBalanceErrorTooltip : balanceErrorTooltip)"
             (click)="save()">
       {{ saving ? 'Saving...' : (isEditMode ? 'Update Voucher' : 'Save Voucher') }}
     </button>

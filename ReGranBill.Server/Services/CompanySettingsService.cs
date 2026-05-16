@@ -42,7 +42,7 @@ public class CompanySettingsService : ICompanySettingsService
 
         settings.CompanyName = companyName;
         settings.Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim();
-        settings.UpdatedAt = DateTime.UtcNow;
+        settings.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         if (request.Logo != null)
         {
@@ -155,7 +155,7 @@ public class CompanySettingsService : ICompanySettingsService
             vehicle.VehicleNumber = item.VehicleNumber;
             vehicle.NormalizedVehicleNumber = item.NormalizedVehicleNumber;
             vehicle.SortOrder = i;
-            vehicle.UpdatedAt = DateTime.UtcNow;
+            vehicle.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
             resultOrder.Add(vehicle);
         }
 

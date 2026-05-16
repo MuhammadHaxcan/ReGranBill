@@ -5,6 +5,7 @@ using QuestPDF.Infrastructure;
 using ReGranBill.Server.DTOs.DeliveryChallans;
 using ReGranBill.Server.DTOs.MasterReport;
 using ReGranBill.Server.DTOs.ProductStockReport;
+using ReGranBill.Server.DTOs.ProductionVouchers;
 using ReGranBill.Server.DTOs.PurchaseVouchers;
 using ReGranBill.Server.DTOs.PurchaseReturns;
 using ReGranBill.Server.DTOs.SOA;
@@ -258,6 +259,250 @@ public class PdfService : IPdfService
                         {
                             c.Item().BorderBottom(1.5f).BorderColor(Green).Height(34);
                             c.Item().PaddingTop(4).AlignCenter().Text("Received by").Bold().FontSize(11);
+                        });
+                    });
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+
+        IContainer CellStyle(IContainer container) =>
+            container.Border(1).BorderColor(BorderGreen).PaddingVertical(5).PaddingHorizontal(6);
+    }
+
+    public byte[] GenerateProductionVoucherPdf(ProductionVoucherDto dto)
+    {
+        var totalOutputCost = dto.Outputs.Sum(line => (line.WeightKg) * (line.Rate ?? 0m));
+        var totalByproductCost = dto.Byproducts.Sum(line => (line.WeightKg) * (line.Rate ?? 0m));
+        var shortageCost = (dto.Shortage?.WeightKg ?? 0m) * (dto.Shortage?.Rate ?? 0m);
+        var totalOutCost = totalOutputCost + totalByproductCost + shortageCost;
+        var totalPhysicalOutKg = dto.TotalOutputKg + dto.TotalByproductKg + dto.ShortageKg;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.MarginHorizontal(28);
+                page.MarginVertical(24);
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(Green).FontFamily("Times New Roman"));
+
+                page.Content().Border(1.5f).BorderColor(Green).Padding(22).Column(column =>
+                {
+                    column.Spacing(0);
+
+                    column.Item().Element(ComposeCompanyHeader);
+                    column.Item().PaddingVertical(12).LineHorizontal(1).LineColor(Green);
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(info =>
+                        {
+                            info.Item().Text("PRODUCTION VOUCHER").Bold().FontSize(17).FontColor(Green);
+                            if (!string.IsNullOrWhiteSpace(dto.LotNumber))
+                                info.Item().PaddingTop(5).Text($"Lot: {dto.LotNumber}").Bold().FontSize(12);
+                            info.Item().PaddingTop(3).Text($"Inputs: {dto.Inputs.Count} · Outputs: {dto.Outputs.Count}"
+                                + (dto.Byproducts.Count > 0 ? $" · Byproducts: {dto.Byproducts.Count}" : "")).FontSize(10);
+                        });
+
+                        row.ConstantItem(195).AlignRight().Border(1.2f).BorderColor(Green).Padding(8).Column(summary =>
+                        {
+                            summary.Item().AlignRight().Text($"Voucher No: {dto.VoucherNumber}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Date: {dto.Date:dd/MM/yyyy}").FontSize(10);
+                            summary.Item().PaddingTop(4).AlignRight().Text($"Total Input Cost: {FormatCurrency(dto.TotalInputCost)}").Bold().FontSize(10);
+                            summary.Item().PaddingTop(2).AlignRight().Text($"Derived Rate: {FormatDecimal(dto.DerivedOutputRate)} / kg").FontSize(10);
+                        });
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(dto.Description))
+                    {
+                        column.Item().PaddingTop(10).Border(1).BorderColor(BorderGreen).Background(LightGreen).Padding(8).Text(t =>
+                        {
+                            t.Span("Note: ").Bold();
+                            t.Span(dto.Description);
+                        });
+                    }
+
+                    // Inputs table
+                    column.Item().PaddingTop(12).Text("Inputs").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(28);
+                            columns.RelativeColumn(2.0f);
+                            columns.RelativeColumn(1.4f);
+                            columns.ConstantColumn(56);
+                            columns.ConstantColumn(82);
+                            columns.ConstantColumn(78);
+                            columns.ConstantColumn(96);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Element(CellStyle).Text("#").Bold();
+                            header.Cell().Element(CellStyle).Text("Account").Bold();
+                            header.Cell().Element(CellStyle).Text("Lot").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Bags").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Weight").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Rate").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Amount").Bold();
+                        });
+
+                        foreach (var input in dto.Inputs.Select((line, i) => new { line, i }))
+                        {
+                            var amount = input.line.WeightKg * (input.line.Rate ?? 0m);
+                            table.Cell().Element(CellStyle).Text((input.i + 1).ToString());
+                            table.Cell().Element(CellStyle).Text(input.line.AccountName ?? "-");
+                            table.Cell().Element(CellStyle).Text(input.line.SelectedLotNumber ?? "-");
+                            table.Cell().Element(CellStyle).AlignRight().Text(input.line.Qty.ToString());
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(input.line.WeightKg)} kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(input.line.Rate ?? 0m)} / kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text(FormatCurrency(amount));
+                        }
+                    });
+
+                    // Outputs table
+                    column.Item().PaddingTop(12).Text("Outputs").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(28);
+                            columns.RelativeColumn(3.0f);
+                            columns.ConstantColumn(56);
+                            columns.ConstantColumn(82);
+                            columns.ConstantColumn(78);
+                            columns.ConstantColumn(96);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Element(CellStyle).Text("#").Bold();
+                            header.Cell().Element(CellStyle).Text("Account").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Bags").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Weight").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Rate").Bold();
+                            header.Cell().Element(CellStyle).AlignRight().Text("Amount").Bold();
+                        });
+
+                        foreach (var output in dto.Outputs.Select((line, i) => new { line, i }))
+                        {
+                            var amount = output.line.WeightKg * (output.line.Rate ?? 0m);
+                            table.Cell().Element(CellStyle).Text((output.i + 1).ToString());
+                            table.Cell().Element(CellStyle).Text(output.line.AccountName ?? "-");
+                            table.Cell().Element(CellStyle).AlignRight().Text(output.line.Qty.ToString());
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(output.line.WeightKg)} kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(output.line.Rate ?? 0m)} / kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text(FormatCurrency(amount));
+                        }
+                    });
+
+                    // Byproducts table (only if any)
+                    if (dto.Byproducts.Count > 0)
+                    {
+                        column.Item().PaddingTop(12).Text("Byproducts").Bold().FontSize(12);
+                        column.Item().PaddingTop(6).Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.ConstantColumn(28);
+                                columns.RelativeColumn(3.0f);
+                                columns.ConstantColumn(56);
+                                columns.ConstantColumn(82);
+                                columns.ConstantColumn(78);
+                                columns.ConstantColumn(96);
+                            });
+
+                            table.Header(header =>
+                            {
+                                header.Cell().Element(CellStyle).Text("#").Bold();
+                                header.Cell().Element(CellStyle).Text("Account").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Bags").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Weight").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Rate").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Amount").Bold();
+                            });
+
+                            foreach (var bp in dto.Byproducts.Select((line, i) => new { line, i }))
+                            {
+                                var amount = bp.line.WeightKg * (bp.line.Rate ?? 0m);
+                                table.Cell().Element(CellStyle).Text((bp.i + 1).ToString());
+                                table.Cell().Element(CellStyle).Text(bp.line.AccountName ?? "-");
+                                table.Cell().Element(CellStyle).AlignRight().Text(bp.line.Qty.ToString());
+                                table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(bp.line.WeightKg)} kg");
+                                table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(bp.line.Rate ?? 0m)} / kg");
+                                table.Cell().Element(CellStyle).AlignRight().Text(FormatCurrency(amount));
+                            }
+                        });
+                    }
+
+                    // Shortage row (only if > 0)
+                    if (dto.Shortage != null && dto.Shortage.WeightKg > 0)
+                    {
+                        column.Item().PaddingTop(12).Text("Shortage / Loss").Bold().FontSize(12);
+                        column.Item().PaddingTop(6).Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(3.0f);
+                                columns.ConstantColumn(82);
+                                columns.ConstantColumn(78);
+                                columns.ConstantColumn(96);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Element(CellStyle).Text("Account").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Weight").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Rate").Bold();
+                                header.Cell().Element(CellStyle).AlignRight().Text("Amount").Bold();
+                            });
+                            table.Cell().Element(CellStyle).Text(dto.Shortage.AccountName ?? "-");
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(dto.Shortage.WeightKg)} kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text($"{FormatDecimal(dto.Shortage.Rate ?? 0m)} / kg");
+                            table.Cell().Element(CellStyle).AlignRight().Text(FormatCurrency(shortageCost));
+                        });
+                    }
+
+                    // Mass & cost balance summary
+                    column.Item().PaddingTop(12).Text("Mass & Cost Balance").Bold().FontSize(12);
+                    column.Item().PaddingTop(6).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(1.5f);
+                            columns.ConstantColumn(120);
+                            columns.RelativeColumn(1.5f);
+                            columns.ConstantColumn(120);
+                        });
+
+                        AddMetricRow(table,
+                            "Total Input Weight", $"{FormatDecimal(dto.TotalInputKg)} kg",
+                            "Total Out Weight", $"{FormatDecimal(totalPhysicalOutKg)} kg");
+                        AddMetricRow(table,
+                            "Total Output Kg", $"{FormatDecimal(dto.TotalOutputKg)} kg",
+                            "Total Byproduct Kg", $"{FormatDecimal(dto.TotalByproductKg)} kg");
+                        AddMetricRow(table,
+                            "Shortage Kg", $"{FormatDecimal(dto.ShortageKg)} kg",
+                            "Derived Rate", $"{FormatDecimal(dto.DerivedOutputRate)} / kg");
+                        AddMetricRow(table,
+                            "Total Input Cost", FormatCurrency(dto.TotalInputCost),
+                            "Total Out Cost", FormatCurrency(totalOutCost));
+                    });
+
+                    column.Item().PaddingTop(42).Row(row =>
+                    {
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().BorderBottom(1.5f).BorderColor(Green).Height(34);
+                            c.Item().PaddingTop(4).AlignCenter().Text("Prepared by").Bold().FontSize(11);
+                        });
+                        row.ConstantItem(140);
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().BorderBottom(1.5f).BorderColor(Green).Height(34);
+                            c.Item().PaddingTop(4).AlignCenter().Text("Authorized by").Bold().FontSize(11);
                         });
                     });
                 });

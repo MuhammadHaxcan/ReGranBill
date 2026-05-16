@@ -67,6 +67,7 @@ export interface ProductionVoucherListDto {
   totalOutputKg: number;
   totalByproductKg: number;
   shortageKg: number;
+  totalInputCost: number;
   createdAt: string;
 }
 
@@ -83,6 +84,7 @@ export interface ProductionLineRequest {
 export interface ProductionShortageRequest {
   accountId: number;
   weightKg: number;
+  rate?: number | null;
 }
 
 export interface ProductionVoucherUpsertRequest {

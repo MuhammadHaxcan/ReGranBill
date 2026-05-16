@@ -217,7 +217,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         purchaseJv.VehicleNumber = request.VehicleNumber;
         purchaseJv.Description = VoucherHelpers.ResolveDescription(request.Description, "Purchase by", validation.VendorAccount.Name, request.Lines.Select(l => (l.ProductId, l.SortOrder, l.Qty)), validation.ProductAccounts);
         purchaseJv.RatesAdded = request.Lines.All(l => l.Rate > 0);
-        purchaseJv.UpdatedAt = DateTime.UtcNow;
+        purchaseJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var vendorEntry = purchaseJv.Entries.FirstOrDefault(e => e.SortOrder == 0);
         if (vendorEntry == null)
@@ -241,7 +241,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
                 _db.InventoryTransactions.Remove(orphanState.Transaction);
                 orphanState.Lot.Status = InventoryLotStatus.Voided;
                 orphanState.Lot.SourceEntryId = null;
-                orphanState.Lot.UpdatedAt = DateTime.UtcNow;
+                orphanState.Lot.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
             }
 
             _db.JournalEntries.Remove(existingEntry);
@@ -325,7 +325,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         }
 
         purchaseJv.RatesAdded = purchaseJv.Entries.Where(e => e.SortOrder > 0).All(e => e.Rate > 0);
-        purchaseJv.UpdatedAt = DateTime.UtcNow;
+        purchaseJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await _db.SaveChangesAsync();
         var vendorId = purchaseJv.Entries.FirstOrDefault(e => e.SortOrder == 0)?.AccountId ?? 0;
@@ -345,7 +345,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             return (false, "Cannot delete a purchase voucher whose inventory lot has already been consumed.");
 
         purchaseJv.IsDeleted = true;
-        purchaseJv.UpdatedAt = DateTime.UtcNow;
+        purchaseJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var cartageRef = await _db.JournalVoucherReferences
             .Where(r => r.MainVoucherId == purchaseJv.Id)
@@ -355,7 +355,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         if (cartageRef?.ReferenceVoucher != null)
         {
             cartageRef.ReferenceVoucher.IsDeleted = true;
-            cartageRef.ReferenceVoucher.UpdatedAt = DateTime.UtcNow;
+            cartageRef.ReferenceVoucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         }
 
         await RemoveVoucherInventoryAsync(purchaseJv.Id, VoucherType.PurchaseVoucher);
@@ -405,7 +405,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             cartageJv.Entries.Clear();
             cartageJv.Date = purchaseJv.Date;
             cartageJv.Description = $"Cartage entries for {purchaseJv.VoucherNumber}";
-            cartageJv.UpdatedAt = DateTime.UtcNow;
+            cartageJv.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
             cartageJv.Entries.Add(new JournalEntry
             {
@@ -738,7 +738,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
         {
             lot.Status = InventoryLotStatus.Voided;
             lot.SourceEntryId = null;
-            lot.UpdatedAt = DateTime.UtcNow;
+            lot.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         }
     }
 
@@ -808,7 +808,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
             _db.InventoryTransactions.Remove(pair.Value.Transaction);
             pair.Value.Lot.Status = InventoryLotStatus.Voided;
             pair.Value.Lot.SourceEntryId = null;
-            pair.Value.Lot.UpdatedAt = DateTime.UtcNow;
+            pair.Value.Lot.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         }
 
         foreach (var entry in productEntries)
@@ -838,7 +838,7 @@ public class PurchaseVoucherService : IPurchaseVoucherService
                 existingState.Lot.OriginalWeightKg = entry.ActualWeightKg ?? 0m;
                 existingState.Lot.BaseRate = entry.Rate ?? 0m;
                 existingState.Lot.Status = InventoryLotStatus.Open;
-                existingState.Lot.UpdatedAt = DateTime.UtcNow;
+                existingState.Lot.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
                 existingState.Transaction.VoucherLineKey = $"purchase-line-{entry.SortOrder}";
                 existingState.Transaction.ProductAccountId = entry.AccountId;

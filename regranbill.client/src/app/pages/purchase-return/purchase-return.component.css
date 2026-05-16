@@ -227,7 +227,8 @@
   font-weight: 500;
 }
 .col-category { width: 270px; }
-.col-product { width: 20%; min-width: 150px; }
+.col-product { width: 18%; min-width: 150px; }
+.col-lot { width: 18%; min-width: 150px; }
 .col-packing {
   width: 10%;
   min-width: 90px;

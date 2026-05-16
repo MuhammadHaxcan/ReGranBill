@@ -34,7 +34,4 @@ export interface Account {
   phone?: string;
   city?: string;
   address?: string;
-
-  // Optional legacy link retained for older UnwashedMaterial records.
-  washedAccountId?: number | null;
 }

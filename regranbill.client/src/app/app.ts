@@ -31,6 +31,7 @@ export class App implements OnInit, OnDestroy {
   private userSub!: Subscription;
   isMobile = false;
   isDrawerOpen = false;
+  paletteOpen = false;
 
   // Each group is open by default; user can collapse via the chevron.
   private collapsedGroups = new Set<PageGroup>();
@@ -117,6 +118,23 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  @HostListener('document:keydown', ['$event'])
+  onGlobalKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey && event.shiftKey && (event.key === 'F' || event.key === 'f')) {
+      if (this.isLoginPage || this.isPrintPage) return;
+      event.preventDefault();
+      this.openPalette();
+    }
+  }
+
+  openPalette(): void {
+    this.paletteOpen = true;
+  }
+
+  closePalette(): void {
+    this.paletteOpen = false;
+  }
+
   @HostListener('window:resize')
   onResize(): void {
     const nextIsMobile = window.innerWidth < 1024;
@@ -189,6 +207,16 @@ export class App implements OnInit, OnDestroy {
     if (!route) return;
     this.closeMobileDrawer();
     void this.router.navigateByUrl(route);
+  }
+
+  /**
+   * Closes the mobile drawer when a sidebar link is clicked. Navigation itself
+   * is handled by the [routerLink] directive — this preserves middle-click /
+   * ctrl-click / right-click "open in new tab" behavior since the anchor
+   * carries a real href that the browser sees natively.
+   */
+  onSidebarLinkClick(): void {
+    this.closeMobileDrawer();
   }
 
   isPageActive(route: string): boolean {

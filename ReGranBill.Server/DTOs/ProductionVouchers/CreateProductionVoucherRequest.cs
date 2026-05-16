@@ -27,4 +27,5 @@ public class ProductionShortageRequest
 {
     public int AccountId { get; set; }
     public decimal WeightKg { get; set; }
+    public decimal? Rate { get; set; }
 }

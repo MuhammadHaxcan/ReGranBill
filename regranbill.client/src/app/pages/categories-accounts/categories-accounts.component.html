@@ -137,12 +137,7 @@
             <ng-container [ngSwitch]="acct.accountType">
               <span *ngSwitchCase="'Product'">{{ acct.packing }} &middot; {{ acct.packingWeightKg }}kg</span>
               <span *ngSwitchCase="'RawMaterial'">{{ acct.packing }} &middot; {{ acct.packingWeightKg }}kg</span>
-              <span *ngSwitchCase="'UnwashedMaterial'">
-                {{ acct.packing }} &middot; {{ acct.packingWeightKg }}kg
-                <span *ngIf="acct.washedAccountId && getLinkedWashedAccountName(acct.washedAccountId)">
-                  &middot; linked to {{ getLinkedWashedAccountName(acct.washedAccountId) }}
-                </span>
-              </span>
+              <span *ngSwitchCase="'UnwashedMaterial'">{{ acct.packing }} &middot; {{ acct.packingWeightKg }}kg</span>
               <span *ngSwitchCase="'Expense'">-</span>
               <span *ngSwitchCase="'Account'">{{ acct.bankName || 'Cash' }}<span *ngIf="acct.accountNumber"> &middot; {{ acct.accountNumber }}</span></span>
               <span *ngSwitchCase="'Party'">{{ acct.city }}<span *ngIf="acct.phone"> &middot; {{ acct.phone }}</span></span>

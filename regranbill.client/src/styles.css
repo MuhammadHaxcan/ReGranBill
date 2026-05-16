@@ -3,6 +3,16 @@
    Aesthetic: Refined Ledger — warm, sophisticated fintech
    ============================================================ */
 
+/* Amount columns across all voucher line tables: make the value visibly
+   heavier than the surrounding inputs (which default to ~400). Inputs
+   don't inherit font-weight from their parent cell, so target both. */
+.col-amount,
+.col-amount input,
+.col-amount .form-control,
+.wash-line-amount {
+  font-weight: 800;
+}
+
 :root {
   /* Palette */
   --slate-950: #0c1222;
@@ -35,7 +45,7 @@
   --danger-border: #fecaca;
 
   /* Surfaces */
-  --bg: #f6f8fb;
+  --bg: #e9eef4;
   --card-bg: #ffffff;
   --card-border: #e5e7eb;
   --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03);

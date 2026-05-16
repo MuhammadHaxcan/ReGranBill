@@ -9,8 +9,8 @@ public class Formulation
     public bool IsActive { get; set; } = true;
     public int CreatedBy { get; set; }
     public bool IsDeleted { get; set; } = false;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateOnly CreatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public DateOnly UpdatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     public User Creator { get; set; } = null!;
     public ICollection<FormulationLine> Lines { get; set; } = new List<FormulationLine>();

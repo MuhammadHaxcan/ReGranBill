@@ -7,6 +7,8 @@ import { Account, AccountType, PartyRole } from '../../models/account.model';
 import { CashVoucher, CashVoucherMode, CreateCashVoucherRequest } from '../../models/cash-voucher.model';
 import { AccountService } from '../../services/account.service';
 import { CashVoucherService } from '../../services/cash-voucher.service';
+import { CategoryService } from '../../services/category.service';
+import { Category } from '../../models/category.model';
 import { ToastService } from '../../services/toast.service';
 import { round2 } from '../../utils/delivery-calculations';
 import { getApiErrorMessage } from '../../utils/api-error';
@@ -14,6 +16,7 @@ import { toDateInputValue } from '../../utils/date-utils';
 
 interface EditableCashVoucherLine {
   id?: number;
+  categoryId: number | null;
   accountId: number | null;
   description: string;
   amount: number;
@@ -44,7 +47,10 @@ export class CashVoucherComponent implements OnInit {
   cashAccounts: Account[] = [];
   partyOptions: SelectOption[] = [];
   cashAccountOptions: SelectOption[] = [];
+  cashCategoryOptions: SelectOption[] = [];
   lines: EditableCashVoucherLine[] = [];
+
+  private accountsById = new Map<number, Account>();
 
   // Add account modal
   showAddAccountModal = false;
@@ -53,12 +59,14 @@ export class CashVoucherComponent implements OnInit {
   addAccountDefaultRole: PartyRole | undefined;
   addAccountDefaultCategoryId: number | undefined;
   private addAccountContext: 'party' | 'cash' = 'party';
+  private addAccountTargetLine: EditableCashVoucherLine | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private accountService: AccountService,
     private cashVoucherService: CashVoucherService,
+    private categoryService: CategoryService,
     private toast: ToastService
   ) {}
 
@@ -115,11 +123,13 @@ export class CashVoucherComponent implements OnInit {
     this.showAddAccountModal = true;
   }
 
-  onAddCashAccountClicked(prefillName: string): void {
+  onAddCashAccountClicked(prefillName: string, line: EditableCashVoucherLine): void {
     this.addAccountPrefillName = prefillName;
     this.addAccountDefaultType = AccountType.Account;
     this.addAccountDefaultRole = undefined;
+    this.addAccountDefaultCategoryId = line.categoryId ?? undefined;
     this.addAccountContext = 'cash';
+    this.addAccountTargetLine = line;
     this.showAddAccountModal = true;
   }
 
@@ -140,15 +150,25 @@ export class CashVoucherComponent implements OnInit {
       this.partyAccountId = account.id;
     } else {
       this.cashAccounts = [...this.cashAccounts, account];
+      this.accountsById.set(account.id, account);
       this.cashAccountOptions = this.cashAccounts.map(a => ({
         value: a.id,
         label: a.name,
         sublabel: a.bankName || 'Cash / Bank'
       }));
-      const emptyLine = this.lines.find(l => l.accountId == null);
-      if (emptyLine) {
-        emptyLine.accountId = account.id;
+      if (account.categoryId && !this.cashCategoryOptions.some(c => c.value === account.categoryId)) {
+        // The new account's category may not yet be in the filtered list; refresh from server.
+        this.categoryService.getFiltered([AccountType.Account]).subscribe(cats => {
+          this.cashCategoryOptions = cats.map(c => ({ value: c.id, label: c.name }));
+          this.cdr.detectChanges();
+        });
       }
+      const target = this.addAccountTargetLine ?? this.lines.find(l => l.accountId == null) ?? null;
+      if (target) {
+        target.categoryId = account.categoryId ?? null;
+        target.accountId = account.id;
+      }
+      this.addAccountTargetLine = null;
     }
 
     this.cdr.detectChanges();
@@ -272,14 +292,17 @@ export class CashVoucherComponent implements OnInit {
       map(accounts => accounts.filter(account => account.accountType === AccountType.Account))
     );
 
+    const cashCategories$ = this.categoryService.getFiltered([AccountType.Account]);
+
     if (this.isEditMode && this.voucherId) {
       forkJoin({
         partyAccounts: partyAccounts$,
         cashAccounts: cashAccounts$,
+        cashCategories: cashCategories$,
         voucher: this.cashVoucherService.getById(this.mode, this.voucherId)
       }).subscribe({
-        next: ({ partyAccounts, cashAccounts, voucher }) => {
-          this.setAccounts(partyAccounts, cashAccounts);
+        next: ({ partyAccounts, cashAccounts, cashCategories, voucher }) => {
+          this.setAccounts(partyAccounts, cashAccounts, cashCategories);
           this.setVoucher(voucher);
           this.loading = false;
           this.cdr.detectChanges();
@@ -296,10 +319,11 @@ export class CashVoucherComponent implements OnInit {
     forkJoin({
       partyAccounts: partyAccounts$,
       cashAccounts: cashAccounts$,
+      cashCategories: cashCategories$,
       voucherNumber: this.cashVoucherService.getNextNumber(this.mode)
     }).subscribe({
-      next: ({ partyAccounts, cashAccounts, voucherNumber }) => {
-        this.setAccounts(partyAccounts, cashAccounts);
+      next: ({ partyAccounts, cashAccounts, cashCategories, voucherNumber }) => {
+        this.setAccounts(partyAccounts, cashAccounts, cashCategories);
         this.voucherNumber = voucherNumber;
         this.description = '';
         this.partyAccountId = null;
@@ -316,9 +340,10 @@ export class CashVoucherComponent implements OnInit {
     });
   }
 
-  private setAccounts(partyAccounts: Account[], cashAccounts: Account[]): void {
+  private setAccounts(partyAccounts: Account[], cashAccounts: Account[], cashCategories: Category[]): void {
     this.partyAccounts = partyAccounts;
     this.cashAccounts = cashAccounts;
+    this.accountsById = new Map(cashAccounts.map(a => [a.id, a]));
 
     this.partyOptions = partyAccounts.map(account => ({
       value: account.id,
@@ -331,6 +356,27 @@ export class CashVoucherComponent implements OnInit {
       label: account.name,
       sublabel: account.bankName || 'Cash / Bank'
     }));
+
+    this.cashCategoryOptions = cashCategories.map(category => ({
+      value: category.id,
+      label: category.name
+    }));
+  }
+
+  getCashAccountOptionsForLine(line: EditableCashVoucherLine): SelectOption[] {
+    if (!line.categoryId) return [];
+    return this.cashAccounts
+      .filter(account => account.categoryId === line.categoryId)
+      .map(account => ({
+        value: account.id,
+        label: account.name,
+        sublabel: account.bankName || 'Cash / Bank'
+      }));
+  }
+
+  onLineCategoryChange(line: EditableCashVoucherLine, categoryId: number | null): void {
+    line.categoryId = categoryId;
+    line.accountId = null;
   }
 
   private setVoucher(voucher: CashVoucher): void {
@@ -344,6 +390,7 @@ export class CashVoucherComponent implements OnInit {
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map(line => ({
         id: line.id,
+        categoryId: this.accountsById.get(line.accountId)?.categoryId ?? null,
         accountId: line.accountId,
         description: line.description || '',
         amount: line.amount,
@@ -387,6 +434,7 @@ export class CashVoucherComponent implements OnInit {
 
   private newLine(): EditableCashVoucherLine {
     return {
+      categoryId: null,
       accountId: null,
       description: '',
       amount: 0,

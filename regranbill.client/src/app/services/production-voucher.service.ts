@@ -38,4 +38,17 @@ export class ProductionVoucherService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
   }
+
+  getPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.url}/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  getPdfByNumber(voucherNumber: string): Observable<Blob> {
+    return this.http.get(`${this.url}/by-number/${encodeURIComponent(voucherNumber)}/pdf`, { responseType: 'blob' });
+  }
+
+  openPdfInNewTab(id: number, voucherNumber?: string | null): void {
+    const key = voucherNumber?.trim() || id.toString();
+    window.open(`/print-prod/${encodeURIComponent(key)}`, '_blank');
+  }
 }

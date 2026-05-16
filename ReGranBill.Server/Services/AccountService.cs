@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReGranBill.Server.Data;
 using ReGranBill.Server.DTOs.Accounts;
+using ReGranBill.Server.DTOs.Common;
 using ReGranBill.Server.Entities;
 using ReGranBill.Server.Enums;
 using ReGranBill.Server.Exceptions;
@@ -98,17 +99,15 @@ public class AccountService : IAccountService
     {
         var accountName = ValidateName(request.Name);
         await ValidateCategoryAsync(request.CategoryId);
-        await EnsureUniqueNameAsync(accountName);
+        await EnsureUniqueNameAsync(accountName, request.CategoryId);
 
         var accountType = ParseAccountType(request.AccountType);
         var partyRole = ParsePartyRole(accountType, request.PartyRole);
-        var washedAccountId = await ResolveWashedAccountIdAsync(accountType, request.WashedAccountId);
         var account = new Account
         {
             Name = accountName,
             CategoryId = request.CategoryId,
-            AccountType = accountType,
-            WashedAccountId = washedAccountId
+            AccountType = accountType
         };
         _db.Accounts.Add(account);
         await _db.SaveChangesAsync();
@@ -134,22 +133,20 @@ public class AccountService : IAccountService
 
         var accountName = ValidateName(request.Name);
         await ValidateCategoryAsync(request.CategoryId);
-        await EnsureUniqueNameAsync(accountName, id);
+        await EnsureUniqueNameAsync(accountName, request.CategoryId, id);
 
         var accountType = ParseAccountType(request.AccountType);
         var partyRole = ParsePartyRole(accountType, request.PartyRole);
-        var washedAccountId = await ResolveWashedAccountIdAsync(accountType, request.WashedAccountId);
         account.Name = accountName;
         account.CategoryId = request.CategoryId;
         account.AccountType = accountType;
-        account.WashedAccountId = washedAccountId;
         await _db.SaveChangesAsync();
 
         await CreateDetailRow(account.Id, request, accountType, partyRole);
         return await GetByIdAsync(account.Id);
     }
 
-    public async Task<(bool Success, string? Error)> DeleteAsync(int id)
+    public async Task<DeleteResult> DeleteAsync(int id)
     {
         var account = await _db.Accounts
             .Include(a => a.ProductDetail)
@@ -157,15 +154,27 @@ public class AccountService : IAccountService
             .Include(a => a.PartyDetail)
             .FirstOrDefaultAsync(a => a.Id == id);
 
-        if (account == null) return (false, null);
+        if (account == null) return new DeleteResult(false, null, null);
 
-        var hasEntries = await _db.JournalEntries.AnyAsync(je => je.AccountId == id);
-        if (hasEntries)
-            return (false, $"Cannot delete \"{account.Name}\" because it is used in voucher entries.");
+        var blockingVouchers = await _db.JournalEntries
+            .Where(je => je.AccountId == id)
+            .Select(je => je.JournalVoucher)
+            .Distinct()
+            .OrderByDescending(v => v.Date).ThenByDescending(v => v.Id)
+            .ToListAsync();
+
+        if (blockingVouchers.Count > 0)
+        {
+            var top = blockingVouchers.Take(20)
+                .Select(v => new VoucherRef(v.Id, v.VoucherNumber, v.Date, v.VoucherType.ToString()))
+                .ToList();
+            var msg = $"Cannot delete \"{account.Name}\" because it is used in {blockingVouchers.Count} voucher(s).";
+            return new DeleteResult(false, null, new DeleteBlockedResult(msg, top, blockingVouchers.Count));
+        }
 
         _db.Accounts.Remove(account);
         await _db.SaveChangesAsync();
-        return (true, null);
+        return new DeleteResult(true, null, null);
     }
 
     private async Task CreateDetailRow(int accountId, CreateAccountRequest request, AccountType accountType, PartyRole? partyRole)
@@ -229,8 +238,7 @@ public class AccountService : IAccountService
         ContactPerson = a.PartyDetail?.ContactPerson,
         Phone = a.PartyDetail?.Phone,
         City = a.PartyDetail?.City,
-        Address = a.PartyDetail?.Address,
-        WashedAccountId = a.WashedAccountId
+        Address = a.PartyDetail?.Address
     };
 
     private static string ValidateName(string? name)
@@ -252,14 +260,21 @@ public class AccountService : IAccountService
         }
     }
 
-    private async Task EnsureUniqueNameAsync(string name, int? existingId = null)
+    private async Task EnsureUniqueNameAsync(string name, int categoryId, int? existingId = null)
     {
         var duplicateExists = await _db.Accounts.AnyAsync(a =>
-            a.Name == name && (!existingId.HasValue || a.Id != existingId.Value));
+            a.CategoryId == categoryId
+            && a.Name == name
+            && (!existingId.HasValue || a.Id != existingId.Value));
 
         if (duplicateExists)
         {
-            throw new ConflictException($"An account named \"{name}\" already exists.");
+            var categoryName = await _db.Categories
+                .Where(c => c.Id == categoryId)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync();
+            var scope = string.IsNullOrEmpty(categoryName) ? "this category" : $"\"{categoryName}\"";
+            throw new ConflictException($"An account named \"{name}\" already exists in {scope}.");
         }
     }
 
@@ -271,27 +286,6 @@ public class AccountService : IAccountService
         }
 
         return parsed;
-    }
-
-    private async Task<int?> ResolveWashedAccountIdAsync(AccountType accountType, int? washedAccountId)
-    {
-        if (accountType != AccountType.UnwashedMaterial)
-        {
-            return null;
-        }
-
-        if (!washedAccountId.HasValue || washedAccountId.Value <= 0)
-        {
-            return null;
-        }
-
-        var washed = await _db.Accounts.FirstOrDefaultAsync(a => a.Id == washedAccountId.Value);
-        if (washed == null || washed.AccountType != AccountType.RawMaterial)
-        {
-            throw new RequestValidationException("Linked washed account must reference an existing RawMaterial account.");
-        }
-
-        return washed.Id;
     }
 
     private static PartyRole? ParsePartyRole(AccountType accountType, string? partyRole)

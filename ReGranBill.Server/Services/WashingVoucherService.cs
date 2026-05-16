@@ -118,7 +118,7 @@ public class WashingVoucherService : IWashingVoucherService
         voucher.Date = request.Date;
         voucher.Description = VoucherHelpers.ToNullIfWhiteSpace(request.Description) ?? BuildDescription(validation);
         voucher.RatesAdded = true;
-        voucher.UpdatedAt = DateTime.UtcNow;
+        voucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
 
         await RemoveVoucherInventoryAsync(id, VoucherType.WashingVoucher);
         await _db.SaveChangesAsync();
@@ -146,7 +146,7 @@ public class WashingVoucherService : IWashingVoucherService
             return (false, "Cannot delete a washing voucher after its output lots have been consumed.");
 
         voucher.IsDeleted = true;
-        voucher.UpdatedAt = DateTime.UtcNow;
+        voucher.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         await RemoveVoucherInventoryAsync(id, VoucherType.WashingVoucher);
         await _db.SaveChangesAsync();
         return (true, null);
@@ -444,7 +444,7 @@ public class WashingVoucherService : IWashingVoucherService
         {
             lot.Status = InventoryLotStatus.Voided;
             lot.SourceEntryId = null;
-            lot.UpdatedAt = DateTime.UtcNow;
+            lot.UpdatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         }
     }
 

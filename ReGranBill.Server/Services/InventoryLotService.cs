@@ -171,7 +171,9 @@ public class InventoryLotService : IInventoryLotService
                 AvailableWeightKg = VoucherHelpers.Round2(x.AvailableWeightKg),
                 ConsumedWeightKg = VoucherHelpers.Round2(x.Lot.OriginalWeightKg - x.AvailableWeightKg),
                 BaseRate = x.Lot.BaseRate,
-                Status = x.Lot.Status.ToString()
+                Status = x.Lot.Status == InventoryLotStatus.Open && x.AvailableWeightKg <= 0.01m
+                    ? "Exhausted"
+                    : x.Lot.Status.ToString()
             }).ToList(),
             Movements = movements
         };

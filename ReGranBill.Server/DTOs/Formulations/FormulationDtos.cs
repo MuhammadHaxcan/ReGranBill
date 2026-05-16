@@ -28,8 +28,8 @@ public class FormulationDto
     public decimal BaseInputKg { get; set; }
     public bool IsActive { get; set; }
     public List<FormulationLineDto> Lines { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateOnly CreatedAt { get; set; }
+    public DateOnly UpdatedAt { get; set; }
 }
 
 public class FormulationLineDto
